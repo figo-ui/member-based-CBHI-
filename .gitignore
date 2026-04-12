@@ -1,0 +1,7 @@
+.agents/
+.claude/
+.continue/
+.vscode/
+.windsurf/
+skills-lock.json
+system.session.sql

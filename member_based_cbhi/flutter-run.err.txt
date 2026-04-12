@@ -1,0 +1,407 @@
+lib/src/cbhi_app.dart:198:61: Error: Can't find '}' to match '{'.
+class _BootstrapScreenState extends State<_BootstrapScreen> {
+                                                            ^
+lib/src/cbhi_app.dart:375:1: Error: Classes can't be declared inside other classes.
+Try moving the class to the top-level.
+class _HomeShell extends StatefulWidget {
+^^^^^
+lib/src/cbhi_app.dart:375:18: Error: Expected a class member, but got 'extends'.
+class _HomeShell extends StatefulWidget {
+                 ^^^^^^^
+lib/src/cbhi_app.dart:375:26: Error: A method declaration needs an explicit list of parameters.
+Try adding a parameter list to the method declaration.
+class _HomeShell extends StatefulWidget {
+                         ^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:382:1: Error: Classes can't be declared inside other classes.
+Try moving the class to the top-level.
+class _HomeShellState extends State<_HomeShell> {
+^^^^^
+lib/src/cbhi_app.dart:382:23: Error: Expected a class member, but got 'extends'.
+class _HomeShellState extends State<_HomeShell> {
+                      ^^^^^^^
+lib/src/cbhi_app.dart:382:31: Error: A method declaration needs an explicit list of parameters.
+Try adding a parameter list to the method declaration.
+class _HomeShellState extends State<_HomeShell> {
+                              ^^^^^
+lib/src/cbhi_app.dart:563:1: Error: Classes can't be declared inside other classes.
+Try moving the class to the top-level.
+class _DashboardPage extends StatelessWidget {
+^^^^^
+lib/src/cbhi_app.dart:563:22: Error: Expected a class member, but got 'extends'.
+class _DashboardPage extends StatelessWidget {
+                     ^^^^^^^
+lib/src/cbhi_app.dart:563:30: Error: A method declaration needs an explicit list of parameters.
+Try adding a parameter list to the method declaration.
+class _DashboardPage extends StatelessWidget {
+                             ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1049:1: Error: Classes can't be declared inside other classes.
+Try moving the class to the top-level.
+class _CardPage extends StatelessWidget {
+^^^^^
+lib/src/cbhi_app.dart:1049:17: Error: Expected a class member, but got 'extends'.
+class _CardPage extends StatelessWidget {
+                ^^^^^^^
+lib/src/cbhi_app.dart:1049:25: Error: A method declaration needs an explicit list of parameters.
+Try adding a parameter list to the method declaration.
+class _CardPage extends StatelessWidget {
+                        ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1268:1: Error: Classes can't be declared inside other classes.
+Try moving the class to the top-level.
+class _CardInfoChip extends StatelessWidget {
+^^^^^
+lib/src/cbhi_app.dart:1268:21: Error: Expected a class member, but got 'extends'.
+class _CardInfoChip extends StatelessWidget {
+                    ^^^^^^^
+lib/src/cbhi_app.dart:1268:29: Error: A method declaration needs an explicit list of parameters.
+Try adding a parameter list to the method declaration.
+class _CardInfoChip extends StatelessWidget {
+                            ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1302:1: Error: Classes can't be declared inside other classes.
+Try moving the class to the top-level.
+class _ClaimsPage extends StatelessWidget {
+^^^^^
+lib/src/cbhi_app.dart:1302:19: Error: Expected a class member, but got 'extends'.
+class _ClaimsPage extends StatelessWidget {
+                  ^^^^^^^
+lib/src/cbhi_app.dart:1302:27: Error: A method declaration needs an explicit list of parameters.
+Try adding a parameter list to the method declaration.
+class _ClaimsPage extends StatelessWidget {
+                          ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1320:1: Error: Classes can't be declared inside other classes.
+Try moving the class to the top-level.
+class _ProfilePage extends StatelessWidget {
+^^^^^
+lib/src/cbhi_app.dart:1320:20: Error: Expected a class member, but got 'extends'.
+class _ProfilePage extends StatelessWidget {
+                   ^^^^^^^
+lib/src/cbhi_app.dart:1320:28: Error: A method declaration needs an explicit list of parameters.
+Try adding a parameter list to the method declaration.
+class _ProfilePage extends StatelessWidget {
+                           ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1665:1: Error: Classes can't be declared inside other classes.
+Try moving the class to the top-level.
+class _ProfileRow extends StatelessWidget {
+^^^^^
+lib/src/cbhi_app.dart:1665:19: Error: Expected a class member, but got 'extends'.
+class _ProfileRow extends StatelessWidget {
+                  ^^^^^^^
+lib/src/cbhi_app.dart:1665:27: Error: A method declaration needs an explicit list of parameters.
+Try adding a parameter list to the method declaration.
+class _ProfileRow extends StatelessWidget {
+                          ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1704:1: Error: Classes can't be declared inside other classes.
+Try moving the class to the top-level.
+class _BiometricToggle extends StatefulWidget {
+^^^^^
+lib/src/cbhi_app.dart:1704:24: Error: Expected a class member, but got 'extends'.
+class _BiometricToggle extends StatefulWidget {
+                       ^^^^^^^
+lib/src/cbhi_app.dart:1704:32: Error: A method declaration needs an explicit list of parameters.
+Try adding a parameter list to the method declaration.
+class _BiometricToggle extends StatefulWidget {
+                               ^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1711:1: Error: Classes can't be declared inside other classes.
+Try moving the class to the top-level.
+class _BiometricToggleState extends State<_BiometricToggle> {
+^^^^^
+lib/src/cbhi_app.dart:1711:29: Error: Expected a class member, but got 'extends'.
+class _BiometricToggleState extends State<_BiometricToggle> {
+                            ^^^^^^^
+lib/src/cbhi_app.dart:1711:37: Error: A method declaration needs an explicit list of parameters.
+Try adding a parameter list to the method declaration.
+class _BiometricToggleState extends State<_BiometricToggle> {
+                                    ^^^^^
+lib/src/cbhi_app.dart:1778:1: Error: Classes can't be declared inside other classes.
+Try moving the class to the top-level.
+class _HeroCard extends StatelessWidget {
+^^^^^
+lib/src/cbhi_app.dart:1778:17: Error: Expected a class member, but got 'extends'.
+class _HeroCard extends StatelessWidget {
+                ^^^^^^^
+lib/src/cbhi_app.dart:1778:25: Error: A method declaration needs an explicit list of parameters.
+Try adding a parameter list to the method declaration.
+class _HeroCard extends StatelessWidget {
+                        ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1795:1: Error: Classes can't be declared inside other classes.
+Try moving the class to the top-level.
+class _MetricCard extends StatelessWidget {
+^^^^^
+lib/src/cbhi_app.dart:1795:19: Error: Expected a class member, but got 'extends'.
+class _MetricCard extends StatelessWidget {
+                  ^^^^^^^
+lib/src/cbhi_app.dart:1795:27: Error: A method declaration needs an explicit list of parameters.
+Try adding a parameter list to the method declaration.
+class _MetricCard extends StatelessWidget {
+                          ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1704:32: Error: 'StatefulWidget' is already declared in this scope.
+class _BiometricToggle extends StatefulWidget {
+                               ^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:375:26: Context: Previous declaration of 'StatefulWidget'.
+class _HomeShell extends StatefulWidget {
+                         ^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1711:37: Error: 'State' is already declared in this scope.
+class _BiometricToggleState extends State<_BiometricToggle> {
+                                    ^^^^^
+lib/src/cbhi_app.dart:382:31: Context: Previous declaration of 'State'.
+class _HomeShellState extends State<_HomeShell> {
+                              ^^^^^
+lib/src/cbhi_app.dart:1049:25: Error: 'StatelessWidget' is already declared in this scope.
+class _CardPage extends StatelessWidget {
+                        ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:563:30: Context: Previous declaration of 'StatelessWidget'.
+class _DashboardPage extends StatelessWidget {
+                             ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1268:29: Error: 'StatelessWidget' is already declared in this scope.
+class _CardInfoChip extends StatelessWidget {
+                            ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:563:30: Context: Previous declaration of 'StatelessWidget'.
+class _DashboardPage extends StatelessWidget {
+                             ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1302:27: Error: 'StatelessWidget' is already declared in this scope.
+class _ClaimsPage extends StatelessWidget {
+                          ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:563:30: Context: Previous declaration of 'StatelessWidget'.
+class _DashboardPage extends StatelessWidget {
+                             ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1320:28: Error: 'StatelessWidget' is already declared in this scope.
+class _ProfilePage extends StatelessWidget {
+                           ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:563:30: Context: Previous declaration of 'StatelessWidget'.
+class _DashboardPage extends StatelessWidget {
+                             ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1665:27: Error: 'StatelessWidget' is already declared in this scope.
+class _ProfileRow extends StatelessWidget {
+                          ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:563:30: Context: Previous declaration of 'StatelessWidget'.
+class _DashboardPage extends StatelessWidget {
+                             ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1778:25: Error: 'StatelessWidget' is already declared in this scope.
+class _HeroCard extends StatelessWidget {
+                        ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:563:30: Context: Previous declaration of 'StatelessWidget'.
+class _DashboardPage extends StatelessWidget {
+                             ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1795:27: Error: 'StatelessWidget' is already declared in this scope.
+class _MetricCard extends StatelessWidget {
+                          ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:563:30: Context: Previous declaration of 'StatelessWidget'.
+class _DashboardPage extends StatelessWidget {
+                             ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:362:26: Error: Not a constant expression.
+            return const _HomeShell();
+                         ^^^^^^^^^^
+lib/src/cbhi_app.dart:376:9: Error: Not a constant expression.
+  const _HomeShell();
+        ^^^^^^^^^^
+lib/src/cbhi_app.dart:379:9: Error: '_HomeShell' isn't a type.
+  State<_HomeShell> createState() => _HomeShellState();
+        ^^^^^^^^^^
+lib/src/cbhi_app.dart:379:38: Error: The method '_HomeShellState' isn't defined for the type '_BootstrapScreenState'.
+ - '_BootstrapScreenState' is from 'package:member_based_cbhi/src/cbhi_app.dart' ('lib/src/cbhi_app.dart').
+Try correcting the name to the name of an existing method, or defining a method named '_HomeShellState'.
+  State<_HomeShell> createState() => _HomeShellState();
+                                     ^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:392:13: Error: Not a constant expression.
+      const _DashboardPage(),
+            ^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:394:13: Error: Not a constant expression.
+      const _CardPage(),
+            ^^^^^^^^^
+lib/src/cbhi_app.dart:395:13: Error: Not a constant expression.
+      const _ClaimsPage(),
+            ^^^^^^^^^^^
+lib/src/cbhi_app.dart:397:13: Error: Not a constant expression.
+      const _ProfilePage(),
+            ^^^^^^^^^^^^
+lib/src/cbhi_app.dart:564:9: Error: Not a constant expression.
+  const _DashboardPage();
+        ^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:968:36: Error: Local variable '_showAllNotificationsSheet' can't be referenced before it is declared.
+                  onPressed: () => _showAllNotificationsSheet(context, snapshot),
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:982:8: Context: This is the declaration of the variable '_showAllNotificationsSheet'.
+  void _showAllNotificationsSheet(BuildContext context, CbhiSnapshot snapshot) {
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:968:36: Error: The method '_showAllNotificationsSheet' isn't defined for the type '_BootstrapScreenState'.
+ - '_BootstrapScreenState' is from 'package:member_based_cbhi/src/cbhi_app.dart' ('lib/src/cbhi_app.dart').
+Try correcting the name to the name of an existing method, or defining a method named '_showAllNotificationsSheet'.
+                  onPressed: () => _showAllNotificationsSheet(context, snapshot),
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1050:9: Error: Not a constant expression.
+  const _CardPage();
+        ^^^^^^^^^
+lib/src/cbhi_app.dart:1138:31: Error: The method '_CardInfoChip' isn't defined for the type '_BootstrapScreenState'.
+ - '_BootstrapScreenState' is from 'package:member_based_cbhi/src/cbhi_app.dart' ('lib/src/cbhi_app.dart').
+Try correcting the name to the name of an existing method, or defining a method named '_CardInfoChip'.
+                              _CardInfoChip(
+                              ^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1147:33: Error: The method '_CardInfoChip' isn't defined for the type '_BootstrapScreenState'.
+ - '_BootstrapScreenState' is from 'package:member_based_cbhi/src/cbhi_app.dart' ('lib/src/cbhi_app.dart').
+Try correcting the name to the name of an existing method, or defining a method named '_CardInfoChip'.
+                                _CardInfoChip(
+                                ^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1155:29: Error: The method '_CardInfoChip' isn't defined for the type '_BootstrapScreenState'.
+ - '_BootstrapScreenState' is from 'package:member_based_cbhi/src/cbhi_app.dart' ('lib/src/cbhi_app.dart').
+Try correcting the name to the name of an existing method, or defining a method named '_CardInfoChip'.
+                            _CardInfoChip(
+                            ^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1269:33: Error: Expected ',' before this.
+  const _CardInfoChip({required this.label, required this.value});
+                                ^^^^
+lib/src/cbhi_app.dart:1269:54: Error: Expected ',' before this.
+  const _CardInfoChip({required this.label, required this.value});
+                                                     ^^^^
+lib/src/cbhi_app.dart:1269:9: Error: Not a constant expression.
+  const _CardInfoChip({required this.label, required this.value});
+        ^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1280:11: Error: Final variable 'label' must be assigned before it can be used.
+          label,
+          ^^^^^
+lib/src/cbhi_app.dart:1287:11: Error: Final variable 'value' must be assigned before it can be used.
+          value,
+          ^^^^^
+lib/src/cbhi_app.dart:1303:9: Error: Not a constant expression.
+  const _ClaimsPage();
+        ^^^^^^^^^^^
+lib/src/cbhi_app.dart:1321:9: Error: Not a constant expression.
+  const _ProfilePage();
+        ^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1574:15: Error: Not a constant expression.
+        const _BiometricToggle()
+              ^^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1608:21: Error: Not a constant expression.
+              const _ProfileRow(
+                    ^^^^^^^^^^^
+lib/src/cbhi_app.dart:1613:21: Error: Not a constant expression.
+              const _ProfileRow(
+                    ^^^^^^^^^^^
+lib/src/cbhi_app.dart:1618:21: Error: Not a constant expression.
+              const _ProfileRow(
+                    ^^^^^^^^^^^
+lib/src/cbhi_app.dart:1410:15: Error: The method '_ProfileRow' isn't defined for the type '_BootstrapScreenState'.
+ - '_BootstrapScreenState' is from 'package:member_based_cbhi/src/cbhi_app.dart' ('lib/src/cbhi_app.dart').
+Try correcting the name to the name of an existing method, or defining a method named '_ProfileRow'.
+              _ProfileRow(
+              ^^^^^^^^^^^
+lib/src/cbhi_app.dart:1417:15: Error: The method '_ProfileRow' isn't defined for the type '_BootstrapScreenState'.
+ - '_BootstrapScreenState' is from 'package:member_based_cbhi/src/cbhi_app.dart' ('lib/src/cbhi_app.dart').
+Try correcting the name to the name of an existing method, or defining a method named '_ProfileRow'.
+              _ProfileRow(
+              ^^^^^^^^^^^
+lib/src/cbhi_app.dart:1423:17: Error: The method '_ProfileRow' isn't defined for the type '_BootstrapScreenState'.
+ - '_BootstrapScreenState' is from 'package:member_based_cbhi/src/cbhi_app.dart' ('lib/src/cbhi_app.dart').
+Try correcting the name to the name of an existing method, or defining a method named '_ProfileRow'.
+                _ProfileRow(
+                ^^^^^^^^^^^
+lib/src/cbhi_app.dart:1429:17: Error: The method '_ProfileRow' isn't defined for the type '_BootstrapScreenState'.
+ - '_BootstrapScreenState' is from 'package:member_based_cbhi/src/cbhi_app.dart' ('lib/src/cbhi_app.dart').
+Try correcting the name to the name of an existing method, or defining a method named '_ProfileRow'.
+                _ProfileRow(
+                ^^^^^^^^^^^
+lib/src/cbhi_app.dart:1434:15: Error: The method '_ProfileRow' isn't defined for the type '_BootstrapScreenState'.
+ - '_BootstrapScreenState' is from 'package:member_based_cbhi/src/cbhi_app.dart' ('lib/src/cbhi_app.dart').
+Try correcting the name to the name of an existing method, or defining a method named '_ProfileRow'.
+              _ProfileRow(
+              ^^^^^^^^^^^
+lib/src/cbhi_app.dart:1667:14: Error: Expected ',' before this.
+    required this.icon,
+             ^^^^
+lib/src/cbhi_app.dart:1668:14: Error: Expected ',' before this.
+    required this.label,
+             ^^^^
+lib/src/cbhi_app.dart:1669:14: Error: Expected ',' before this.
+    required this.value,
+             ^^^^
+lib/src/cbhi_app.dart:1666:9: Error: Not a constant expression.
+  const _ProfileRow({
+        ^^^^^^^^^^^
+lib/src/cbhi_app.dart:1682:16: Error: Final variable 'icon' must be assigned before it can be used.
+          Icon(icon, size: 18, color: AppTheme.textSecondary),
+               ^^^^
+lib/src/cbhi_app.dart:1685:25: Error: Final variable 'label' must be assigned before it can be used.
+            child: Text(label, style: Theme.of(context).textTheme.bodySmall),
+                        ^^^^^
+lib/src/cbhi_app.dart:1688:13: Error: Final variable 'value' must be assigned before it can be used.
+            value,
+            ^^^^^
+lib/src/cbhi_app.dart:1705:9: Error: Not a constant expression.
+  const _BiometricToggle();
+        ^^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1708:9: Error: '_BiometricToggle' isn't a type.
+  State<_BiometricToggle> createState() => _BiometricToggleState();
+        ^^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1708:44: Error: The method '_BiometricToggleState' isn't defined for the type '_BootstrapScreenState'.
+ - '_BootstrapScreenState' is from 'package:member_based_cbhi/src/cbhi_app.dart' ('lib/src/cbhi_app.dart').
+Try correcting the name to the name of an existing method, or defining a method named '_BiometricToggleState'.
+  State<_BiometricToggle> createState() => _BiometricToggleState();
+                                           ^^^^^^^^^^^^^^^^^^^^^
+lib/src/cbhi_app.dart:1718:5: Error: Local variable '_load' can't be referenced before it is declared.
+    _load();
+    ^^^^^
+lib/src/cbhi_app.dart:1721:16: Context: This is the declaration of the variable '_load'.
+  Future<void> _load() async {
+               ^^^^^
+lib/src/cbhi_app.dart:1718:5: Error: The method '_load' isn't defined for the type '_BootstrapScreenState'.
+ - '_BootstrapScreenState' is from 'package:member_based_cbhi/src/cbhi_app.dart' ('lib/src/cbhi_app.dart').
+Try correcting the name to the name of an existing method, or defining a method named '_load'.
+    _load();
+    ^^^^^
+lib/src/cbhi_app.dart:1780:14: Error: Expected ',' before this.
+    required this.title,
+             ^^^^
+lib/src/cbhi_app.dart:1781:14: Error: Expected ',' before this.
+    required this.subtitle,
+             ^^^^
+lib/src/cbhi_app.dart:1782:14: Error: Expected ',' before this.
+    required this.value,
+             ^^^^
+lib/src/cbhi_app.dart:1779:9: Error: Not a constant expression.
+  const _HeroCard({
+        ^^^^^^^^^
+lib/src/cbhi_app.dart:1791:36: Error: Final variable 'title' must be assigned before it can be used.
+    return AnimatedHeroCard(title: title, subtitle: subtitle, value: value);
+                                   ^^^^^
+lib/src/cbhi_app.dart:1791:53: Error: Final variable 'subtitle' must be assigned before it can be used.
+    return AnimatedHeroCard(title: title, subtitle: subtitle, value: value);
+                                                    ^^^^^^^^
+lib/src/cbhi_app.dart:1791:70: Error: Final variable 'value' must be assigned before it can be used.
+    return AnimatedHeroCard(title: title, subtitle: subtitle, value: value);
+                                                                     ^^^^^
+lib/src/cbhi_app.dart:1797:14: Error: Expected ',' before this.
+    required this.label,
+             ^^^^
+lib/src/cbhi_app.dart:1798:14: Error: Expected ',' before this.
+    required this.value,
+             ^^^^
+lib/src/cbhi_app.dart:1799:14: Error: Expected ',' before this.
+    required this.icon,
+             ^^^^
+lib/src/cbhi_app.dart:1796:9: Error: Not a constant expression.
+  const _MetricCard({
+        ^^^^^^^^^^^
+lib/src/cbhi_app.dart:1808:30: Error: Final variable 'label' must be assigned before it can be used.
+    return MetricCard(label: label, value: value, icon: icon);
+                             ^^^^^
+lib/src/cbhi_app.dart:1808:44: Error: Final variable 'value' must be assigned before it can be used.
+    return MetricCard(label: label, value: value, icon: icon);
+                                           ^^^^^
+lib/src/cbhi_app.dart:1808:57: Error: Final variable 'icon' must be assigned before it can be used.
+    return MetricCard(label: label, value: value, icon: icon);
+                                                        ^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command 'C:\flutter\bin\flutter.bat'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 14m 58s
+Error: Gradle task assembleDebug failed with exit code 1

@@ -1,0 +1,794 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+import '../cbhi_data.dart';
+import '../shared/image_utils.dart';
+import '../shared/local_attachment_store.dart';
+import '../theme/app_theme.dart';
+import 'indigent_models.dart';
+
+/// Complete indigent application screen with:
+/// - Income, property, disability data entry
+/// - Document upload (1-3 documents)
+/// - Real-time Vision API validation per document:
+///     * Type detection (Income/Disability/Kebele/Poverty/Agricultural)
+///     * Date extraction (Gregorian + Ethiopic calendar)
+///     * Expiry check (each type has a validity period)
+///     * Expired documents block submission
+/// - Auto-scoring on backend (0-100)
+/// - Clear feedback in English + Amharic
+class IndigentApplicationScreen extends StatefulWidget {
+  const IndigentApplicationScreen({
+    super.key,
+    required this.repository,
+    required this.userId,
+    required this.familySize,
+    required this.employmentStatus,
+    required this.onSubmitted,
+  });
+
+  final CbhiRepository repository;
+  final String userId;
+  final int familySize;
+  final String employmentStatus;
+  final void Function(Map<String, dynamic> result) onSubmitted;
+
+  @override
+  State<IndigentApplicationScreen> createState() =>
+      _IndigentApplicationScreenState();
+}
+
+class _IndigentApplicationScreenState
+    extends State<IndigentApplicationScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _incomeController = TextEditingController();
+  bool _hasProperty = false;
+  bool _hasDisability = false;
+  final List<IndigentDocumentMeta> _documents = [];
+  bool _isSubmitting = false;
+  String? _submitError;
+  final _picker = ImagePicker();
+
+  @override
+  void dispose() {
+    _incomeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDocument() async {
+    if (_documents.length >= 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maximum 3 documents allowed.')),
+      );
+      return;
+    }
+
+    await Permission.camera.request();
+    await Permission.photos.request();
+    if (!mounted) return;
+
+    final source = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take photo'),
+              onTap: () => Navigator.pop(ctx, 'camera'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf_outlined),
+              title: const Text('Choose PDF or image file'),
+              onTap: () => Navigator.pop(ctx, 'file'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    String? filePath;
+    if (source == 'file') {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['pdf', 'png', 'jpg', 'jpeg'],
+      );
+      filePath = result?.files.single.path;
+    } else {
+      final image = await _picker.pickImage(
+        source: source == 'camera' ? ImageSource.camera : ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (image != null) {
+        filePath = await compressImageForUpload(image.path);
+      }
+    }
+
+    if (filePath == null || !mounted) return;
+
+    final persistedPath = await LocalAttachmentStore.persist(
+      filePath,
+      category: 'indigent_doc',
+    );
+
+    final meta = IndigentDocumentMeta(
+      localPath: persistedPath,
+      isValidating: true,
+    );
+    setState(() => _documents.add(meta));
+
+    await _validateDocument(_documents.length - 1);
+  }
+
+  Future<void> _validateDocument(int index) async {
+    final doc = _documents[index];
+    setState(() {
+      _documents[index] = doc.copyWith(isValidating: true);
+    });
+
+    try {
+      final base64 = await fileToBase64(doc.localPath);
+      if (base64 == null) {
+        setState(() {
+          _documents[index] = doc.copyWith(
+            isValidating: false,
+            isValidated: true,
+            validationError: 'Could not read file. Please try again.',
+          );
+        });
+        return;
+      }
+
+      final result = await widget.repository.validateIndigentDocument(
+        imageBase64: base64,
+      );
+
+      final issues = (result['issues'] as List?)?.cast<String>() ?? [];
+
+      setState(() {
+        _documents[index] = doc.copyWith(
+          isValidating: false,
+          isValidated: true,
+          documentType: result['documentType']?.toString(),
+          detectedDate: result['detectedDate']?.toString(),
+          isExpired: result['isExpired'] == true,
+          expiryWarning: result['expiryWarning']?.toString(),
+          validationSummary: issues.join('; '),
+          confidence: (result['confidence'] as num?)?.toDouble() ?? 0,
+          detectedKeywords:
+              (result['detectedKeywords'] as List?)?.cast<String>() ?? [],
+          validationError: issues.isNotEmpty ? issues.first : null,
+        );
+      });
+    } catch (e) {
+      setState(() {
+        _documents[index] = doc.copyWith(
+          isValidating: false,
+          isValidated: true,
+          validationError: 'Validation failed: ${e.toString()}',
+        );
+      });
+    }
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_documents.isEmpty) {
+      setState(() =>
+          _submitError = 'Please upload at least one supporting document.');
+      return;
+    }
+
+    final expiredDocs = _documents.where((d) => d.isExpired).toList();
+    if (expiredDocs.isNotEmpty) {
+      setState(() {
+        _submitError =
+            'Cannot submit: ${expiredDocs.map((d) => d.documentType ?? "document").join(", ")} '
+            'is expired. Please upload a valid document from your kebele.';
+      });
+      return;
+    }
+
+    final stillValidating = _documents.any((d) => d.isValidating);
+    if (stillValidating) {
+      setState(() =>
+          _submitError = 'Please wait for all documents to finish validating.');
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _submitError = null;
+    });
+
+    try {
+      final result = await widget.repository.submitIndigentApplication(
+        userId: widget.userId,
+        income: int.tryParse(_incomeController.text.trim()) ?? 0,
+        employmentStatus: widget.employmentStatus,
+        familySize: widget.familySize,
+        hasProperty: _hasProperty,
+        disabilityStatus: _hasDisability,
+        documents: _documents.map((d) => d.localPath).toList(),
+        documentMeta: _documents.map((d) => d.toJson()).toList(),
+      );
+      widget.onSubmitted(result);
+    } catch (e) {
+      setState(() =>
+          _submitError = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Indigent Application')),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(AppTheme.spacingM),
+          children: [
+            _InfoBanner().animate().fadeIn(duration: 400.ms),
+            const SizedBox(height: 20),
+            _buildIncomeCard(),
+            const SizedBox(height: 16),
+            _buildStatusCard(),
+            const SizedBox(height: 16),
+            _buildDocumentsCard(),
+            const SizedBox(height: 16),
+            if (_submitError != null) _ErrorCard(message: _submitError!),
+            const SizedBox(height: 16),
+            _buildSubmitButton(),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIncomeCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Monthly Income',
+                style: TextStyle(
+                    fontWeight: FontWeight.w700, fontSize: 15)),
+            const SizedBox(height: 4),
+            const Text(
+              'Enter your household monthly income in ETB.\nየቤተሰብ ወርሃዊ ገቢ በብር ያስገቡ።',
+              style: TextStyle(
+                  color: AppTheme.textSecondary, fontSize: 13, height: 1.5),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _incomeController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Monthly income (ETB)',
+                prefixIcon: Icon(Icons.payments_outlined),
+                hintText: 'e.g. 500',
+              ),
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'Income is required';
+                if (int.tryParse(v.trim()) == null) {
+                  return 'Enter a valid number';
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(duration: 400.ms, delay: 100.ms);
+  }
+
+  Widget _buildStatusCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Household Status',
+                style: TextStyle(
+                    fontWeight: FontWeight.w700, fontSize: 15)),
+            const SizedBox(height: 12),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Owns property (land, house, or business)'),
+              subtitle: const Text('ቤት፣ መሬት ወይም ንግድ ያለዎት ከሆነ'),
+              value: _hasProperty,
+              onChanged: (v) => setState(() => _hasProperty = v),
+              activeThumbColor: AppTheme.primary,
+            ),
+            const Divider(),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text(
+                  'Has a household member with disability'),
+              subtitle: const Text('የቤተሰብ አባል አካል ጉዳት ካለው'),
+              value: _hasDisability,
+              onChanged: (v) => setState(() => _hasDisability = v),
+              activeThumbColor: AppTheme.primary,
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(duration: 400.ms, delay: 150.ms);
+  }
+
+  Widget _buildDocumentsCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Supporting Documents',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 15)),
+                      SizedBox(height: 4),
+                      Text(
+                        'Upload 1-3 documents from your kebele.',
+                        style: TextStyle(
+                            color: AppTheme.textSecondary, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_documents.length < 3)
+                  FilledButton.tonalIcon(
+                    onPressed: _pickDocument,
+                    icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                    label: const Text('Add'),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _AcceptedTypesExpansion(),
+            const SizedBox(height: 12),
+            if (_documents.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceLight,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusS),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: const Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.upload_file_outlined,
+                          size: 40, color: AppTheme.textSecondary),
+                      SizedBox(height: 8),
+                      Text('No documents uploaded yet',
+                          style: TextStyle(color: AppTheme.textSecondary)),
+                      Text('Tap Add to upload a document',
+                          style: TextStyle(
+                              color: AppTheme.textSecondary, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ..._documents.asMap().entries.map(
+                (entry) => _DocumentCard(
+                  doc: entry.value,
+                  index: entry.key,
+                  onRemove: () =>
+                      setState(() => _documents.removeAt(entry.key)),
+                  onRetry: () => _validateDocument(entry.key),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(duration: 400.ms, delay: 200.ms);
+  }
+
+  Widget _buildSubmitButton() {
+    final hasExpired = _documents.any((d) => d.isExpired);
+    final isValidating = _documents.any((d) => d.isValidating);
+
+    return FilledButton.icon(
+      onPressed: (_isSubmitting || hasExpired || isValidating) ? null : _submit,
+      icon: _isSubmitting
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white),
+            )
+          : const Icon(Icons.send_outlined),
+      label: Text(
+        isValidating
+            ? 'Validating documents...'
+            : hasExpired
+                ? 'Expired documents — cannot submit'
+                : 'Submit Application',
+      ),
+    ).animate().fadeIn(duration: 400.ms, delay: 300.ms);
+  }
+}
+
+// ── Supporting widgets ────────────────────────────────────────────────────────
+
+class _InfoBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: AppTheme.heroGradient,
+        borderRadius: BorderRadius.circular(AppTheme.radiusL),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.volunteer_activism, color: Colors.white, size: 28),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Indigent Membership Application',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 10),
+          Text(
+            'Qualifying households receive subsidized or free CBHI coverage. '
+            'Upload supporting documents from your kebele. '
+            'Documents are verified automatically by AI.',
+            style: TextStyle(
+                color: Colors.white70, fontSize: 13, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AcceptedTypesExpansion extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      title: const Text(
+        'Accepted document types',
+        style: TextStyle(
+            fontSize: 13,
+            color: AppTheme.primary,
+            fontWeight: FontWeight.w600),
+      ),
+      leading: const Icon(Icons.info_outline,
+          color: AppTheme.primary, size: 18),
+      children: IndigentDocumentType.values
+          .map(
+            (type) => ListTile(
+              dense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 8),
+              leading: const Icon(Icons.check_circle_outline,
+                  color: AppTheme.success, size: 18),
+              title: Text(type.label,
+                  style: const TextStyle(fontSize: 13)),
+              subtitle: Text(
+                '${type.amharic} • Valid for ${type.validityMonths} months',
+                style: const TextStyle(fontSize: 11),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppTheme.radiusS),
+        border: Border.all(
+            color: AppTheme.error.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.error_outline,
+              color: AppTheme.error, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(message,
+                style: const TextStyle(
+                    color: AppTheme.error, fontSize: 13)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DocumentCard extends StatelessWidget {
+  const _DocumentCard({
+    required this.doc,
+    required this.index,
+    required this.onRemove,
+    required this.onRetry,
+  });
+
+  final IndigentDocumentMeta doc;
+  final int index;
+  final VoidCallback onRemove;
+  final VoidCallback onRetry;
+
+  Color get _statusColor {
+    if (doc.isValidating) return AppTheme.primary;
+    if (doc.isExpired) return AppTheme.error;
+    if (doc.isAccepted) return AppTheme.success;
+    if (doc.validationError != null) return AppTheme.warning;
+    return AppTheme.textSecondary;
+  }
+
+  IconData get _statusIcon {
+    if (doc.isValidating) return Icons.hourglass_empty;
+    if (doc.isExpired) return Icons.cancel_outlined;
+    if (doc.isAccepted) return Icons.check_circle_outline;
+    if (doc.validationError != null) return Icons.warning_amber_outlined;
+    return Icons.description_outlined;
+  }
+
+  String get _statusLabel {
+    if (doc.isValidating) return 'Validating...';
+    if (doc.isExpired) return 'EXPIRED';
+    if (doc.isAccepted) return 'Accepted';
+    if (doc.validationError != null) return 'Issue detected';
+    return 'Pending';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _statusColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+        border: Border.all(
+            color: _statusColor.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Thumbnail
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 52,
+                  height: 52,
+                  child: doc.localPath.toLowerCase().endsWith('.pdf')
+                      ? Container(
+                          color: AppTheme.primary
+                              .withValues(alpha: 0.1),
+                          child: const Icon(Icons.picture_as_pdf,
+                              color: AppTheme.primary, size: 28),
+                        )
+                      : Image.file(
+                          File(doc.localPath),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: AppTheme.surfaceLight,
+                            child: const Icon(
+                                Icons.broken_image_outlined,
+                                color: AppTheme.textSecondary),
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      doc.documentType ?? 'Document ${index + 1}',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: _statusColor,
+                          fontSize: 14),
+                    ),
+                    if (doc.detectedDate != null)
+                      Text(
+                        'Issued: ${doc.detectedDate}',
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.textSecondary),
+                      ),
+                    Row(
+                      children: [
+                        Icon(_statusIcon,
+                            color: _statusColor, size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          _statusLabel,
+                          style: TextStyle(
+                              color: _statusColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600),
+                        ),
+                        if (doc.confidence > 0) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            '${(doc.confidence * 100).toStringAsFixed(0)}% confidence',
+                            style: const TextStyle(
+                                fontSize: 11,
+                                color: AppTheme.textSecondary),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (doc.isValidating)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: onRemove,
+                  color: AppTheme.textSecondary,
+                ),
+            ],
+          ),
+
+          // Expiry warning (not yet expired)
+          if (doc.expiryWarning != null && !doc.isExpired) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.warning.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.schedule_outlined,
+                      color: AppTheme.warning, size: 14),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      doc.expiryWarning!,
+                      style: const TextStyle(
+                          color: AppTheme.warning, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Error / expired message
+          if (doc.validationError != null || doc.isExpired) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.error.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.error_outline,
+                          color: AppTheme.error, size: 14),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          doc.isExpired
+                              ? 'This document has expired. Please obtain a new certificate from your kebele.\n'
+                                'ሰነዱ ጊዜው አልፎበታል። ከቀበሌዎ አዲስ ማረጋገጫ ያግኙ።'
+                              : doc.validationError ?? '',
+                          style: const TextStyle(
+                              color: AppTheme.error, fontSize: 12, height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!doc.isExpired) ...[
+                    const SizedBox(height: 6),
+                    TextButton.icon(
+                      onPressed: onRetry,
+                      icon: const Icon(Icons.refresh, size: 14),
+                      label: const Text('Retry validation',
+                          style: TextStyle(fontSize: 12)),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.primary,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+
+          // Detected keywords (accepted docs only)
+          if (doc.detectedKeywords.isNotEmpty && doc.isAccepted) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: doc.detectedKeywords
+                  .take(5)
+                  .map(
+                    (kw) => Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppTheme.success.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        kw,
+                        style: const TextStyle(
+                            fontSize: 10,
+                            color: AppTheme.success,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}

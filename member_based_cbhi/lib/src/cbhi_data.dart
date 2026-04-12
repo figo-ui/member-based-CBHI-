@@ -1,0 +1,1656 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
+import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
+
+import 'registration/models/identity_model.dart';
+import 'registration/models/membership_type.dart';
+import 'registration/models/personal_info_model.dart';
+
+String get kDefaultApiBaseUrl {
+  const envUrl = String.fromEnvironment('CBHI_API_BASE_URL');
+  if (envUrl.isNotEmpty) return envUrl;
+  // On web and Windows/macOS/Linux use localhost; on Android use 10.0.2.2
+  if (kIsWeb || !_isAndroid) return 'http://localhost:3000/api/v1';
+  return 'http://10.0.2.2:3000/api/v1';
+}
+
+bool get _isAndroid {
+  try {
+    return !kIsWeb && Platform.isAndroid;
+  } catch (_) {
+    return false;
+  }
+}
+
+@immutable
+class AppUserProfile {
+  const AppUserProfile({
+    required this.id,
+    required this.displayName,
+    this.firstName,
+    this.middleName,
+    this.lastName,
+    this.phoneNumber,
+    this.email,
+    this.role,
+    this.preferredLanguage,
+    this.householdCode,
+    this.beneficiaryId,
+    this.membershipId,
+    this.lastLoginAt,
+  });
+
+  final String id;
+  final String displayName;
+  final String? firstName;
+  final String? middleName;
+  final String? lastName;
+  final String? phoneNumber;
+  final String? email;
+  final String? role;
+  final String? preferredLanguage;
+  final String? householdCode;
+  final String? beneficiaryId;
+  final String? membershipId;
+  final String? lastLoginAt;
+
+  factory AppUserProfile.fromJson(Map<String, dynamic> json) {
+    return AppUserProfile(
+      id: json['id']?.toString() ?? '',
+      displayName: json['displayName']?.toString() ?? 'Member',
+      firstName: json['firstName']?.toString(),
+      middleName: json['middleName']?.toString(),
+      lastName: json['lastName']?.toString(),
+      phoneNumber: json['phoneNumber']?.toString(),
+      email: json['email']?.toString(),
+      role: json['role']?.toString(),
+      preferredLanguage: json['preferredLanguage']?.toString(),
+      householdCode: json['householdCode']?.toString(),
+      beneficiaryId: json['beneficiaryId']?.toString(),
+      membershipId: json['membershipId']?.toString(),
+      lastLoginAt: json['lastLoginAt']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'displayName': displayName,
+    'firstName': firstName,
+    'middleName': middleName,
+    'lastName': lastName,
+    'phoneNumber': phoneNumber,
+    'email': email,
+    'role': role,
+    'preferredLanguage': preferredLanguage,
+    'householdCode': householdCode,
+    'beneficiaryId': beneficiaryId,
+    'membershipId': membershipId,
+    'lastLoginAt': lastLoginAt,
+  };
+}
+
+@immutable
+class AuthSession {
+  const AuthSession({
+    required this.accessToken,
+    required this.tokenType,
+    required this.expiresAt,
+    required this.user,
+    this.refreshToken,
+    this.refreshTokenExpiresAt,
+  });
+
+  final String accessToken;
+  final String tokenType;
+  final String expiresAt;
+  final AppUserProfile user;
+  final String? refreshToken;
+  final String? refreshTokenExpiresAt;
+
+  bool get isExpired {
+    final exp = DateTime.tryParse(expiresAt);
+    if (exp == null) return false;
+    return DateTime.now().isAfter(exp.subtract(const Duration(minutes: 5)));
+  }
+
+  bool get refreshTokenExpired {
+    final exp = DateTime.tryParse(refreshTokenExpiresAt ?? '');
+    if (exp == null) return true;
+    return DateTime.now().isAfter(exp);
+  }
+
+  factory AuthSession.fromJson(Map<String, dynamic> json) {
+    return AuthSession(
+      accessToken: json['accessToken']?.toString() ?? '',
+      tokenType: json['tokenType']?.toString() ?? 'Bearer',
+      expiresAt: json['expiresAt']?.toString() ?? '',
+      user: AppUserProfile.fromJson(
+        (json['user'] as Map? ?? const {}).cast<String, dynamic>(),
+      ),
+      refreshToken: json['refreshToken']?.toString(),
+      refreshTokenExpiresAt: json['refreshTokenExpiresAt']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'accessToken': accessToken,
+    'tokenType': tokenType,
+    'expiresAt': expiresAt,
+    'user': user.toJson(),
+    'refreshToken': refreshToken,
+    'refreshTokenExpiresAt': refreshTokenExpiresAt,
+  };
+}
+
+@immutable
+class OtpChallenge {
+  const OtpChallenge({
+    required this.channel,
+    required this.target,
+    required this.expiresInSeconds,
+    this.debugCode,
+  });
+
+  final String channel;
+  final String target;
+  final int expiresInSeconds;
+  final String? debugCode;
+
+  factory OtpChallenge.fromJson(Map<String, dynamic> json) {
+    return OtpChallenge(
+      channel: json['channel']?.toString() ?? 'sms',
+      target: json['target']?.toString() ?? '',
+      expiresInSeconds: (json['expiresInSeconds'] as num?)?.toInt() ?? 300,
+      debugCode: json['debugCode']?.toString(),
+    );
+  }
+}
+
+@immutable
+class FamilyMember {
+  const FamilyMember({
+    required this.id,
+    required this.membershipId,
+    required this.fullName,
+    required this.coverageStatus,
+    required this.isPrimaryHolder,
+    required this.isEligible,
+    this.gender,
+    this.dateOfBirth,
+    this.relationshipToHouseholdHead,
+    this.identityType,
+    this.identityNumber,
+    this.birthCertificateRef,
+    this.birthCertificatePath,
+    this.idDocumentPath,
+    this.photoPath,
+    this.phoneNumber,
+    this.canLoginIndependently = false,
+  });
+
+  final String id;
+  final String membershipId;
+  final String fullName;
+  final String coverageStatus;
+  final bool isPrimaryHolder;
+  final bool isEligible;
+  final String? gender;
+  final String? dateOfBirth;
+  final String? relationshipToHouseholdHead;
+  final String? identityType;
+  final String? identityNumber;
+  final String? birthCertificateRef;
+  final String? birthCertificatePath;
+  final String? idDocumentPath;
+  final String? photoPath;
+  final String? phoneNumber;
+  final bool canLoginIndependently;
+
+  factory FamilyMember.fromJson(Map<String, dynamic> json) {
+    return FamilyMember(
+      id: json['id']?.toString() ?? '',
+      membershipId: json['membershipId']?.toString() ?? '',
+      fullName: json['fullName']?.toString() ?? 'Member',
+      coverageStatus: json['coverageStatus']?.toString() ?? 'UNKNOWN',
+      isPrimaryHolder: json['isPrimaryHolder'] == true,
+      isEligible: json['isEligible'] != false,
+      gender: json['gender']?.toString(),
+      dateOfBirth: json['dateOfBirth']?.toString(),
+      relationshipToHouseholdHead: json['relationshipToHouseholdHead']
+          ?.toString(),
+      identityType: json['identityType']?.toString(),
+      identityNumber: json['identityNumber']?.toString(),
+      birthCertificateRef: json['birthCertificateRef']?.toString(),
+      birthCertificatePath: json['birthCertificatePath']?.toString(),
+      idDocumentPath: json['idDocumentPath']?.toString(),
+      photoPath: json['photoPath']?.toString(),
+      phoneNumber: json['phoneNumber']?.toString(),
+      canLoginIndependently: json['canLoginIndependently'] == true,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'membershipId': membershipId,
+    'fullName': fullName,
+    'coverageStatus': coverageStatus,
+    'isPrimaryHolder': isPrimaryHolder,
+    'isEligible': isEligible,
+    'gender': gender,
+    'dateOfBirth': dateOfBirth,
+    'relationshipToHouseholdHead': relationshipToHouseholdHead,
+    'identityType': identityType,
+    'identityNumber': identityNumber,
+    'birthCertificateRef': birthCertificateRef,
+    'birthCertificatePath': birthCertificatePath,
+    'idDocumentPath': idDocumentPath,
+    'photoPath': photoPath,
+    'phoneNumber': phoneNumber,
+    'canLoginIndependently': canLoginIndependently,
+  };
+}
+
+@immutable
+class FamilyMemberDraft {
+  const FamilyMemberDraft({
+    required this.firstName,
+    this.middleName,
+    required this.lastName,
+    required this.gender,
+    required this.dateOfBirth,
+    required this.relationshipToHouseholdHead,
+    this.identityType,
+    this.identityNumber,
+    this.phoneNumber,
+    this.photoPath,
+    this.birthCertificateRef,
+    this.birthCertificatePath,
+    this.idDocumentPath,
+  });
+
+  final String firstName;
+  final String? middleName;
+  final String lastName;
+  final String gender;
+  final DateTime dateOfBirth;
+  final String relationshipToHouseholdHead;
+  final String? identityType;
+  final String? identityNumber;
+  final String? phoneNumber;
+  final String? photoPath;
+  final String? birthCertificateRef;
+  final String? birthCertificatePath;
+  final String? idDocumentPath;
+
+  String get fullName => [
+    firstName,
+    middleName,
+    lastName,
+  ].where((value) => value != null && value.trim().isNotEmpty).join(' ');
+
+  Map<String, dynamic> toJson() => {
+    'firstName': firstName,
+    'middleName': middleName,
+    'lastName': lastName,
+    'gender': gender,
+    'dateOfBirth': DateFormat('yyyy-MM-dd').format(dateOfBirth),
+    'relationshipToHouseholdHead': relationshipToHouseholdHead,
+    'identityType': identityType,
+    'identityNumber': identityNumber,
+    'phoneNumber': phoneNumber,
+    'beneficiaryPhotoPath': photoPath,
+    'birthCertificateRef': birthCertificateRef,
+    'birthCertificatePath': birthCertificatePath,
+    'idDocumentPath': idDocumentPath,
+  };
+}
+
+@immutable
+class CbhiSnapshot {
+  const CbhiSnapshot({
+    required this.household,
+    required this.claims,
+    required this.payments,
+    required this.notifications,
+    required this.digitalCards,
+    required this.familyMembers,
+    required this.syncedAt,
+    this.coverage,
+    this.card,
+    this.eligibility,
+    this.viewer,
+  });
+
+  final Map<String, dynamic> household;
+  final Map<String, dynamic>? coverage;
+  final Map<String, dynamic>? card;
+  final Map<String, dynamic>? eligibility;
+  final Map<String, dynamic>? viewer;
+  final List<Map<String, dynamic>> claims;
+  final List<Map<String, dynamic>> payments;
+  final List<Map<String, dynamic>> notifications;
+  final List<Map<String, dynamic>> digitalCards;
+  final List<FamilyMember> familyMembers;
+  final String syncedAt;
+
+  String get householdCode => household['householdCode']?.toString() ?? '';
+
+  String get headName {
+    final headUser =
+        (household['headUser'] as Map?)?.cast<String, dynamic>() ?? {};
+    final name = [
+      headUser['firstName'],
+      headUser['middleName'],
+      headUser['lastName'],
+    ].where((value) => value != null && value.toString().isNotEmpty).join(' ');
+    return name.isEmpty ? 'Member' : name;
+  }
+
+  String get viewerName => viewer?['fullName']?.toString() ?? headName;
+
+  String get viewerRole => viewer?['role']?.toString() ?? '';
+
+  String get viewerMembershipId => viewer?['membershipId']?.toString() ?? '';
+
+  String get viewerBeneficiaryId => viewer?['beneficiaryId']?.toString() ?? '';
+
+  String get coverageStatus =>
+      coverage?['status']?.toString() ??
+      household['coverageStatus']?.toString() ??
+      'UNKNOWN';
+
+  double get premiumAmount =>
+      (coverage?['premiumAmount'] as num?)?.toDouble() ?? 0;
+
+  double get paidAmount => (coverage?['paidAmount'] as num?)?.toDouble() ?? 0;
+
+  String get coverageNumber => coverage?['coverageNumber']?.toString() ?? '';
+
+  String get cardToken =>
+      (card?['token'] ?? card?['accessToken'])?.toString() ?? '';
+
+  Map<String, dynamic>? get currentDigitalCard {
+    if (digitalCards.isEmpty) {
+      return null;
+    }
+    final beneficiaryId = viewerBeneficiaryId;
+    if (beneficiaryId.isEmpty) {
+      return digitalCards.first;
+    }
+    final match = digitalCards.cast<Map<String, dynamic>?>().firstWhere(
+      (item) => item?['memberId']?.toString() == beneficiaryId,
+      orElse: () => null,
+    );
+    return match;
+  }
+
+  FamilyMember? get currentMember {
+    if (familyMembers.isEmpty) {
+      return null;
+    }
+    final beneficiaryId = viewerBeneficiaryId;
+    if (beneficiaryId.isEmpty) {
+      return familyMembers.first;
+    }
+    for (final member in familyMembers) {
+      if (member.id == beneficiaryId) {
+        return member;
+      }
+    }
+    return familyMembers.first;
+  }
+
+  bool get hasLiveCard => cardToken.isNotEmpty;
+
+  bool get isPendingSync => householdCode.startsWith('LOCAL-') || !hasLiveCard;
+
+  factory CbhiSnapshot.empty() {
+    return const CbhiSnapshot(
+      household: <String, dynamic>{},
+      coverage: null,
+      card: null,
+      eligibility: null,
+      viewer: null,
+      claims: <Map<String, dynamic>>[],
+      payments: <Map<String, dynamic>>[],
+      notifications: <Map<String, dynamic>>[],
+      digitalCards: <Map<String, dynamic>>[],
+      familyMembers: <FamilyMember>[],
+      syncedAt: '',
+    );
+  }
+
+  factory CbhiSnapshot.fromJson(Map<String, dynamic> json) {
+    return CbhiSnapshot(
+      household: (json['household'] as Map? ?? const {})
+          .cast<String, dynamic>(),
+      coverage: json['coverage'] == null
+          ? null
+          : (json['coverage'] as Map).cast<String, dynamic>(),
+      card: json['card'] == null
+          ? null
+          : (json['card'] as Map).cast<String, dynamic>(),
+      eligibility: json['eligibility'] == null
+          ? null
+          : (json['eligibility'] as Map).cast<String, dynamic>(),
+      viewer: json['viewer'] == null
+          ? null
+          : (json['viewer'] as Map).cast<String, dynamic>(),
+      claims: (json['claims'] as List? ?? const [])
+          .map((item) => (item as Map).cast<String, dynamic>())
+          .toList(growable: false),
+      payments: (json['payments'] as List? ?? const [])
+          .map((item) => (item as Map).cast<String, dynamic>())
+          .toList(growable: false),
+      notifications: (json['notifications'] as List? ?? const [])
+          .map((item) => (item as Map).cast<String, dynamic>())
+          .toList(growable: false),
+      digitalCards: (json['digitalCards'] as List? ?? const [])
+          .map((item) => (item as Map).cast<String, dynamic>())
+          .toList(growable: false),
+      familyMembers: (json['familyMembers'] as List? ?? const [])
+          .map(
+            (item) =>
+                FamilyMember.fromJson((item as Map).cast<String, dynamic>()),
+          )
+          .toList(growable: false),
+      syncedAt: json['syncedAt']?.toString() ?? '',
+    );
+  }
+
+  CbhiSnapshot copyWith({
+    Map<String, dynamic>? household,
+    Map<String, dynamic>? coverage,
+    Map<String, dynamic>? card,
+    Map<String, dynamic>? eligibility,
+    Map<String, dynamic>? viewer,
+    List<Map<String, dynamic>>? claims,
+    List<Map<String, dynamic>>? payments,
+    List<Map<String, dynamic>>? notifications,
+    List<Map<String, dynamic>>? digitalCards,
+    List<FamilyMember>? familyMembers,
+    String? syncedAt,
+  }) {
+    return CbhiSnapshot(
+      household: household ?? this.household,
+      coverage: coverage ?? this.coverage,
+      card: card ?? this.card,
+      eligibility: eligibility ?? this.eligibility,
+      viewer: viewer ?? this.viewer,
+      claims: claims ?? this.claims,
+      payments: payments ?? this.payments,
+      notifications: notifications ?? this.notifications,
+      digitalCards: digitalCards ?? this.digitalCards,
+      familyMembers: familyMembers ?? this.familyMembers,
+      syncedAt: syncedAt ?? this.syncedAt,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'household': household,
+    'coverage': coverage,
+    'card': card,
+    'eligibility': eligibility,
+    'viewer': viewer,
+    'claims': claims,
+    'payments': payments,
+    'notifications': notifications,
+    'digitalCards': digitalCards,
+    'familyMembers': familyMembers.map((member) => member.toJson()).toList(),
+    'syncedAt': syncedAt,
+  };
+}
+
+class CbhiLocalDb {
+  CbhiLocalDb._();
+
+  static final CbhiLocalDb instance = CbhiLocalDb._();
+
+  Database? _database;
+
+  Future<void> init() async {
+    if (_database != null) {
+      return;
+    }
+
+    if (kIsWeb) {
+      databaseFactory = databaseFactoryFfiWeb;
+    } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    }
+
+    final dbPath = kIsWeb
+        ? 'cbhi_local_web.db'
+        : p.join(await getDatabasesPath(), 'cbhi_local.db');
+    _database = await openDatabase(
+      dbPath,
+      version: 1,
+      onCreate: (db, version) async {
+        await db.execute('''
+          CREATE TABLE snapshot_cache (
+            cache_key TEXT PRIMARY KEY,
+            payload TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE pending_actions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            type TEXT NOT NULL,
+            payload TEXT NOT NULL,
+            created_at TEXT NOT NULL
+          )
+        ''');
+      },
+    );
+  }
+
+  Database get _db {
+    final db = _database;
+    if (db == null) {
+      throw StateError('Database not initialized');
+    }
+    return db;
+  }
+
+  Future<CbhiSnapshot?> readSnapshot([String cacheKey = 'active']) async {
+    final rows = await _db.query(
+      'snapshot_cache',
+      where: 'cache_key = ?',
+      whereArgs: [cacheKey],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      return null;
+    }
+    return CbhiSnapshot.fromJson(
+      (jsonDecode(rows.first['payload'] as String) as Map)
+          .cast<String, dynamic>(),
+    );
+  }
+
+  Future<void> writeSnapshot(
+    CbhiSnapshot snapshot, [
+    String cacheKey = 'active',
+  ]) async {
+    await _db.insert('snapshot_cache', {
+      'cache_key': cacheKey,
+      'payload': jsonEncode(snapshot.toJson()),
+      'updated_at': DateTime.now().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<int> queueAction(String type, Map<String, dynamic> payload) {
+    return _db.insert('pending_actions', {
+      'type': type,
+      'payload': jsonEncode(payload),
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<List<Map<String, Object?>>> readPendingActionRows() async {
+    return _db.query('pending_actions', orderBy: 'id ASC');
+  }
+
+  Future<void> removeAction(int id) async {
+    await _db.delete('pending_actions', where: 'id = ?', whereArgs: [id]);
+  }
+}
+
+class _ApiException implements Exception {
+  const _ApiException(this.message, {this.retryable = false, this.statusCode});
+
+  final String message;
+  final bool retryable;
+  final int? statusCode;
+
+  @override
+  String toString() => message;
+}
+
+class CbhiRepository {
+  CbhiRepository({
+    required this.localDb,
+    required SharedPreferences prefs,
+    http.Client? client,
+    String? apiBaseUrl,
+  }) : _prefs = prefs,
+       _client = client ?? http.Client(),
+       apiBaseUrl = apiBaseUrl ?? kDefaultApiBaseUrl;
+
+  final CbhiLocalDb localDb;
+  final SharedPreferences _prefs;
+  final http.Client _client;
+  final String apiBaseUrl;
+
+  static const _sessionStorageKey = 'cbhi_auth_session';
+
+  static Future<CbhiRepository> create({
+    String? apiBaseUrl,
+  }) async {
+    final db = CbhiLocalDb.instance;
+    await db.init();
+    final prefs = await SharedPreferences.getInstance();
+    return CbhiRepository(
+      localDb: db,
+      prefs: prefs,
+      apiBaseUrl: apiBaseUrl,
+    );
+  }
+
+  Future<CbhiSnapshot> loadCachedSnapshot() async {
+    return (await localDb.readSnapshot()) ?? CbhiSnapshot.empty();
+  }
+
+  Future<AuthSession?> restoreSession() async {
+    final session = await _readStoredSession();
+    if (session == null) return null;
+
+    // If access token is still valid, refresh the profile
+    if (!session.isExpired) {
+      try {
+        final profileJson = await _getJson(
+          '/auth/me',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ${session.accessToken}',
+          },
+        );
+        final refreshed = AuthSession(
+          accessToken: session.accessToken,
+          tokenType: session.tokenType,
+          expiresAt: session.expiresAt,
+          user: AppUserProfile.fromJson(profileJson),
+          refreshToken: session.refreshToken,
+          refreshTokenExpiresAt: session.refreshTokenExpiresAt,
+        );
+        await _persistSession(refreshed);
+        return refreshed;
+      } on _ApiException catch (error) {
+        if (error.statusCode == 401 || error.statusCode == 403) {
+          // Try refresh token before giving up
+          return _tryRefreshToken(session);
+        }
+        return session;
+      } catch (_) {
+        return session;
+      }
+    }
+
+    // Access token expired — try refresh token
+    return _tryRefreshToken(session);
+  }
+
+  Future<AuthSession?> _tryRefreshToken(AuthSession session) async {
+    final refreshToken = session.refreshToken;
+    if (refreshToken == null || refreshToken.isEmpty) {
+      await logout();
+      return null;
+    }
+
+    if (session.refreshTokenExpired) {
+      await logout();
+      return null;
+    }
+
+    try {
+      final response = await _postJson('/auth/refresh', {
+        'refreshToken': refreshToken,
+      });
+      final newSession = AuthSession.fromJson(response);
+      await _persistSession(newSession);
+      return newSession;
+    } catch (_) {
+      await logout();
+      return null;
+    }
+  }
+
+  Future<AuthSession?> currentSession() => restoreSession();
+
+  /// Restore session from a known access token (used by biometric login)
+  Future<AuthSession?> restoreSessionFromToken(String accessToken) async {
+    try {
+      final profileJson = await _getJson(
+        '/auth/me',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+      );
+      final session = AuthSession(
+        accessToken: accessToken,
+        tokenType: 'Bearer',
+        expiresAt: DateTime.now().add(const Duration(hours: 24)).toIso8601String(),
+        user: AppUserProfile.fromJson(profileJson),
+      );
+      await _persistSession(session);
+      return session;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<OtpChallenge> sendOtp({String? phoneNumber, String? email}) async {
+    final response = await _postJson('/auth/send-otp', {
+      'phoneNumber': phoneNumber,
+      'email': email,
+      'purpose': 'login',
+    });
+    return OtpChallenge.fromJson(response);
+  }
+
+  Future<OtpChallenge> requestFamilyMemberOtp({
+    required String phoneNumber,
+    String? membershipId,
+    String? householdCode,
+    String? fullName,
+  }) async {
+    final response = await _postJson('/auth/family/request-otp', {
+      'phoneNumber': phoneNumber,
+      'membershipId': membershipId,
+      'householdCode': householdCode,
+      'fullName': fullName,
+    });
+    return OtpChallenge.fromJson(response);
+  }
+
+  Future<OtpChallenge> forgotPassword(String identifier) async {
+    final response = await _postJson('/auth/forgot-password', {
+      'identifier': identifier,
+    });
+    return OtpChallenge.fromJson(response);
+  }
+
+  Future<AuthSession> verifyOtp({
+    String? phoneNumber,
+    String? email,
+    required String code,
+  }) async {
+    final response = await _postJson('/auth/verify-otp', {
+      'phoneNumber': phoneNumber,
+      'email': email,
+      'code': code,
+    });
+    final session = AuthSession.fromJson(response);
+    await _persistSession(session);
+    return session;
+  }
+
+  Future<AuthSession> loginWithPassword({
+    required String identifier,
+    required String password,
+  }) async {
+    final response = await _postJson('/auth/login', {
+      'identifier': identifier,
+      'password': password,
+    });
+    final session = AuthSession.fromJson(response);
+    await _persistSession(session);
+    return session;
+  }
+
+  Future<AuthSession> loginFamilyMemberWithPassword({
+    required String phoneNumber,
+    String? membershipId,
+    String? householdCode,
+    String? fullName,
+    required String password,
+  }) async {
+    final response = await _postJson('/auth/family/login', {
+      'phoneNumber': phoneNumber,
+      'membershipId': membershipId,
+      'householdCode': householdCode,
+      'fullName': fullName,
+      'password': password,
+    });
+    final session = AuthSession.fromJson(response);
+    await _persistSession(session);
+    return session;
+  }
+
+  Future<void> resetPassword({
+    required String identifier,
+    required String code,
+    required String newPassword,
+  }) async {
+    await _postJson('/auth/reset-password', {
+      'identifier': identifier,
+      'code': code,
+      'newPassword': newPassword,
+    });
+  }
+
+  Future<void> logout() async {
+    await _prefs.remove(_sessionStorageKey);
+  }
+
+  Future<CbhiSnapshot> registerFull({
+    required PersonalInfoModel personalInfo,
+    required IdentityModel identity,
+    required MembershipSelection membership,
+  }) async {
+    final stepOnePayload = await _buildRegistrationStepOnePayload(personalInfo);
+    final stepTwoPayload = {
+      'identityType': identity.identityType,
+      'identityNumber': identity.identityNumber,
+      'membershipType': membership.membershipType.value,
+      'premiumAmount': membership.premiumAmount,
+      'eligibilitySignals': {'employmentStatus': identity.employmentStatus},
+    };
+    final fullPayload = {
+      'personalInfo': personalInfo.toJson(),
+      'identity': identity.toJson(),
+      'membership': membership.toJson(),
+      'stepOnePayload': stepOnePayload,
+      'stepTwoPayload': stepTwoPayload,
+    };
+
+    try {
+      return await _registerFullRemote(
+        personalInfo: personalInfo,
+        identity: identity,
+        membership: membership,
+      );
+    } on _ApiException catch (error) {
+      if (!error.retryable) {
+        rethrow;
+      }
+
+      await localDb.queueAction('registration_full', fullPayload);
+      final snapshot = _buildPendingSnapshot(
+        personalInfo: personalInfo,
+        membership: membership,
+      );
+      await localDb.writeSnapshot(snapshot);
+      return snapshot;
+    } catch (_) {
+      await localDb.queueAction('registration_full', fullPayload);
+      final snapshot = _buildPendingSnapshot(
+        personalInfo: personalInfo,
+        membership: membership,
+      );
+      await localDb.writeSnapshot(snapshot);
+      return snapshot;
+    }
+  }
+
+  Future<List<FamilyMember>> fetchMyFamily() async {
+    final response = await _getJson('/cbhi/family', authorized: true);
+    return _applyFamilyPayload(response);
+  }
+
+  Future<List<FamilyMember>> addFamilyMember(FamilyMemberDraft draft) async {
+    final payload = await _buildFamilyMemberPayload(draft);
+    final response = await _postJson('/cbhi/family', payload, authorized: true);
+    return _applyFamilyPayload(response);
+  }
+
+  Future<List<FamilyMember>> updateFamilyMember(
+    String memberId,
+    FamilyMemberDraft draft,
+  ) async {
+    final payload = await _buildFamilyMemberPayload(draft);
+    final response = await _patchJson(
+      '/cbhi/family/$memberId',
+      payload,
+      authorized: true,
+    );
+    return _applyFamilyPayload(response);
+  }
+
+  Future<List<FamilyMember>> removeFamilyMember(String memberId) async {
+    final response = await _deleteJson(
+      '/cbhi/family/$memberId',
+      authorized: true,
+    );
+    return _applyFamilyPayload(response);
+  }
+
+  Future<CbhiSnapshot> renewCoverage({
+    String? paymentMethod,
+    String? providerName,
+    String? receiptNumber,
+  }) async {
+    final response = await _postJson('/cbhi/coverage/renew', {
+      'paymentMethod': paymentMethod,
+      'providerName': providerName,
+      'receiptNumber': receiptNumber,
+    }, authorized: true);
+    final snapshot = _snapshotFromRemote(response);
+    await localDb.writeSnapshot(snapshot);
+    return snapshot;
+  }
+
+  Future<List<Map<String, dynamic>>> markNotificationRead(
+    String notificationId,
+  ) async {
+    final response = await _postJson(
+      '/cbhi/notifications/$notificationId/read',
+      const <String, dynamic>{},
+      authorized: true,
+    );
+    final notifications = (response['notifications'] as List? ?? const [])
+        .map((item) => (item as Map).cast<String, dynamic>())
+        .toList(growable: false);
+    final snapshot = await loadCachedSnapshot();
+    await localDb.writeSnapshot(
+      snapshot.copyWith(
+        notifications: notifications,
+        syncedAt:
+            response['syncedAt']?.toString() ?? DateTime.now().toIso8601String(),
+      ),
+    );
+    return notifications;
+  }
+
+  Future<Map<String, dynamic>> verifyFacilityEligibility({
+    String? membershipId,
+    String? phoneNumber,
+    String? householdCode,
+    String? fullName,
+  }) async {
+    final query = <String, String>{
+      if (membershipId != null && membershipId.trim().isNotEmpty)
+        'membershipId': membershipId.trim(),
+      if (phoneNumber != null && phoneNumber.trim().isNotEmpty)
+        'phoneNumber': phoneNumber.trim(),
+      if (householdCode != null && householdCode.trim().isNotEmpty)
+        'householdCode': householdCode.trim(),
+      if (fullName != null && fullName.trim().isNotEmpty)
+        'fullName': fullName.trim(),
+    };
+    return _getJson(
+      '/facility/eligibility?${Uri(queryParameters: query).query}',
+      authorized: true,
+    );
+  }
+
+  Future<Map<String, dynamic>> submitFacilityClaim({
+    String? membershipId,
+    String? phoneNumber,
+    String? householdCode,
+    String? fullName,
+    required DateTime serviceDate,
+    required List<Map<String, dynamic>> items,
+    String? supportingDocumentPath,
+  }) async {
+    return _postJson('/facility/claims', {
+      'membershipId': membershipId,
+      'phoneNumber': phoneNumber,
+      'householdCode': householdCode,
+      'fullName': fullName,
+      'serviceDate': DateFormat('yyyy-MM-dd').format(serviceDate),
+      'items': items,
+      'supportingDocumentPath': supportingDocumentPath,
+      'supportingDocumentUpload':
+          await _buildAttachmentPayload(supportingDocumentPath),
+    }, authorized: true);
+  }
+
+  Future<List<Map<String, dynamic>>> fetchFacilityClaims() async {
+    final response = await _getJson('/facility/claims', authorized: true);
+    return (response['claims'] as List? ?? const [])
+        .map((item) => (item as Map).cast<String, dynamic>())
+        .toList(growable: false);
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAdminClaims() async {
+    final response = await _getJson('/admin/claims', authorized: true);
+    return (response['claims'] as List? ?? const [])
+        .map((item) => (item as Map).cast<String, dynamic>())
+        .toList(growable: false);
+  }
+
+  Future<Map<String, dynamic>> reviewAdminClaim({
+    required String claimId,
+    required String status,
+    double? approvedAmount,
+    String? decisionNote,
+  }) async {
+    return _patchJson('/admin/claims/$claimId/decision', {
+      'status': status,
+      'approvedAmount': approvedAmount,
+      'decisionNote': decisionNote,
+    }, authorized: true);
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAdminConfiguration() async {
+    final response = await _getJson('/admin/configuration', authorized: true);
+    return (response['settings'] as List? ?? const [])
+        .map((item) => (item as Map).cast<String, dynamic>())
+        .toList(growable: false);
+  }
+
+  Future<List<Map<String, dynamic>>> updateAdminConfiguration({
+    required String key,
+    required Map<String, dynamic> value,
+    String? label,
+    String? description,
+  }) async {
+    final response = await _putJson('/admin/configuration/$key', {
+      'label': label,
+      'description': description,
+      'value': value,
+    }, authorized: true);
+    return (response['settings'] as List? ?? const [])
+        .map((item) => (item as Map).cast<String, dynamic>())
+        .toList(growable: false);
+  }
+
+  Future<Map<String, dynamic>> fetchAdminSummaryReport() async {
+    return _getJson('/admin/reports/summary', authorized: true);
+  }
+
+  /// Validate an ID document image using Google Vision API (server-side)
+  Future<Map<String, dynamic>> validateIdDocument({
+    required String imageBase64,
+    String? expectedIdNumber,
+  }) async {
+    return _postJson('/vision/validate-id', {
+      'imageBase64': imageBase64,
+      'expectedIdNumber': ?expectedIdNumber,
+    });
+  }
+
+  /// Validate an indigent supporting document using Google Vision API
+  Future<Map<String, dynamic>> validateIndigentDocument({
+    required String imageBase64,
+  }) async {
+    return _postJson('/vision/validate-indigent-doc', {
+      'imageBase64': imageBase64,
+    });
+  }
+
+  /// Submit an indigent application with document metadata
+  Future<Map<String, dynamic>> submitIndigentApplication({
+    required String userId,
+    required int income,
+    required String employmentStatus,
+    required int familySize,
+    required bool hasProperty,
+    required bool disabilityStatus,
+    required List<String> documents,
+    List<Map<String, dynamic>>? documentMeta,
+  }) async {
+    return _postJson('/indigent/apply', {
+      'userId': userId,
+      'income': income,
+      'employmentStatus': employmentStatus,
+      'familySize': familySize,
+      'hasProperty': hasProperty,
+      'disabilityStatus': disabilityStatus,
+      'documents': documents,
+      'documentMeta': ?documentMeta,
+    });
+  }
+
+  /// Get document requirements for indigent applications
+  Future<Map<String, dynamic>> getIndigentDocumentRequirements() async {
+    return _getJson('/indigent/document-requirements');
+  }
+
+  /// Get all indigent applications for the current user
+  Future<List<Map<String, dynamic>>> getMyIndigentApplications() async {
+    final response = await _getJson('/indigent/my/applications', authorized: true);
+    return (response as List? ?? [])
+        .map((item) => (item as Map).cast<String, dynamic>())
+        .toList();
+  }
+
+  /// Initiate a Chapa payment for CBHI premium renewal
+  Future<Map<String, dynamic>> initiatePayment({
+    required double amount,
+    String? description,
+  }) async {
+    return _postJson('/payments/initiate', {
+      'amount': amount,
+      'description': description,
+    }, authorized: true);
+  }
+
+  /// Verify a Chapa payment by transaction reference
+  Future<Map<String, dynamic>> verifyPayment(String txRef) async {
+    return _getJson('/payments/verify/$txRef', authorized: true);
+  }
+
+  /// Get demo sandbox status
+  Future<Map<String, dynamic>> getDemoStatus() async {
+    return _getJson('/demo/status');
+  }
+
+  /// Search accredited health facilities
+  Future<List<Map<String, dynamic>>> searchFacilities({String? query}) async {
+    final q = query?.trim() ?? '';
+    final path = q.isEmpty
+        ? '/facilities'
+        : '/facilities?q=${Uri.encodeComponent(q)}';
+    final response = await _getJson(path);
+    return (response['facilities'] as List? ?? [])
+        .map((item) => (item as Map).cast<String, dynamic>())
+        .toList();
+  }
+
+  Future<List<Map<String, dynamic>>> fetchPendingIndigentApplications() async {
+    final response = await _getJson('/admin/indigent/pending', authorized: true);
+    return (response['applications'] as List? ?? const [])
+        .map((item) => (item as Map).cast<String, dynamic>())
+        .toList(growable: false);
+  }
+
+  Future<CbhiSnapshot> sync([String? householdCode]) async {
+    await syncPendingActions();
+    final session = await restoreSession();
+    if (session != null) {
+      try {
+        final remote = await _getJson('/cbhi/me', authorized: true);
+        final snapshot = _snapshotFromRemote(remote);
+        await localDb.writeSnapshot(snapshot);
+        return snapshot;
+      } on _ApiException catch (error) {
+        if (!error.retryable) {
+          rethrow;
+        }
+      }
+    }
+    return loadCachedSnapshot();
+  }
+
+  Future<void> syncPendingActions() async {
+    final rows = await localDb.readPendingActionRows();
+    for (final row in rows) {
+      final id = row['id'] as int;
+      final type = row['type'] as String;
+      final payload =
+          jsonDecode(row['payload'] as String) as Map<String, dynamic>;
+
+      try {
+        if (type == 'registration_full') {
+          final stepOnePayload = (payload['stepOnePayload'] as Map?)
+              ?.cast<String, dynamic>();
+          final stepTwoPayload = (payload['stepTwoPayload'] as Map?)
+              ?.cast<String, dynamic>();
+          if (stepOnePayload != null && stepTwoPayload != null) {
+            final stepOneResponse = await _postJson(
+              '/cbhi/registration/step-1',
+              stepOnePayload,
+            );
+            final registrationId =
+                stepOneResponse['registrationId']?.toString() ?? '';
+            if (registrationId.isEmpty) {
+              throw const _ApiException(
+                'Registration step 1 did not return an id.',
+              );
+            }
+            final response = await _postJson('/cbhi/registration/step-2', {
+              ...stepTwoPayload,
+              'registrationId': registrationId,
+            });
+            final snapshot = _snapshotFromRegistration(response);
+            await _storeAuthIfPresent(response);
+            await localDb.writeSnapshot(snapshot);
+          } else {
+            await _registerFullRemote(
+              personalInfo: PersonalInfoModel.fromJson(
+                (payload['personalInfo'] as Map).cast<String, dynamic>(),
+              ),
+              identity: IdentityModel.fromJson(
+                (payload['identity'] as Map).cast<String, dynamic>(),
+              ),
+              membership: MembershipSelection.fromJson(
+                (payload['membership'] as Map).cast<String, dynamic>(),
+              ),
+            );
+          }
+        } else if (type == 'registration_step_two') {
+          final response = await _postJson(
+            '/cbhi/registration/step-2',
+            payload,
+          );
+          final snapshot = _snapshotFromRegistration(response);
+          await _storeAuthIfPresent(response);
+          await localDb.writeSnapshot(snapshot);
+        }
+        await localDb.removeAction(id);
+      } catch (error) {
+        if (error is _ApiException && !error.retryable) {
+          await localDb.removeAction(id);
+          continue;
+        }
+        break;
+      }
+    }
+  }
+
+  Future<CbhiSnapshot> _registerFullRemote({
+    required PersonalInfoModel personalInfo,
+    required IdentityModel identity,
+    required MembershipSelection membership,
+  }) async {
+    final stepOnePayload = await _buildRegistrationStepOnePayload(personalInfo);
+    final stepOneResponse = await _postJson(
+      '/cbhi/registration/step-1',
+      stepOnePayload,
+    );
+
+    final registrationId = stepOneResponse['registrationId']?.toString() ?? '';
+    if (registrationId.isEmpty) {
+      throw const _ApiException('Registration step 1 did not return an id.');
+    }
+
+    final stepTwoPayload = {
+      'registrationId': registrationId,
+      'identityType': identity.identityType,
+      'identityNumber': identity.identityNumber,
+      'membershipType': membership.membershipType.value,
+      'premiumAmount': membership.premiumAmount,
+      'eligibilitySignals': {'employmentStatus': identity.employmentStatus},
+    };
+
+    try {
+      final stepTwoResponse = await _postJson(
+        '/cbhi/registration/step-2',
+        stepTwoPayload,
+      );
+      await _storeAuthIfPresent(stepTwoResponse);
+      final snapshot = _snapshotFromRegistration(stepTwoResponse);
+      await localDb.writeSnapshot(snapshot);
+      return snapshot;
+    } on _ApiException catch (error) {
+      if (!error.retryable) {
+        rethrow;
+      }
+
+      await localDb.queueAction('registration_step_two', stepTwoPayload);
+      final snapshot = _buildPendingSnapshot(
+        personalInfo: personalInfo,
+        membership: membership,
+        householdCode: stepOneResponse['householdCode']?.toString(),
+      );
+      await localDb.writeSnapshot(snapshot);
+      return snapshot;
+    }
+  }
+
+  Future<void> _storeAuthIfPresent(Map<String, dynamic> json) async {
+    final auth = json['auth'];
+    if (auth is Map) {
+      await _persistSession(AuthSession.fromJson(auth.cast<String, dynamic>()));
+    }
+  }
+
+  Future<void> _persistSession(AuthSession session) async {
+    await _prefs.setString(_sessionStorageKey, jsonEncode(session.toJson()));
+  }
+
+  Future<AuthSession?> _readStoredSession() async {
+    final raw = _prefs.getString(_sessionStorageKey);
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+    return AuthSession.fromJson(
+      (jsonDecode(raw) as Map).cast<String, dynamic>(),
+    );
+  }
+
+  String resolveMediaUrl(String? path) {
+    if (path == null || path.isEmpty) {
+      return '';
+    }
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    if (path.startsWith('/')) {
+      final baseUri = Uri.parse(apiBaseUrl);
+      return baseUri
+          .replace(path: path, query: null, fragment: null)
+          .toString();
+    }
+    return path;
+  }
+
+  Future<Map<String, dynamic>> _buildRegistrationStepOnePayload(
+    PersonalInfoModel personalInfo,
+  ) async {
+    return {
+      ...personalInfo.toJson(),
+      'birthCertificateUpload': await _buildAttachmentPayload(
+        personalInfo.birthCertificatePath,
+      ),
+      'idDocumentUpload': await _buildAttachmentPayload(
+        personalInfo.idDocumentPath,
+      ),
+    };
+  }
+
+  Future<Map<String, dynamic>> _buildFamilyMemberPayload(
+    FamilyMemberDraft draft,
+  ) async {
+    return {
+      ...draft.toJson(),
+      'beneficiaryPhotoUpload': await _buildAttachmentPayload(draft.photoPath),
+      'birthCertificateUpload': await _buildAttachmentPayload(
+        draft.birthCertificatePath,
+      ),
+      'idDocumentUpload': await _buildAttachmentPayload(draft.idDocumentPath),
+    };
+  }
+
+  Future<Map<String, dynamic>?> _buildAttachmentPayload(
+    String? filePath,
+  ) async {
+    final normalizedPath = filePath?.trim();
+    if (normalizedPath == null || normalizedPath.isEmpty) {
+      return null;
+    }
+
+    // File I/O is not available on web
+    if (kIsWeb) {
+      return null;
+    }
+
+    try {
+      final file = File(normalizedPath);
+      if (!await file.exists()) {
+        return null;
+      }
+
+      final bytes = await file.readAsBytes();
+      return {
+        'fileName': p.basename(normalizedPath),
+        'mimeType': _resolveMimeType(normalizedPath),
+        'contentBase64': base64Encode(bytes),
+        'localPath': normalizedPath,
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _resolveMimeType(String path) {
+    switch (p.extension(path).toLowerCase()) {
+      case '.jpg':
+      case '.jpeg':
+        return 'image/jpeg';
+      case '.png':
+        return 'image/png';
+      case '.pdf':
+        return 'application/pdf';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
+  Future<Map<String, dynamic>> _getJson(
+    String path, {
+    bool authorized = false,
+    Map<String, String>? headers,
+  }) async {
+    try {
+      final response = await _client.get(
+        Uri.parse('$apiBaseUrl$path'),
+        headers: headers ?? await _headers(authorized: authorized),
+      );
+      return _decodeResponse(path, response);
+    } catch (error) {
+      if (error is _ApiException) {
+        rethrow;
+      }
+      throw const _ApiException('Network unavailable.', retryable: true);
+    }
+  }
+
+  Future<Map<String, dynamic>> _postJson(
+    String path,
+    Map<String, dynamic> payload, {
+    bool authorized = false,
+  }) async {
+    try {
+      final response = await _client.post(
+        Uri.parse('$apiBaseUrl$path'),
+        headers: await _headers(authorized: authorized),
+        body: jsonEncode(payload),
+      );
+      return _decodeResponse(path, response);
+    } catch (error) {
+      if (error is _ApiException) {
+        rethrow;
+      }
+      throw const _ApiException('Network unavailable.', retryable: true);
+    }
+  }
+
+  Future<Map<String, dynamic>> _patchJson(
+    String path,
+    Map<String, dynamic> payload, {
+    bool authorized = false,
+  }) async {
+    try {
+      final response = await _client.patch(
+        Uri.parse('$apiBaseUrl$path'),
+        headers: await _headers(authorized: authorized),
+        body: jsonEncode(payload),
+      );
+      return _decodeResponse(path, response);
+    } catch (error) {
+      if (error is _ApiException) {
+        rethrow;
+      }
+      throw const _ApiException('Network unavailable.', retryable: true);
+    }
+  }
+
+  Future<Map<String, dynamic>> _putJson(
+    String path,
+    Map<String, dynamic> payload, {
+    bool authorized = false,
+  }) async {
+    try {
+      final response = await _client.put(
+        Uri.parse('$apiBaseUrl$path'),
+        headers: await _headers(authorized: authorized),
+        body: jsonEncode(payload),
+      );
+      return _decodeResponse(path, response);
+    } catch (error) {
+      if (error is _ApiException) {
+        rethrow;
+      }
+      throw const _ApiException('Network unavailable.', retryable: true);
+    }
+  }
+
+  Future<Map<String, dynamic>> _deleteJson(
+    String path, {
+    bool authorized = false,
+  }) async {
+    try {
+      final response = await _client.delete(
+        Uri.parse('$apiBaseUrl$path'),
+        headers: await _headers(authorized: authorized),
+      );
+      return _decodeResponse(path, response);
+    } catch (error) {
+      if (error is _ApiException) {
+        rethrow;
+      }
+      throw const _ApiException('Network unavailable.', retryable: true);
+    }
+  }
+
+  Future<Map<String, String>> _headers({required bool authorized}) async {
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (authorized) {
+      final session = await _readStoredSession();
+      final token = session?.accessToken;
+      if (token == null || token.isEmpty) {
+        throw const _ApiException(
+          'You need to sign in before using this feature.',
+          retryable: false,
+          statusCode: 401,
+        );
+      }
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
+  }
+
+  Map<String, dynamic> _decodeResponse(String path, http.Response response) {
+    final body = response.body.trim();
+    final decoded = body.isEmpty
+        ? <String, dynamic>{}
+        : (jsonDecode(body) as Map).cast<String, dynamic>();
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return decoded;
+    }
+
+    final message = decoded['message'];
+    throw _ApiException(
+      message is List
+          ? message.join(', ')
+          : 'Request failed for $path: ${body.isEmpty ? response.statusCode : body}',
+      retryable: response.statusCode >= 500,
+      statusCode: response.statusCode,
+    );
+  }
+
+  CbhiSnapshot _snapshotFromRegistration(Map<String, dynamic> json) {
+    return _snapshotFromRemote(json);
+  }
+
+  CbhiSnapshot _snapshotFromRemote(Map<String, dynamic> json) {
+    return CbhiSnapshot.fromJson({
+      'household': json['household'] ?? <String, dynamic>{},
+      'coverage': json['coverage'],
+      'card': json['digitalCard'] ?? json['card'],
+      'eligibility': json['eligibility'],
+      'viewer': json['viewer'],
+      'claims': json['claims'] ?? const <Map<String, dynamic>>[],
+      'payments': json['payments'] ?? const <Map<String, dynamic>>[],
+      'notifications': json['notifications'] ?? const <Map<String, dynamic>>[],
+      'digitalCards': json['digitalCards'] ?? const <Map<String, dynamic>>[],
+      'familyMembers': json['familyMembers'] ?? const <Map<String, dynamic>>[],
+      'syncedAt':
+          json['syncedAt']?.toString() ?? DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<List<FamilyMember>> _applyFamilyPayload(
+    Map<String, dynamic> json,
+  ) async {
+    final members = (json['members'] as List? ?? const [])
+        .map(
+          (item) =>
+              FamilyMember.fromJson((item as Map).cast<String, dynamic>()),
+        )
+        .toList(growable: false);
+    final snapshot = await loadCachedSnapshot();
+    await localDb.writeSnapshot(
+      snapshot.copyWith(
+        familyMembers: members,
+        household: {
+          ...snapshot.household,
+          'householdCode':
+              json['householdCode']?.toString() ?? snapshot.householdCode,
+          'coverageStatus':
+              json['coverageStatus']?.toString() ?? snapshot.coverageStatus,
+        },
+        syncedAt: json['syncedAt']?.toString() ?? snapshot.syncedAt,
+      ),
+    );
+    return members;
+  }
+
+  CbhiSnapshot _buildPendingSnapshot({
+    required PersonalInfoModel personalInfo,
+    required MembershipSelection membership,
+    String? householdCode,
+  }) {
+    final now = DateTime.now().toIso8601String();
+    return CbhiSnapshot(
+      household: {
+        'householdCode':
+            householdCode ?? 'LOCAL-${DateTime.now().millisecondsSinceEpoch}',
+        'address': {
+          'region': personalInfo.region,
+          'zone': personalInfo.zone,
+          'woreda': personalInfo.woreda,
+          'kebele': personalInfo.kebele,
+        },
+        'phoneNumber': personalInfo.phone,
+        'memberCount': personalInfo.householdSize,
+        'membershipType': membership.membershipType.value,
+        'coverageStatus': 'PENDING_RENEWAL',
+        'headUser': {
+          'firstName': personalInfo.firstName,
+          'middleName': personalInfo.middleName,
+          'lastName': personalInfo.lastName,
+          'email': personalInfo.email,
+          'phoneNumber': personalInfo.phone,
+          'identityVerificationStatus': 'PENDING',
+          'preferredLanguage': personalInfo.preferredLanguage,
+        },
+        'primaryMember': {
+          'fullName': personalInfo.fullName,
+          'dateOfBirth': DateFormat(
+            'yyyy-MM-dd',
+          ).format(personalInfo.dateOfBirth),
+          'gender': personalInfo.gender,
+          'birthCertificateRef': personalInfo.birthCertificateRef,
+          'birthCertificatePath': personalInfo.birthCertificatePath,
+          'idDocumentPath': personalInfo.idDocumentPath,
+        },
+      },
+      coverage: {
+        'status': 'PENDING_RENEWAL',
+        'premiumAmount': membership.isIndigent
+            ? 0
+            : membership.premiumAmount ?? 0,
+        'paidAmount': 0,
+      },
+      card: null,
+      eligibility: {
+        'approved': membership.isIndigent,
+        'canLoginIndependently': false,
+        'coverageStatus': 'PENDING_RENEWAL',
+        'reason': membership.isIndigent
+            ? 'Pending indigent verification while offline.'
+            : 'Coverage activates after renewal payment sync.',
+      },
+      viewer: {'fullName': personalInfo.fullName, 'role': 'HOUSEHOLD_HEAD'},
+      claims: const <Map<String, dynamic>>[],
+      payments: const <Map<String, dynamic>>[],
+      notifications: const <Map<String, dynamic>>[],
+      digitalCards: const <Map<String, dynamic>>[],
+      familyMembers: [
+        FamilyMember(
+          id: 'LOCAL-PRIMARY',
+          membershipId: '',
+          fullName: personalInfo.fullName,
+          coverageStatus: 'PENDING_RENEWAL',
+          isPrimaryHolder: true,
+          isEligible: membership.isIndigent,
+          gender: personalInfo.gender,
+          dateOfBirth: DateFormat(
+            'yyyy-MM-dd',
+          ).format(personalInfo.dateOfBirth),
+          relationshipToHouseholdHead: 'HEAD',
+          birthCertificateRef: personalInfo.birthCertificateRef,
+          birthCertificatePath: personalInfo.birthCertificatePath,
+          idDocumentPath: personalInfo.idDocumentPath,
+        ),
+      ],
+      syncedAt: now,
+    );
+  }
+}

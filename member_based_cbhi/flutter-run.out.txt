@@ -1,0 +1,51 @@
+Launching lib\main.dart on SM A047F in debug mode...
+Running Gradle task 'assembleDebug'...                          
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if "Windows_NT" == "Windows_NT" setlocal
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set DEFAULT_JVM_OPTS= 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set DIRNAME=C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android\ 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if "C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android\" == "" set DIRNAME=. 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set APP_BASE_NAME=gradlew 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set APP_HOME=C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android\ 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if defined JAVA_HOME goto findJavaFromJavaHome 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set JAVA_HOME=C:\Program Files\Android\Android Studio\jbr 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set JAVA_EXE=C:\Program Files\Android\Android Studio\jbr/bin/java.exe 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if exist "C:\Program Files\Android\Android Studio\jbr/bin/java.exe" goto init 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if not "Windows_NT" == "Windows_NT" goto win9xME_args 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if "@eval[2+2]" == "4" goto 4NT_args 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set CMD_LINE_ARGS= 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set _SKIP=2 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if "x-q" == "x" goto execute 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set CMD_LINE_ARGS=-q -Ptarget-platform=android-arm64 -Ptarget=C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\lib\main.dart -Pbase-application-name=android.app.Application -Pdart-defines=RkxVVFRFUl9WRVJTSU9OPTMuMzguMw==,RkxVVFRFUl9DSEFOTkVMPXN0YWJsZQ==,RkxVVFRFUl9HSVRfVVJMPWh0dHBzOi8vZ2l0aHViLmNvbS9mbHV0dGVyL2ZsdXR0ZXIuZ2l0,RkxVVFRFUl9GUkFNRVdPUktfUkVWSVNJT049MTkwNzRkMTJmNw==,RkxVVFRFUl9FTkdJTkVfUkVWSVNJT049MTNlNjU4NzI1ZA==,RkxVVFRFUl9EQVJUX1ZFUlNJT049My4xMC4x -Pdart-obfuscation=false -Ptrack-widget-creation=true -Ptree-shake-icons=false -Pfilesystem-scheme=org-dartlang-root assembleDebug 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>goto execute 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set CLASSPATH=C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android\\gradle\wrapper\gradle-wrapper.jar 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>"C:\Program Files\Android\Android Studio\jbr/bin/java.exe"    "-Dorg.gradle.appname=gradlew" -classpath "C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android\\gradle\wrapper\gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain -q -Ptarget-platform=android-arm64 -Ptarget=C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\lib\main.dart -Pbase-application-name=android.app.Application -Pdart-defines=RkxVVFRFUl9WRVJTSU9OPTMuMzguMw==,RkxVVFRFUl9DSEFOTkVMPXN0YWJsZQ==,RkxVVFRFUl9HSVRfVVJMPWh0dHBzOi8vZ2l0aHViLmNvbS9mbHV0dGVyL2ZsdXR0ZXIuZ2l0,RkxVVFRFUl9GUkFNRVdPUktfUkVWSVNJT049MTkwNzRkMTJmNw==,RkxVVFRFUl9FTkdJTkVfUkVWSVNJT049MTNlNjU4NzI1ZA==,RkxVVFRFUl9EQVJUX1ZFUlNJT049My4xMC4x -Pdart-obfuscation=false -Ptrack-widget-creation=true -Ptree-shake-icons=false -Pfilesystem-scheme=org-dartlang-root assembleDebug 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if "1" == "0" goto mainEnd 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>rem Set variable GRADLE_EXIT_CONSOLE if you need the _script_ return code instead of 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>rem the _cmd.exe /c_ return code! 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if not "" == "" exit 1 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>exit /b 1 
+Running Gradle task 'assembleDebug'...                            918.5s

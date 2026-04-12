@@ -1,0 +1,40 @@
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if "Windows_NT" == "Windows_NT" setlocal
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set DEFAULT_JVM_OPTS= 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set DIRNAME=C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android\ 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if "C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android\" == "" set DIRNAME=. 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set APP_BASE_NAME=gradlew 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set APP_HOME=C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android\ 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if defined JAVA_HOME goto findJavaFromJavaHome 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set JAVA_HOME=C:\Program Files\Android\Android Studio\jbr 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set JAVA_EXE=C:\Program Files\Android\Android Studio\jbr/bin/java.exe 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if exist "C:\Program Files\Android\Android Studio\jbr/bin/java.exe" goto init 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if not "Windows_NT" == "Windows_NT" goto win9xME_args 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if "@eval[2+2]" == "4" goto 4NT_args 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set CMD_LINE_ARGS= 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set _SKIP=2 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>if "xhelp" == "x" goto execute 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set CMD_LINE_ARGS=help --stacktrace --console=plain --no-daemon 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>goto execute 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>set CLASSPATH=C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android\\gradle\wrapper\gradle-wrapper.jar 
+
+C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android>"C:\Program Files\Android\Android Studio\jbr/bin/java.exe"    "-Dorg.gradle.appname=gradlew" -classpath "C:\Users\hp\Desktop\Member_Based_CBHI\member_based_cbhi\android\\gradle\wrapper\gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain help --stacktrace --console=plain --no-daemon 
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 

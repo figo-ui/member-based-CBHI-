@@ -1,0 +1,30 @@
+name: cbhi_admin_desktop
+description: "Maya City CBHI — Admin & CBHI Officer Desktop Application"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.7
+  http: ^1.2.2
+  intl: ^0.20.2
+  shared_preferences: ^2.5.5
+  google_fonts: ^8.0.2
+  flutter_animate: ^4.5.2
+  file_picker: ^10.1.9
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
