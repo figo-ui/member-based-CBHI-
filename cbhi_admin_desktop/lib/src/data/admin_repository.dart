@@ -13,15 +13,22 @@ class AdminRepository {
 
   final http.Client _client;
   String? _token;
+  // FIX: Track TOTP status after login
+  bool _totpEnabled = false;
 
   static const _tokenKey = 'cbhi_admin_token';
+  static const _totpKey = 'cbhi_admin_totp_enabled';
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString(_tokenKey);
+    _totpEnabled = prefs.getBool(_totpKey) ?? false;
   }
 
   bool get isAuthenticated => _token != null && _token!.isNotEmpty;
+
+  /// Whether the current admin has TOTP 2FA enabled
+  bool get totpEnabled => _totpEnabled;
 
   Future<Map<String, dynamic>> login({
     required String identifier,
@@ -32,24 +39,39 @@ class AdminRepository {
       'password': password,
     });
     _token = response['accessToken']?.toString();
+    // Extract totpEnabled from the user profile in the login response
+    final user = (response['user'] as Map?)?.cast<String, dynamic>() ?? {};
+    _totpEnabled = user['totpEnabled'] == true;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, _token ?? '');
+    await prefs.setBool(_totpKey, _totpEnabled);
     return response;
   }
 
   Future<void> logout() async {
     _token = null;
+    _totpEnabled = false;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
+    await prefs.remove(_totpKey);
   }
 
-  Future<Map<String, dynamic>> getSummaryReport({
-    String? from,
-    String? to,
-  }) async {
+  /// Returns true if the backend is reachable
+  Future<bool> ping() async {
+    try {
+      final response = await _client
+          .get(Uri.parse('$kAdminApiBase/../health'), headers: _headers)
+          .timeout(const Duration(seconds: 5));
+      return response.statusCode < 500;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>> getSummaryReport({String? from, String? to}) async {
     final query = <String, String>{
-      if (from != null) 'from': from,
-      if (to != null) 'to': to,
+      'from': from ?? '',
+      'to': to ?? '',
     };
     final qs = query.isEmpty ? '' : '?${Uri(queryParameters: query).query}';
     return _get('/admin/reports/summary$qs');
@@ -68,8 +90,8 @@ class AdminRepository {
   }) async {
     return _patch('/admin/claims/$claimId/decision', {
       'status': status,
-      if (approvedAmount != null) 'approvedAmount': approvedAmount,
-      if (decisionNote != null) 'decisionNote': decisionNote,
+      'approvedAmount': approvedAmount,
+      'decisionNote': decisionNote,
     });
   }
 
@@ -86,8 +108,8 @@ class AdminRepository {
   }) async {
     await _put('/admin/configuration/$key', {
       'value': value,
-      if (label != null) 'label': label,
-      if (description != null) 'description': description,
+      'label': label,
+      'description': description,
     });
   }
 
@@ -103,8 +125,55 @@ class AdminRepository {
   }) async {
     await _patch('/admin/indigent/$applicationId/review', {
       'status': status,
-      if (reason != null) 'reason': reason,
+      'reason': reason,
     });
+  }
+
+  Future<List<Map<String, dynamic>>> listFacilities() async {
+    final response = await _get('/admin/facilities');
+    return _asList(response['facilities']);
+  }
+
+  Future<Map<String, dynamic>> createFacility({
+    required String name,
+    String? facilityCode,
+    String? serviceLevel,
+    String? phoneNumber,
+    String? addressLine,
+  }) async {
+    return _post('/admin/facilities', {
+      'name': name,
+      if (facilityCode != null) 'facilityCode': facilityCode,
+      if (serviceLevel != null) 'serviceLevel': serviceLevel,
+      if (phoneNumber != null) 'phoneNumber': phoneNumber,
+      if (addressLine != null) 'addressLine': addressLine,
+    });
+  }
+
+  Future<void> addFacilityStaff({
+    required String facilityId,
+    required String identifier,
+    String? firstName,
+    String? lastName,
+  }) async {
+    await _post('/admin/facilities/$facilityId/staff', {
+      'identifier': identifier,
+      if (firstName != null) 'firstName': firstName,
+      if (lastName != null) 'lastName': lastName,
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getAuditLogs({
+    String? entityType,
+    String? entityId,
+  }) async {
+    final query = <String, String>{
+      if (entityType != null) 'entityType': entityType,
+      if (entityId != null) 'entityId': entityId,
+    };
+    final qs = query.isEmpty ? '' : '?${Uri(queryParameters: query).query}';
+    final response = await _get('/admin/audit-logs$qs');
+    return _asList(response['logs']);
   }
 
   Future<String> exportCsv({
@@ -114,8 +183,8 @@ class AdminRepository {
   }) async {
     final query = <String, String>{
       'type': type,
-      if (from != null) 'from': from,
-      if (to != null) 'to': to,
+      'from': from ?? '',
+      'to': to ?? '',
     };
     final qs = '?${Uri(queryParameters: query).query}';
     final response = await _client.get(
@@ -126,52 +195,178 @@ class AdminRepository {
     return response.body;
   }
 
+  // ── TOTP 2FA ──────────────────────────────────────────────────────────────
+
+  /// Initiate TOTP setup — returns secret and QR URI
+  Future<Map<String, dynamic>> setupTotp() async {
+    return _post('/auth/totp/setup', {});
+  }
+
+  /// Activate TOTP after scanning QR code — verifies the first token
+  Future<Map<String, dynamic>> activateTotp(String token) async {
+    return _post('/auth/totp/activate', {'token': token});
+  }
+
+  /// Verify a TOTP token during login (second factor check)
+  Future<Map<String, dynamic>> verifyTotp(String token) async {
+    return _post('/auth/totp/verify', {'token': token});
+  }
+
+  /// Disable TOTP — requires a valid token to confirm
+  Future<Map<String, dynamic>> disableTotp(String token) async {
+    return _post('/auth/totp/disable', {'token': token});
+  }
+
+  // ── Benefit Packages ──────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getBenefitPackages() async {
+    final response = await _get('/benefit-packages');
+    return _asList(response['packages'] ?? response);
+  }
+
+  Future<Map<String, dynamic>> createBenefitPackage({
+    required String name,
+    String? description,
+    required double premiumPerMember,
+    double annualCeiling = 0,
+  }) async {
+    return _post('/benefit-packages', {
+      'name': name,
+      if (description != null) 'description': description,
+      'premiumPerMember': premiumPerMember,
+      'annualCeiling': annualCeiling,
+    });
+  }
+
+  Future<Map<String, dynamic>> addBenefitItem({
+    required String packageId,
+    required String serviceName,
+    String? serviceCode,
+    required String category,
+    double maxClaimAmount = 0,
+    int coPaymentPercent = 0,
+    int maxClaimsPerYear = 0,
+  }) async {
+    return _post('/benefit-packages/$packageId/items', {
+      'serviceName': serviceName,
+      if (serviceCode != null) 'serviceCode': serviceCode,
+      'category': category,
+      'maxClaimAmount': maxClaimAmount,
+      'coPaymentPercent': coPaymentPercent,
+      'maxClaimsPerYear': maxClaimsPerYear,
+    });
+  }
+
+  Future<Map<String, dynamic>> updateBenefitItem(String itemId, {bool? isCovered}) async {
+    return _patch('/benefit-packages/items/$itemId', {
+      if (isCovered != null) 'isCovered': isCovered,
+    });
+  }
+
+  // ── Grievances ────────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getAllGrievances({String? status}) async {
+    final qs = status != null ? '?status=$status' : '';
+    final response = await _get('/grievances$qs');
+    return _asList(response['grievances']);
+  }
+
+  Future<Map<String, dynamic>> updateGrievance({
+    required String grievanceId,
+    String? status,
+    String? resolution,
+  }) async {
+    return _patch('/grievances/$grievanceId', {
+      if (status != null) 'status': status,
+      if (resolution != null) 'resolution': resolution,
+    });
+  }
+
+  // ── User Management ───────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> listUsers({String? role}) async {
+    final qs = role != null ? '?role=$role' : '';
+    final response = await _get('/admin/users$qs');
+    return _asList(response['users']);
+  }
+
+  Future<void> deactivateUser(String userId) async {
+    await _patch('/admin/users/$userId/deactivate', {});
+  }
+
+  Future<void> activateUser(String userId) async {
+    await _patch('/admin/users/$userId/activate', {});
+  }
+
+  Future<void> resetUserPassword(String userId) async {
+    await _post('/admin/users/$userId/reset-password', {});
+  }
+
+  // ── Financial Dashboard ───────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getFinancialDashboard({String? from, String? to}) async {
+    final query = <String, String>{
+      if (from != null) 'from': from,
+      if (to != null) 'to': to,
+    };
+    final qs = query.isEmpty ? '' : '?${Uri(queryParameters: query).query}';
+    return _get('/admin/reports/financial$qs');
+  }
+
+  // ── Facility Performance ──────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getFacilityPerformance({String? from, String? to}) async {
+    final query = <String, String>{
+      if (from != null) 'from': from,
+      if (to != null) 'to': to,
+    };
+    final qs = query.isEmpty ? '' : '?${Uri(queryParameters: query).query}';
+    final response = await _get('/admin/reports/facility-performance$qs');
+    return _asList(response['facilities'] ?? response);
+  }
+
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
     if (_token != null) 'Authorization': 'Bearer $_token',
   };
 
   Future<Map<String, dynamic>> _get(String path) async {
-    final response = await _client.get(
-      Uri.parse('$kAdminApiBase$path'),
-      headers: _headers,
-    );
+    final response = await _client
+        .get(Uri.parse('$kAdminApiBase$path'), headers: _headers)
+        .timeout(const Duration(seconds: 15));
     return _parse(response);
   }
 
-  Future<Map<String, dynamic>> _post(
-    String path,
-    Map<String, dynamic> body,
-  ) async {
-    final response = await _client.post(
-      Uri.parse('$kAdminApiBase$path'),
-      headers: _headers,
-      body: jsonEncode(body),
-    );
+  Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body) async {
+    final response = await _client
+        .post(
+          Uri.parse('$kAdminApiBase$path'),
+          headers: _headers,
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 30));
     return _parse(response);
   }
 
-  Future<Map<String, dynamic>> _patch(
-    String path,
-    Map<String, dynamic> body,
-  ) async {
-    final response = await _client.patch(
-      Uri.parse('$kAdminApiBase$path'),
-      headers: _headers,
-      body: jsonEncode(body),
-    );
+  Future<Map<String, dynamic>> _patch(String path, Map<String, dynamic> body) async {
+    final response = await _client
+        .patch(
+          Uri.parse('$kAdminApiBase$path'),
+          headers: _headers,
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 15));
     return _parse(response);
   }
 
-  Future<Map<String, dynamic>> _put(
-    String path,
-    Map<String, dynamic> body,
-  ) async {
-    final response = await _client.put(
-      Uri.parse('$kAdminApiBase$path'),
-      headers: _headers,
-      body: jsonEncode(body),
-    );
+  Future<Map<String, dynamic>> _put(String path, Map<String, dynamic> body) async {
+    final response = await _client
+        .put(
+          Uri.parse('$kAdminApiBase$path'),
+          headers: _headers,
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 15));
     return _parse(response);
   }
 

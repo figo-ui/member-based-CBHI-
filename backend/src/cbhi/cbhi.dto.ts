@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsDateString,
   IsEmail,
   IsEnum,
@@ -61,6 +62,11 @@ export class RegistrationStepOneDto {
 
   @IsString()
   lastName!: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  age?: number;
 
   @IsOptional()
   @IsString()
@@ -139,6 +145,13 @@ export class RegistrationStepTwoDto {
   @ValidateNested()
   @Type(() => EligibilitySignalsDto)
   eligibilitySignals!: EligibilitySignalsDto;
+
+  /** Required for INDIGENT: at least one kebele / income / poverty proof document */
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => InlineAttachmentDto)
+  indigentProofUploads?: InlineAttachmentDto[];
 }
 
 export class CreateFamilyMemberDto {
@@ -151,6 +164,11 @@ export class CreateFamilyMemberDto {
 
   @IsString()
   lastName!: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  age?: number;
 
   @IsEnum(Gender)
   gender!: Gender;
@@ -219,6 +237,11 @@ export class UpdateFamilyMemberDto {
   @IsOptional()
   @IsString()
   lastName?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  age?: number;
 
   @IsOptional()
   @IsEnum(Gender)

@@ -25,10 +25,17 @@ class PersonalInfoConfirmation extends StatelessWidget {
 
             _buildInfoCard('Personal Details', [
               'Full Name: ${personalInfo.firstName} ${personalInfo.middleName} ${personalInfo.lastName}',
+              'Age: ${personalInfo.age}',
               'Phone: ${personalInfo.phone}',
               if (personalInfo.email != null) 'Email: ${personalInfo.email}',
               'Gender: ${personalInfo.gender}',
               'Date of Birth: ${personalInfo.dateOfBirth.toString().split(' ')[0]}',
+              if (personalInfo.birthCertificatePath != null &&
+                  personalInfo.birthCertificatePath!.isNotEmpty)
+                'Birth certificate: attached',
+              if (personalInfo.idDocumentPath != null &&
+                  personalInfo.idDocumentPath!.isNotEmpty)
+                'ID document: attached',
               if (personalInfo.birthCertificateRef != null)
                 'Birth Certificate: ${personalInfo.birthCertificateRef}',
             ]),
@@ -49,7 +56,7 @@ class PersonalInfoConfirmation extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context), // Go back to edit
+                    onPressed: () => regCubit.goBackToPersonalInfo(),
                     child: const Text('Edit Information'),
                   ),
                 ),

@@ -2,139 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 import 'auth/onboarding_screen.dart';
 import 'auth/privacy_consent_screen.dart';
-import 'payment/payment_screen.dart';
-import 'admin/admin_dashboard_screen.dart';
 import 'auth/auth_cubit.dart';
 import 'auth/auth_state.dart';
 import 'auth/welcome_screen.dart';
+import 'benefits/benefit_package_screen.dart';
+import 'card/digital_card_screen.dart';
 import 'cbhi_data.dart';
 import 'cbhi_localizations.dart';
 import 'cbhi_state.dart';
+import 'claims/member_claims_screen.dart';
+import 'coverage/coverage_history_screen.dart';
+import 'coverage/renewal_reminder_widget.dart';
+import 'dashboard/dashboard_screen.dart';
 import 'family/my_family_cubit.dart';
 import 'family/my_family_screen.dart';
+import 'grievances/grievance_screen.dart';
+import 'profile/profile_screen.dart';
 import 'registration/registration_cubit.dart';
 import 'registration/registration_flow.dart';
-import 'shared/animated_widgets.dart';
-import 'claims/member_claims_screen.dart';
-import 'facilities/facility_finder_screen.dart';
-import 'shared/biometric_service.dart';
-import 'shared/help_screen.dart';
 import 'shared/skeleton_widgets.dart';
-import 'staff/facility_staff_screen.dart';
 import 'theme/app_theme.dart';
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-String _formatDateLabel(dynamic value) {
-  final raw = value?.toString() ?? '';
-  if (raw.isEmpty) return 'Not available';
-  final parsed = DateTime.tryParse(raw);
-  if (parsed == null) return raw;
-  final month = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ][parsed.month - 1];
-  return '${parsed.day.toString().padLeft(2, '0')} $month ${parsed.year}';
-}
-
-// ─── Renew Coverage Sheet ───────────────────────────────────────────────────
-
-Future<void> _showRenewCoverageSheet(
-  BuildContext context,
-  CbhiSnapshot snapshot,
-  CbhiRepository repository,
-) async {
-  // If premium > 0, use Chapa payment gateway
-  if (snapshot.premiumAmount > 0) {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PaymentScreen(
-          repository: repository,
-          snapshot: snapshot,
-          onPaymentComplete: () async {
-            Navigator.of(context).pop();
-            await context.read<AppCubit>().sync();
-          },
-        ),
-      ),
-    );
-    return;
-  }
-
-  // Indigent/free renewal — confirm without payment
-  await showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    builder: (sheetContext) {
-      return Padding(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 24,
-          bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 28,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.success.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.autorenew, color: AppTheme.success),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Confirm Free Renewal',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'This household qualifies for subsidized coverage. Tap confirm to extend your coverage for another year at no cost.',
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () async {
-                await context.read<AppCubit>().renewCoverage();
-                if (context.mounted) {
-                  Navigator.of(sheetContext).pop();
-                }
-              },
-              icon: const Icon(Icons.check_circle_outline),
-              label: const Text('Confirm Free Renewal'),
-              style: FilledButton.styleFrom(
-                  backgroundColor: AppTheme.success),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      );
-    },
-  );
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CbhiApp
@@ -253,10 +143,6 @@ class _BootstrapScreenState extends State<_BootstrapScreen> {
             final familyCubit = context.read<MyFamilyCubit>();
             final registrationCubit = context.read<RegistrationCubit>();
             if (state.status == AuthStatus.authenticated) {
-              if (state.isFacilityStaff || state.isAdmin) {
-                familyCubit.clear();
-                return;
-              }
               await appCubit.sync();
               await familyCubit.load();
               return;
@@ -314,51 +200,6 @@ class _BootstrapScreenState extends State<_BootstrapScreen> {
           }
 
           if (authState.status == AuthStatus.authenticated) {
-            // Admin and facility staff should use the dedicated desktop apps
-            if (authState.isFacilityStaff || authState.isAdmin) {
-              return Scaffold(
-                body: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: AppTheme.warning.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.desktop_windows_outlined, size: 56, color: AppTheme.warning),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          authState.isAdmin ? 'Admin Portal' : 'Facility Staff Portal',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          authState.isAdmin
-                              ? 'CBHI Officers and Admins use the dedicated desktop application.\n\nInstall: cbhi_admin_desktop'
-                              : 'Health Facility Staff use the dedicated desktop application.\n\nInstall: cbhi_facility_desktop',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
-                        FilledButton.icon(
-                          onPressed: () => context.read<AuthCubit>().logout(),
-                          icon: const Icon(Icons.logout),
-                          label: const Text('Sign Out'),
-                          style: FilledButton.styleFrom(backgroundColor: AppTheme.error),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
-
             return const _HomeShell();
           }
 
@@ -390,14 +231,17 @@ class _HomeShellState extends State<_HomeShell> {
     final repository = context.read<AppCubit>().repository;
 
     final pages = [
-      const _DashboardPage(),
+      const DashboardScreen(),
       const MyFamilyScreen(),
-      const _CardPage(),
-      const _ClaimsPage(),
-      FacilityFinderScreen(repository: repository),
-      const _ProfilePage(),
+      const DigitalCardScreen(),
+      BlocBuilder<AppCubit, AppState>(
+        builder: (context, state) {
+          final snapshot = state.snapshot ?? CbhiSnapshot.empty();
+          return MemberClaimsScreen(snapshot: snapshot);
+        },
+      ),
+      const ProfileScreen(),
     ];
-
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -439,12 +283,19 @@ class _HomeShellState extends State<_HomeShell> {
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: AppTheme.warning.withValues(alpha: 0.3)),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.cloud_off_outlined, color: AppTheme.warning, size: 14),
-                            SizedBox(width: 4),
-                            Text('Offline', style: TextStyle(color: AppTheme.warning, fontSize: 11, fontWeight: FontWeight.w700)),
+                            const Icon(Icons.cloud_off_outlined, color: AppTheme.warning, size: 14),
+                            const SizedBox(width: 4),
+                            Text(
+                              strings.t('offlineBadge'),
+                              style: const TextStyle(
+                                color: AppTheme.warning,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -507,7 +358,7 @@ class _HomeShellState extends State<_HomeShell> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.06),
@@ -519,36 +370,31 @@ class _HomeShellState extends State<_HomeShell> {
         child: NavigationBar(
           selectedIndex: _index,
           onDestinationSelected: (value) => setState(() => _index = value),
-          destinations: const [
+          destinations: [
             NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home_rounded),
-              label: 'Home',
+              icon: const Icon(Icons.home_outlined),
+              selectedIcon: const Icon(Icons.home_rounded),
+              label: strings.t('home'),
             ),
             NavigationDestination(
-              icon: Icon(Icons.family_restroom_outlined),
-              selectedIcon: Icon(Icons.family_restroom),
-              label: 'Family',
+              icon: const Icon(Icons.family_restroom_outlined),
+              selectedIcon: const Icon(Icons.family_restroom),
+              label: strings.t('family'),
             ),
             NavigationDestination(
-              icon: Icon(Icons.badge_outlined),
-              selectedIcon: Icon(Icons.badge),
-              label: 'Card',
+              icon: const Icon(Icons.badge_outlined),
+              selectedIcon: const Icon(Icons.badge),
+              label: strings.t('card'),
             ),
             NavigationDestination(
-              icon: Icon(Icons.receipt_long_outlined),
-              selectedIcon: Icon(Icons.receipt_long),
-              label: 'Claims',
+              icon: const Icon(Icons.receipt_long_outlined),
+              selectedIcon: const Icon(Icons.receipt_long),
+              label: strings.t('claims'),
             ),
             NavigationDestination(
-              icon: Icon(Icons.local_hospital_outlined),
-              selectedIcon: Icon(Icons.local_hospital),
-              label: 'Facilities',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'Profile',
+              icon: const Icon(Icons.person_outline),
+              selectedIcon: const Icon(Icons.person),
+              label: strings.t('profile'),
             ),
           ],
         ),
@@ -1218,7 +1064,7 @@ class _CardPage extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               OutlinedButton.icon(
-                                onPressed: () {
+                                onPressed: () async {
                                   final info = [
                                     'Maya City CBHI Membership Card',
                                     'Name: ${card['memberName'] ?? snapshot.viewerName}',
@@ -1227,9 +1073,13 @@ class _CardPage extends StatelessWidget {
                                     'Coverage: ${card['coverageStatus'] ?? snapshot.coverageStatus}',
                                     'Coverage #: ${snapshot.coverageNumber}',
                                   ].join('\n');
+                                  await Clipboard.setData(ClipboardData(text: info));
+                                  if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: const Text('Card details copied — share with facility staff if needed.'),
+                                      content: const Text(
+                                        'Card details copied — paste in SMS, email, or messaging to share.',
+                                      ),
                                       action: SnackBarAction(label: 'OK', onPressed: () {}),
                                     ),
                                   );
@@ -1329,6 +1179,7 @@ class _ProfilePage extends StatelessWidget {
         context.watch<AppCubit>().state.snapshot ?? CbhiSnapshot.empty();
     final member = snapshot.currentMember;
     final eligibility = snapshot.eligibility ?? const <String, dynamic>{};
+    final strings = CbhiLocalizations.of(context);
 
     return ListView(
       padding: const EdgeInsets.all(AppTheme.spacingM),
@@ -1467,6 +1318,56 @@ class _ProfilePage extends StatelessWidget {
             .slideY(begin: 0.06, end: 0, duration: 400.ms, delay: 150.ms),
 
         const SizedBox(height: 20),
+
+        if (!authState.isFamilyMember && session != null) ...[
+          GlassCard(
+            child: ListTile(
+              leading: Icon(
+                Icons.volunteer_activism_outlined,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: Text(strings.t('indigentApplicationMenuTitle')),
+              subtitle: Text(strings.t('indigentApplicationMenuSubtitle')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                final appCubit = context.read<AppCubit>();
+                final repo = appCubit.repository;
+                final uid = session!.user.id;
+                final memberCount = snapshot.familyMembers.isNotEmpty
+                    ? snapshot.familyMembers.length
+                    : ((snapshot.household['memberCount'] as num?)?.toInt() ??
+                        1);
+                final employment =
+                    snapshot.household['headEmploymentStatus']?.toString() ??
+                        snapshot.household['employmentStatus']?.toString() ??
+                        'unemployed';
+                await Navigator.of(context).push<void>(
+                  MaterialPageRoute<void>(
+                    builder: (ctx) => IndigentApplicationScreen(
+                      repository: repo,
+                      userId: uid,
+                      familySize: memberCount,
+                      employmentStatus: employment,
+                      onSubmitted: (result) {
+                        Navigator.of(ctx).pop();
+                        final messenger = ScaffoldMessenger.maybeOf(context);
+                        messenger?.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              strings.t('indigentApplicationSubmitted'),
+                            ),
+                          ),
+                        );
+                        context.read<AppCubit>().sync();
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
 
         // Language selection
         GlassCard(
@@ -1643,13 +1544,24 @@ class _ProfilePage extends StatelessWidget {
 
         const SizedBox(height: 12),
 
+        // Change password
+        OutlinedButton.icon(
+          onPressed: () => _showChangePasswordDialog(context),
+          icon: const Icon(Icons.lock_reset_outlined),
+          label: Text(strings.t('changePassword')),
+        )
+            .animate()
+            .fadeIn(duration: 400.ms, delay: 430.ms),
+
+        const SizedBox(height: 12),
+
         // Sign out
         FilledButton.icon(
           onPressed: () async {
             await context.read<AuthCubit>().logout();
           },
           icon: const Icon(Icons.logout),
-          label: const Text('Sign Out'),
+          label: Text(strings.t('signOut')),
           style: FilledButton.styleFrom(
             backgroundColor: AppTheme.error.withValues(alpha: 0.9),
           ),
@@ -1657,9 +1569,139 @@ class _ProfilePage extends StatelessWidget {
             .animate()
             .fadeIn(duration: 400.ms, delay: 400.ms),
 
+        const SizedBox(height: 12),
+
+        // Delete account
+        TextButton.icon(
+          onPressed: () => _showDeleteAccountDialog(context),
+          icon: const Icon(Icons.delete_forever_outlined, color: AppTheme.error),
+          label: Text(strings.t('deleteAccount'),
+              style: const TextStyle(color: AppTheme.error)),
+        )
+            .animate()
+            .fadeIn(duration: 400.ms, delay: 460.ms),
+
         const SizedBox(height: 24),
       ],
     );
+  }
+}
+
+// ── Profile helpers ──────────────────────────────────────────────────────────
+
+Future<void> _showChangePasswordDialog(BuildContext context) async {
+  final strings = CbhiLocalizations.of(context);
+  final currentCtrl = TextEditingController();
+  final newCtrl = TextEditingController();
+  final confirmCtrl = TextEditingController();
+  String? error;
+
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setDialogState) => AlertDialog(
+        title: Text(strings.t('changePassword')),
+        content: SizedBox(
+          width: 360,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (error != null)
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.error.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(error!, style: const TextStyle(color: AppTheme.error, fontSize: 13)),
+                ),
+              TextField(
+                controller: newCtrl,
+                obscureText: true,
+                decoration: InputDecoration(labelText: strings.t('newPassword')),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: confirmCtrl,
+                obscureText: true,
+                decoration: InputDecoration(labelText: strings.t('confirmPassword')),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(strings.t('cancel')),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (newCtrl.text.length < 6) {
+                setDialogState(() => error = strings.t('passwordTooShort'));
+                return;
+              }
+              if (newCtrl.text != confirmCtrl.text) {
+                setDialogState(() => error = strings.t('passwordsDoNotMatch'));
+                return;
+              }
+              try {
+                await ctx.read<AppCubit>().repository.setInitialPassword(
+                  password: newCtrl.text,
+                );
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(strings.t('passwordChanged')),
+                      backgroundColor: AppTheme.success,
+                    ),
+                  );
+                }
+              } catch (e) {
+                setDialogState(() => error = e.toString().replaceFirst('Exception: ', ''));
+              }
+            },
+            child: Text(strings.t('save')),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Future<void> _showDeleteAccountDialog(BuildContext context) async {
+  final strings = CbhiLocalizations.of(context);
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(strings.t('deleteAccountTitle')),
+      content: Text(strings.t('deleteAccountMessage')),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text(strings.t('cancel')),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: FilledButton.styleFrom(backgroundColor: AppTheme.error),
+          child: Text(strings.t('deleteAccount')),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+  try {
+    await context.read<AppCubit>().repository.deleteAccount();
+    if (context.mounted) {
+      await context.read<AuthCubit>().logout();
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: AppTheme.error),
+      );
+    }
   }
 }
 

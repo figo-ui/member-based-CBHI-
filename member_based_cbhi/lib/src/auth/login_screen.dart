@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import '../i18n/app_localizations.dart';
+import '../cbhi_localizations.dart';
 import '../shared/biometric_service.dart';
 import '../theme/app_theme.dart';
 import 'auth_cubit.dart';
@@ -39,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _loginWithBiometric() async {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     final token = await BiometricService.authenticateAndGetToken();
     if (token == null) {
       if (mounted) {
@@ -67,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(strings.t('signIn')),
@@ -122,7 +122,7 @@ class _PhoneLoginTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -239,7 +239,7 @@ class _PasswordLoginTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(

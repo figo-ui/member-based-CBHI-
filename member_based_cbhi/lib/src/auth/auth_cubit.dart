@@ -8,6 +8,21 @@ class AuthCubit extends Cubit<AuthState> {
 
   final CbhiRepository repository;
 
+  /// After registration, the API may persist a session — pick it up without OTP.
+  Future<void> adoptRegisteredSession() async {
+    final session = await repository.restoreSession();
+    if (session == null) {
+      return;
+    }
+    emit(
+      state.copyWith(
+        status: AuthStatus.authenticated,
+        session: session,
+        clearError: true,
+      ),
+    );
+  }
+
   Future<void> bootstrap() async {
     emit(state.copyWith(status: AuthStatus.checking, clearError: true));
     try {

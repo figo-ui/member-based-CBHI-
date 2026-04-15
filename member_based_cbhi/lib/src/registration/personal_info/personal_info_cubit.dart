@@ -66,6 +66,7 @@ class PersonalInfoCubit extends Cubit<PersonalInfoState> {
       woreda: state.woreda?.trim(),
       kebele: state.kebele?.trim(),
       householdSize: state.householdSize,
+      
     );
   }
 }

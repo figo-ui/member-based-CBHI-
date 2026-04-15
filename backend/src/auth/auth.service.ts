@@ -4,8 +4,9 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { createHmac, createHash, pbkdf2Sync, randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, pbkdf2Sync, randomBytes, timingSafeEqual } from 'crypto';
 import { Repository } from 'typeorm';
 import { Beneficiary } from '../beneficiaries/beneficiary.entity';
 import { UserRole } from '../common/enums/cbhi.enums';
@@ -29,7 +30,6 @@ type AuthTokenPayload = {
   role: string;
   phoneNumber?: string | null;
   email?: string | null;
-  exp: number;
 };
 
 // Refresh token TTL: 30 days
@@ -41,9 +41,6 @@ export class AuthService {
     process.env.AUTH_ACCESS_TOKEN_TTL_SECONDS ?? 60 * 60 * 24, // 24h default
   );
 
-  private readonly jwtSecret =
-    process.env.AUTH_JWT_SECRET ?? 'maya-city-cbhi-secret';
-
   private readonly isProduction = process.env.NODE_ENV === 'production';
 
   constructor(
@@ -52,6 +49,8 @@ export class AuthService {
     @InjectRepository(Beneficiary)
     private readonly beneficiaryRepository: Repository<Beneficiary>,
     private readonly smsService: SmsService,
+    // FIX QW-6: Inject JwtService from @nestjs/jwt
+    private readonly jwtService: JwtService,
   ) {}
 
   normalizePhoneNumber(value?: string | null) {
@@ -236,7 +235,14 @@ export class AuthService {
       throw new UnauthorizedException('Missing bearer token.');
     }
 
-    const payload = this.verifyAccessToken(token);
+    // FIX QW-6: Use @nestjs/jwt JwtService.verify() instead of hand-rolled HMAC verify
+    let payload: AuthTokenPayload;
+    try {
+      payload = this.jwtService.verify<AuthTokenPayload>(token);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired access token.');
+    }
+
     const user = await this.userRepository.findOne({
       where: { id: payload.sub },
       relations: [
@@ -262,12 +268,16 @@ export class AuthService {
     const expiresAt = new Date(
       Date.now() + this.accessTokenTtlSeconds * 1000,
     ).toISOString();
-    const accessToken = this.signAccessToken({
+
+    // FIX QW-6: Use @nestjs/jwt JwtService.sign() instead of hand-rolled HMAC
+    const payload: AuthTokenPayload = {
       sub: user.id,
       role: user.role,
       phoneNumber: user.phoneNumber,
       email: user.email,
-      exp: Math.floor(Date.now() / 1000) + this.accessTokenTtlSeconds,
+    };
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: `${this.accessTokenTtlSeconds}s`,
     });
 
     // Issue refresh token
@@ -336,6 +346,135 @@ export class AuthService {
     }
   }
 
+  async setPassword(userId: string, password: string) {
+    if (!password || password.length < 6) {
+      throw new BadRequestException('Password must be at least 6 characters.');
+    }
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found.');
+    user.passwordHash = this.hashPassword(password);
+    await this.userRepository.save(user);
+    return { message: 'Password set successfully.' };
+  }
+
+  /**
+   * GDPR / data privacy: anonymise PII and deactivate the account.
+   * Preserves household, claim, and payment records for audit purposes.
+   */
+  async anonymiseAccount(userId: string) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found.');
+
+    user.firstName = 'Deleted';
+    user.middleName = null;
+    user.lastName = 'User';
+    user.phoneNumber = null;
+    user.email = null;
+    user.nationalId = null;
+    user.identityNumber = null;
+    user.passwordHash = null;
+    user.oneTimeCodeHash = null;
+    user.refreshTokenHash = null;
+    user.totpSecret = null;
+    user.totpEnabled = false;
+    user.isActive = false;
+    await this.userRepository.save(user);
+    await this.revokeRefreshToken(userId);
+
+    return { message: 'Account data anonymised and deactivated.' };
+  }
+
+  // ── TOTP 2FA ────────────────────────────────────────────────────────────────
+
+  async setupTotp(userId: string, totpService: import('./totp.service').TotpService) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found.');
+
+    const secret = totpService.generateSecret();
+    const accountName = user.email ?? user.phoneNumber ?? user.firstName;
+    const qrUri = totpService.generateQrUri(secret, accountName ?? 'Admin');
+
+    // Store secret (not yet activated — user must verify first)
+    const userWithSecrets = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect(['user.totpSecret'])
+      .where('user.id = :id', { id: userId })
+      .getOne();
+
+    if (userWithSecrets) {
+      userWithSecrets.totpSecret = secret;
+      userWithSecrets.totpEnabled = false;
+      await this.userRepository.save(userWithSecrets);
+    }
+
+    return {
+      secret,
+      qrUri,
+      message: 'Scan the QR code with your authenticator app, then call /auth/totp/activate with a valid token.',
+    };
+  }
+
+  async activateTotp(userId: string, token: string, totpService: import('./totp.service').TotpService) {
+    const userWithSecrets = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect(['user.totpSecret'])
+      .where('user.id = :id', { id: userId })
+      .getOne();
+
+    if (!userWithSecrets?.totpSecret) {
+      throw new BadRequestException('TOTP setup not initiated. Call /auth/totp/setup first.');
+    }
+
+    if (!totpService.verifyToken(userWithSecrets.totpSecret, token)) {
+      throw new UnauthorizedException('Invalid TOTP token. Please check your authenticator app.');
+    }
+
+    userWithSecrets.totpEnabled = true;
+    await this.userRepository.save(userWithSecrets);
+
+    return { message: 'Two-factor authentication activated successfully.' };
+  }
+
+  async verifyTotp(userId: string, token: string, totpService: import('./totp.service').TotpService) {
+    const userWithSecrets = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect(['user.totpSecret'])
+      .where('user.id = :id', { id: userId })
+      .getOne();
+
+    if (!userWithSecrets?.totpEnabled || !userWithSecrets.totpSecret) {
+      throw new BadRequestException('Two-factor authentication is not enabled for this account.');
+    }
+
+    if (!totpService.verifyToken(userWithSecrets.totpSecret, token)) {
+      throw new UnauthorizedException('Invalid TOTP token.');
+    }
+
+    return { verified: true, message: 'Two-factor authentication verified.' };
+  }
+
+  async disableTotp(userId: string, token: string, totpService: import('./totp.service').TotpService) {
+    const userWithSecrets = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect(['user.totpSecret'])
+      .where('user.id = :id', { id: userId })
+      .getOne();
+
+    if (!userWithSecrets?.totpEnabled || !userWithSecrets.totpSecret) {
+      throw new BadRequestException('Two-factor authentication is not enabled.');
+    }
+
+    if (!totpService.verifyToken(userWithSecrets.totpSecret, token)) {
+      throw new UnauthorizedException('Invalid TOTP token. Provide a valid token to disable 2FA.');
+    }
+
+    userWithSecrets.totpSecret = null;
+    userWithSecrets.totpEnabled = false;
+    await this.userRepository.save(userWithSecrets);
+
+    return { message: 'Two-factor authentication disabled.' };
+  }
+
   hashPassword(password: string) {
     const salt = createHash('sha256')
       .update(`${Date.now()}:${Math.random()}`)
@@ -387,6 +526,8 @@ export class AuthService {
       beneficiaryId: user.beneficiaryProfile?.id ?? null,
       membershipId: user.beneficiaryProfile?.memberNumber ?? null,
       lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
+      // FIX: Include TOTP status so admin clients know whether to prompt for 2FA setup
+      totpEnabled: user.totpEnabled ?? false,
     };
   }
 
@@ -655,43 +796,5 @@ export class AuthService {
       return false;
     }
     return timingSafeEqual(leftBuffer, rightBuffer);
-  }
-
-  private signAccessToken(payload: AuthTokenPayload) {
-    const header = this.base64UrlEncode({ alg: 'HS256', typ: 'JWT' });
-    const body = this.base64UrlEncode(payload);
-    const signature = createHmac('sha256', this.jwtSecret)
-      .update(`${header}.${body}`)
-      .digest('base64url');
-    return `${header}.${body}.${signature}`;
-  }
-
-  private verifyAccessToken(token: string) {
-    const [header, body, signature] = token.split('.');
-    if (!header || !body || !signature) {
-      throw new UnauthorizedException('Malformed access token.');
-    }
-
-    const expectedSignature = createHmac('sha256', this.jwtSecret)
-      .update(`${header}.${body}`)
-      .digest('base64url');
-
-    if (!this.safeEqual(signature, expectedSignature)) {
-      throw new UnauthorizedException('Invalid token signature.');
-    }
-
-    const payload = JSON.parse(
-      Buffer.from(body, 'base64url').toString('utf8'),
-    ) as AuthTokenPayload;
-
-    if (!payload.sub || !payload.exp || payload.exp < Date.now() / 1000) {
-      throw new UnauthorizedException('Access token expired.');
-    }
-
-    return payload;
-  }
-
-  private base64UrlEncode(value: Record<string, unknown>) {
-    return Buffer.from(JSON.stringify(value), 'utf8').toString('base64url');
   }
 }

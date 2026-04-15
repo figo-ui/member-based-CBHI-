@@ -35,6 +35,18 @@ class FacilityRepository {
     await prefs.remove(_tokenKey);
   }
 
+  /// Returns true if the backend is reachable
+  Future<bool> ping() async {
+    try {
+      final response = await _client
+          .get(Uri.parse('$kFacilityApiBase/../health'), headers: _headers)
+          .timeout(const Duration(seconds: 5));
+      return response.statusCode < 500;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<Map<String, dynamic>> verifyEligibility({
     String? membershipId,
     String? phoneNumber,
@@ -59,14 +71,17 @@ class FacilityRepository {
     required String serviceDate,
     required List<Map<String, dynamic>> items,
     String? supportingDocumentPath,
+    Map<String, dynamic>? supportingDocumentUpload,
   }) async {
     return _post('/facility/claims', {
-      'membershipId': ?membershipId,
-      'phoneNumber': ?phoneNumber,
-      'householdCode': ?householdCode,
-      'fullName': ?fullName,
+      'membershipId': membershipId,
+      'phoneNumber': phoneNumber,
+      'householdCode': householdCode,
+      'fullName': fullName,
       'serviceDate': serviceDate,
       'items': items,
+      if (supportingDocumentUpload != null)
+        'supportingDocumentUpload': supportingDocumentUpload,
     });
   }
 
@@ -81,12 +96,20 @@ class FacilityRepository {
   };
 
   Future<Map<String, dynamic>> _get(String path) async {
-    final response = await _client.get(Uri.parse('$kFacilityApiBase$path'), headers: _headers);
+    final response = await _client
+        .get(Uri.parse('$kFacilityApiBase$path'), headers: _headers)
+        .timeout(const Duration(seconds: 15));
     return _parse(response);
   }
 
   Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body) async {
-    final response = await _client.post(Uri.parse('$kFacilityApiBase$path'), headers: _headers, body: jsonEncode(body));
+    final response = await _client
+        .post(
+          Uri.parse('$kFacilityApiBase$path'),
+          headers: _headers,
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 30));
     return _parse(response);
   }
 

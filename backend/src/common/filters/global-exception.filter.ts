@@ -14,7 +14,6 @@ interface ErrorResponse {
   error: string;
   timestamp: string;
   path: string;
-  requestId?: string;
 }
 
 @Catch()
@@ -43,11 +42,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         error = (resp['error'] as string) ?? exception.name;
       }
     } else if (exception instanceof Error) {
-      // Log full stack for unexpected errors, but never expose to client
       this.logger.error(
         `Unhandled exception: ${exception.message}`,
         this.isProduction ? undefined : exception.stack,
       );
+      // FIX MJ-8: Report unhandled errors to Sentry
+      this.reportToSentry(exception, request);
     }
 
     const body: ErrorResponse = {
@@ -58,14 +58,36 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       path: request.url,
     };
 
-    // Log 5xx errors
     if (statusCode >= 500) {
       this.logger.error(
         `[${request.method}] ${request.url} → ${statusCode}`,
-        this.isProduction ? undefined : (exception instanceof Error ? exception.stack : String(exception)),
+        this.isProduction
+          ? undefined
+          : exception instanceof Error
+          ? exception.stack
+          : String(exception),
       );
     }
 
     response.status(statusCode).json(body);
+  }
+
+  private reportToSentry(error: Error, request: Request): void {
+    try {
+      // Dynamic import to avoid hard dependency — Sentry is optional
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Sentry = require('@sentry/node') as typeof import('@sentry/node');
+      Sentry.withScope((scope) => {
+        scope.setTag('url', request.url);
+        scope.setTag('method', request.method);
+        scope.setExtra('headers', {
+          'user-agent': request.headers['user-agent'],
+          'content-type': request.headers['content-type'],
+        });
+        Sentry.captureException(error);
+      });
+    } catch {
+      // Sentry not available — silently skip
+    }
   }
 }

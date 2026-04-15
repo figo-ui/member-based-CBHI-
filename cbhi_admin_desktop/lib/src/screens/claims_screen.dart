@@ -17,11 +17,19 @@ class _ClaimsScreenState extends State<ClaimsScreen> {
   String? _error;
   List<Map<String, dynamic>> _claims = [];
   String _filter = 'ALL';
+  String _searchQuery = '';
+  final _searchCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -40,8 +48,20 @@ class _ClaimsScreenState extends State<ClaimsScreen> {
   }
 
   List<Map<String, dynamic>> get _filtered {
-    if (_filter == 'ALL') return _claims;
-    return _claims.where((c) => c['status'] == _filter).toList();
+    var list = _filter == 'ALL'
+        ? _claims
+        : _claims.where((c) => c['status'] == _filter).toList();
+
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      list = list.where((c) {
+        final claimNum = c['claimNumber']?.toString().toLowerCase() ?? '';
+        final beneficiary = c['beneficiaryName']?.toString().toLowerCase() ?? '';
+        final household = c['householdCode']?.toString().toLowerCase() ?? '';
+        return claimNum.contains(q) || beneficiary.contains(q) || household.contains(q);
+      }).toList();
+    }
+    return list;
   }
 
   Future<void> _review(Map<String, dynamic> claim, String status) async {
@@ -175,6 +195,30 @@ class _ClaimsScreenState extends State<ClaimsScreen> {
                     ),
                   ),
                 ),
+              const SizedBox(width: 8),
+              // Search field
+              SizedBox(
+                width: 240,
+                child: TextField(
+                  controller: _searchCtrl,
+                  decoration: InputDecoration(
+                    hintText: strings.t('searchClaimsHint'),
+                    prefixIcon: const Icon(Icons.search, size: 18),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close, size: 16),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                          )
+                        : null,
+                  ),
+                  onChanged: (v) => setState(() => _searchQuery = v.trim()),
+                ),
+              ),
               const Spacer(),
               IconButton(
                 onPressed: _load,

@@ -1,12 +1,25 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../blocs/claims_cubit.dart';
+import '../blocs/indigent_cubit.dart';
+import '../blocs/overview_cubit.dart';
 import '../data/admin_repository.dart';
 import '../i18n/app_localizations.dart';
 import '../theme/admin_theme.dart';
+import 'audit_log_screen.dart';
+import 'benefit_packages_screen.dart';
+import 'facility_performance_screen.dart';
+import 'financial_screen.dart';
+import 'grievances_admin_screen.dart';
 import 'overview_screen.dart';
 import 'claims_screen.dart';
+import 'facilities_screen.dart';
 import 'indigent_screen.dart';
 import 'settings_screen.dart';
 import 'reports_screen.dart';
+import 'user_management_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({
@@ -28,42 +41,64 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
+  bool _isOnline = true;
+  Timer? _pingTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkConnectivity();
+    // Ping every 30 seconds
+    _pingTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _checkConnectivity(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pingTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkConnectivity() async {
+    final online = await widget.repository.ping();
+    if (mounted && online != _isOnline) {
+      setState(() => _isOnline = online);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
     final navItems = [
-      _NavItem(
-        icon: Icons.space_dashboard_outlined,
-        selectedIcon: Icons.space_dashboard,
-        label: strings.t('navOverview'),
-      ),
-      _NavItem(
-        icon: Icons.rule_folder_outlined,
-        selectedIcon: Icons.rule_folder,
-        label: strings.t('navClaims'),
-      ),
-      _NavItem(
-        icon: Icons.volunteer_activism_outlined,
-        selectedIcon: Icons.volunteer_activism,
-        label: strings.t('navIndigent'),
-      ),
-      _NavItem(
-        icon: Icons.bar_chart_outlined,
-        selectedIcon: Icons.bar_chart,
-        label: strings.t('navReports'),
-      ),
-      _NavItem(
-        icon: Icons.settings_outlined,
-        selectedIcon: Icons.settings,
-        label: strings.t('navSettings'),
-      ),
+      _NavItem(icon: Icons.space_dashboard_outlined, selectedIcon: Icons.space_dashboard, label: strings.t('navOverview')),
+      _NavItem(icon: Icons.rule_folder_outlined, selectedIcon: Icons.rule_folder, label: strings.t('navClaims')),
+      _NavItem(icon: Icons.volunteer_activism_outlined, selectedIcon: Icons.volunteer_activism, label: strings.t('navIndigent')),
+      _NavItem(icon: Icons.local_hospital_outlined, selectedIcon: Icons.local_hospital, label: strings.t('navFacilities')),
+      _NavItem(icon: Icons.account_balance_outlined, selectedIcon: Icons.account_balance, label: strings.t('navFinancial')),
+      _NavItem(icon: Icons.analytics_outlined, selectedIcon: Icons.analytics, label: strings.t('navFacilityPerformance')),
+      _NavItem(icon: Icons.people_outlined, selectedIcon: Icons.people, label: strings.t('navUsers')),
+      _NavItem(icon: Icons.inventory_2_outlined, selectedIcon: Icons.inventory_2, label: strings.t('benefitPackages')),
+      _NavItem(icon: Icons.gavel_outlined, selectedIcon: Icons.gavel, label: strings.t('memberGrievances')),
+      _NavItem(icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, label: strings.t('navReports')),
+      _NavItem(icon: Icons.history_outlined, selectedIcon: Icons.history, label: strings.t('navAuditLog')),
+      _NavItem(icon: Icons.settings_outlined, selectedIcon: Icons.settings, label: strings.t('navSettings')),
     ];
     final pages = [
-      OverviewScreen(repository: widget.repository),
-      ClaimsScreen(repository: widget.repository),
-      IndigentScreen(repository: widget.repository),
+      BlocProvider(create: (_) => OverviewCubit(widget.repository)..load(), child: OverviewScreen(repository: widget.repository)),
+      BlocProvider(create: (_) => ClaimsCubit(widget.repository)..load(), child: ClaimsScreen(repository: widget.repository)),
+      BlocProvider(create: (_) => IndigentCubit(widget.repository)..load(),
+        child: IndigentScreen(repository: widget.repository),
+      ),
+      FacilitiesScreen(repository: widget.repository),
+      FinancialScreen(repository: widget.repository),
+      FacilityPerformanceScreen(repository: widget.repository),
+      UserManagementScreen(repository: widget.repository),
+      BenefitPackagesScreen(repository: widget.repository),
+      GrievancesAdminScreen(repository: widget.repository),
       ReportsScreen(repository: widget.repository),
+      AuditLogScreen(repository: widget.repository),
       SettingsScreen(repository: widget.repository),
     ];
 
@@ -301,33 +336,48 @@ class _MainShellState extends State<MainShell> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AdminTheme.success.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.circle,
-                              color: AdminTheme.success,
-                              size: 8,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              strings.t('connected'),
-                              style: const TextStyle(
-                                color: AdminTheme.success,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                      // FIX: Add Semantics for accessibility
+                      Semantics(
+                        label: _isOnline
+                            ? 'Connected to server'
+                            : 'Offline — no server connection',
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: (_isOnline
+                                    ? AdminTheme.success
+                                    : AdminTheme.error)
+                                .withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.circle,
+                                color: _isOnline
+                                    ? AdminTheme.success
+                                    : AdminTheme.error,
+                                size: 8,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 6),
+                              Text(
+                                _isOnline
+                                    ? strings.t('connected')
+                                    : strings.t('offline'),
+                                style: TextStyle(
+                                  color: _isOnline
+                                      ? AdminTheme.success
+                                      : AdminTheme.error,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],

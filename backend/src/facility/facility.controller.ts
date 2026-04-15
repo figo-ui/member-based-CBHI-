@@ -1,5 +1,8 @@
-import { Body, Controller, Get, Headers, Post, Query } from '@nestjs/common';
-import { AuthService } from '../auth/auth.service';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { UserRole } from '../common/enums/cbhi.enums';
+import { User } from '../users/user.entity';
 import {
   SubmitServiceClaimDto,
   VerifyEligibilityQueryDto,
@@ -7,36 +10,22 @@ import {
 import { FacilityService } from './facility.service';
 
 @Controller('facility')
+@Roles(UserRole.HEALTH_FACILITY_STAFF)
 export class FacilityController {
-  constructor(
-    private readonly facilityService: FacilityService,
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly facilityService: FacilityService) {}
 
   @Get('eligibility')
-  async verifyEligibility(
-    @Headers('authorization') authorization: string | undefined,
-    @Query() query: VerifyEligibilityQueryDto,
-  ) {
-    const user =
-      await this.authService.requireUserFromAuthorization(authorization);
+  verifyEligibility(@CurrentUser() user: User, @Query() query: VerifyEligibilityQueryDto) {
     return this.facilityService.verifyBeneficiaryEligibility(user.id, query);
   }
 
   @Post('claims')
-  async submitClaim(
-    @Headers('authorization') authorization: string | undefined,
-    @Body() dto: SubmitServiceClaimDto,
-  ) {
-    const user =
-      await this.authService.requireUserFromAuthorization(authorization);
+  submitClaim(@CurrentUser() user: User, @Body() dto: SubmitServiceClaimDto) {
     return this.facilityService.submitServiceClaim(user.id, dto);
   }
 
   @Get('claims')
-  async listClaims(@Headers('authorization') authorization: string | undefined) {
-    const user =
-      await this.authService.requireUserFromAuthorization(authorization);
+  listClaims(@CurrentUser() user: User) {
     return this.facilityService.listFacilityClaims(user.id);
   }
 }

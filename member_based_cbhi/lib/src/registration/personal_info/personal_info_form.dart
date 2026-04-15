@@ -39,6 +39,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
   late final TextEditingController _firstName;
   late final TextEditingController _middleName;
   late final TextEditingController _lastName;
+  late final TextEditingController _age;
   late final TextEditingController _phone;
   late final TextEditingController _email;
   late final TextEditingController _dateOfBirth;
@@ -46,6 +47,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
   String _gender = 'FEMALE';
   String _preferredLanguage = 'en';
   String? _birthCertificatePath;
+  String? _idDocumentPath;
 
   // Location cascade state
   List<LocationItem> _regions = [];
@@ -68,6 +70,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
     _firstName = TextEditingController(text: initial?.firstName ?? '');
     _middleName = TextEditingController(text: initial?.middleName ?? '');
     _lastName = TextEditingController(text: initial?.lastName ?? '');
+    _age = TextEditingController(text: initial?.age.toString() ?? '');
     _phone = TextEditingController(text: initial?.phone ?? '+2519');
     _email = TextEditingController(text: initial?.email ?? '');
     _dateOfBirth = TextEditingController(
@@ -81,6 +84,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
     _gender = initial?.gender ?? 'FEMALE';
     _preferredLanguage = initial?.preferredLanguage ?? 'en';
     _birthCertificatePath = initial?.birthCertificatePath;
+    _idDocumentPath = initial?.idDocumentPath;
     _loadRegions();
   }
 
@@ -137,6 +141,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
     _firstName.dispose();
     _middleName.dispose();
     _lastName.dispose();
+    _age.dispose();
     _phone.dispose();
     _email.dispose();
     _dateOfBirth.dispose();
@@ -158,6 +163,9 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
     if (picked != null) {
       _dateOfBirth.text =
           '${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+      // Auto-calculate age
+      final years = now.year - picked.year;
+      _age.text = years.toString();
     }
   }
 
@@ -223,6 +231,68 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
     }
   }
 
+  Future<void> _pickIdDocument() async {
+    await Permission.camera.request();
+    await Permission.photos.request();
+    if (!mounted) {
+      return;
+    }
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take photo'),
+              onTap: () => Navigator.pop(context, 'camera'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose image'),
+              onTap: () => Navigator.pop(context, 'gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf_outlined),
+              title: const Text('Choose PDF or image'),
+              onTap: () => Navigator.pop(context, 'file'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null) {
+      return;
+    }
+    if (choice == 'file') {
+      final file = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['pdf', 'png', 'jpg', 'jpeg'],
+      );
+      if (file?.files.single.path != null) {
+        final persistedPath = await LocalAttachmentStore.persist(
+          file!.files.single.path!,
+          category: 'registration_national_id',
+        );
+        setState(() => _idDocumentPath = persistedPath);
+      }
+      return;
+    }
+    final picked = choice == 'camera'
+        ? await _picker.pickImage(source: ImageSource.camera, imageQuality: 85)
+        : await _picker.pickImage(
+            source: ImageSource.gallery,
+            imageQuality: 85,
+          );
+    if (picked != null) {
+      final persistedPath = await LocalAttachmentStore.persist(
+        picked.path,
+        category: 'registration_national_id',
+      );
+      setState(() => _idDocumentPath = persistedPath);
+    }
+  }
+
   bool _isImage(String path) {
     final normalized = path.toLowerCase();
     return normalized.endsWith('.png') ||
@@ -235,7 +305,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
     final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Step 1 of 5'),
+        title: const Text('Step 1: Personal information'),
         leading: widget.onCancel == null
             ? null
             : IconButton(
@@ -257,52 +327,85 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                 style: textTheme.bodyMedium,
               ),
               const SizedBox(height: 24),
-              _buildTextField(_firstName, 'First name', required: true),
-              const SizedBox(height: 12),
-              _buildTextField(_middleName, 'Middle name'),
-              const SizedBox(height: 12),
-              _buildTextField(_lastName, 'Last name', required: true),
-              const SizedBox(height: 12),
-              _buildTextField(
-                _phone,
-                'Phone number',
-                required: true,
-                keyboardType: TextInputType.phone,
-                hintText: '+2519XXXXXXXX',
+              Row(
+                children: [
+                  Expanded(child: _buildTextField(_firstName, 'First name', required: true)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildTextField(_middleName, 'Middle name')),
+                ],
               ),
               const SizedBox(height: 12),
-              _buildTextField(
-                _email,
-                'Email address',
-                keyboardType: TextInputType.emailAddress,
+              Row(
+                children: [
+                  Expanded(child: _buildTextField(_lastName, 'Last name', required: true)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildTextField(
+                      _age,
+                      'Age',
+                      required: true,
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTextField(
+                      _phone,
+                      'Phone number',
+                      required: true,
+                      keyboardType: TextInputType.phone,
+                      hintText: '+2519XXXXXXXX',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildTextField(
+                      _email,
+                      'Email address',
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _gender,
-                decoration: const InputDecoration(labelText: 'Gender'),
-                items: const [
-                  DropdownMenuItem(value: 'FEMALE', child: Text('Female')),
-                  DropdownMenuItem(value: 'MALE', child: Text('Male')),
-                  DropdownMenuItem(value: 'OTHER', child: Text('Other')),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: _gender,
+                      decoration: const InputDecoration(labelText: 'Gender'),
+                      items: const [
+                        DropdownMenuItem(value: 'FEMALE', child: Text('Female')),
+                        DropdownMenuItem(value: 'MALE', child: Text('Male')),
+                        DropdownMenuItem(value: 'OTHER', child: Text('Other')),
+                      ],
+                      onChanged: (value) =>
+                          setState(() => _gender = value ?? 'FEMALE'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _dateOfBirth,
+                      readOnly: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Date of birth',
+                        suffixIcon: Icon(Icons.calendar_today_outlined),
+                      ),
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty) ? 'Required' : null,
+                      onTap: _selectDate,
+                    ),
+                  ),
                 ],
-                onChanged: (value) =>
-                    setState(() => _gender = value ?? 'FEMALE'),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _dateOfBirth,
-                readOnly: true,
-                decoration: const InputDecoration(
-                  labelText: 'Date of birth',
-                  suffixIcon: Icon(Icons.calendar_today_outlined),
-                ),
-                validator: (value) =>
-                    (value == null || value.trim().isEmpty) ? 'Required' : null,
-                onTap: _selectDate,
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                initialValue: _preferredLanguage,
+                value: _preferredLanguage,
                 decoration: const InputDecoration(
                   labelText: 'Preferred language',
                 ),
@@ -317,7 +420,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
               const SizedBox(height: 20),
               Text('Household address', style: textTheme.titleMedium),
               const SizedBox(height: 12),
-              // Region dropdown
+              // Location cascade
               if (_loadingLocations)
                 const Center(child: CircularProgressIndicator())
               else if (_regions.isEmpty)
@@ -331,50 +434,66 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                   _buildTextField(TextEditingController(text: _selectedKebele?.name ?? ''), 'Kebele', required: true),
                 ]
               else ...[
-                DropdownButtonFormField<LocationItem>(
-                  initialValue: _selectedRegion,
-                  decoration: const InputDecoration(labelText: 'Region'),
-                  items: _regions.map((r) => DropdownMenuItem(
-                    value: r,
-                    child: Text(r.displayName(_preferredLanguage)),
-                  )).toList(),
-                  onChanged: _onRegionChanged,
-                  validator: (v) => v == null ? 'Region is required' : null,
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<LocationItem>(
+                        value: _selectedRegion,
+                        decoration: const InputDecoration(labelText: 'Region'),
+                        items: _regions.map((r) => DropdownMenuItem(
+                          value: r,
+                          child: Text(r.displayName(_preferredLanguage)),
+                        )).toList(),
+                        onChanged: _onRegionChanged,
+                        validator: (v) => v == null ? 'Required' : null,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<LocationItem>(
+                        value: _selectedZone,
+                        decoration: const InputDecoration(labelText: 'Zone'),
+                        items: _zones.map((z) => DropdownMenuItem(
+                          value: z,
+                          child: Text(z.displayName(_preferredLanguage)),
+                        )).toList(),
+                        onChanged: _selectedRegion == null ? null : _onZoneChanged,
+                        validator: (v) => v == null ? 'Required' : null,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<LocationItem>(
-                  initialValue: _selectedZone,
-                  decoration: const InputDecoration(labelText: 'Zone'),
-                  items: _zones.map((z) => DropdownMenuItem(
-                    value: z,
-                    child: Text(z.displayName(_preferredLanguage)),
-                  )).toList(),
-                  onChanged: _selectedRegion == null ? null : _onZoneChanged,
-                  validator: (v) => v == null ? 'Zone is required' : null,
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<LocationItem>(
-                  initialValue: _selectedWoreda,
-                  decoration: const InputDecoration(labelText: 'Woreda'),
-                  items: _woredas.map((w) => DropdownMenuItem(
-                    value: w,
-                    child: Text(w.displayName(_preferredLanguage)),
-                  )).toList(),
-                  onChanged: _selectedZone == null ? null : _onWoredaChanged,
-                  validator: (v) => v == null ? 'Woreda is required' : null,
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<LocationItem>(
-                  initialValue: _selectedKebele,
-                  decoration: const InputDecoration(labelText: 'Kebele'),
-                  items: _kebeles.map((k) => DropdownMenuItem(
-                    value: k,
-                    child: Text(k.displayName(_preferredLanguage)),
-                  )).toList(),
-                  onChanged: _selectedWoreda == null
-                      ? null
-                      : (v) => setState(() => _selectedKebele = v),
-                  validator: (v) => v == null ? 'Kebele is required' : null,
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<LocationItem>(
+                        value: _selectedWoreda,
+                        decoration: const InputDecoration(labelText: 'Woreda'),
+                        items: _woredas.map((w) => DropdownMenuItem(
+                          value: w,
+                          child: Text(w.displayName(_preferredLanguage)),
+                        )).toList(),
+                        onChanged: _selectedZone == null ? null : _onWoredaChanged,
+                        validator: (v) => v == null ? 'Required' : null,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<LocationItem>(
+                        value: _selectedKebele,
+                        decoration: const InputDecoration(labelText: 'Kebele'),
+                        items: _kebeles.map((k) => DropdownMenuItem(
+                          value: k,
+                          child: Text(k.displayName(_preferredLanguage)),
+                        )).toList(),
+                        onChanged: _selectedWoreda == null
+                            ? null
+                            : (v) => setState(() => _selectedKebele = v),
+                        validator: (v) => v == null ? 'Required' : null,
+                      ),
+                    ),
+                  ],
                 ),
               ],
               const SizedBox(height: 12),
@@ -385,14 +504,31 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 20),
-              _DocumentPickerCard(
-                title: 'Birth certificate',
-                subtitle: 'Optional image or PDF upload',
-                path: _birthCertificatePath,
-                onPick: _pickBirthCertificate,
-                isImage:
-                    _birthCertificatePath != null &&
-                    _isImage(_birthCertificatePath!),
+              Row(
+                children: [
+                  Expanded(
+                    child: _DocumentPickerCard(
+                      title: 'Birth certificate',
+                      subtitle: 'Optional upload',
+                      path: _birthCertificatePath,
+                      onPick: _pickBirthCertificate,
+                      isImage:
+                          _birthCertificatePath != null &&
+                          _isImage(_birthCertificatePath!),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _DocumentPickerCard(
+                      title: 'National ID',
+                      subtitle: 'Required upload',
+                      path: _idDocumentPath,
+                      onPick: _pickIdDocument,
+                      isImage:
+                          _idDocumentPath != null && _isImage(_idDocumentPath!),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 28),
               SizedBox(
@@ -402,6 +538,14 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                     if (!_formKey.currentState!.validate()) {
                       return;
                     }
+                    if (_idDocumentPath == null || _idDocumentPath!.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please upload a photo or scan of your ID document.'),
+                        ),
+                      );
+                      return;
+                    }
                     widget.onNext(
                       PersonalInfoModel(
                         firstName: _firstName.text.trim(),
@@ -409,6 +553,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                             ? null
                             : _middleName.text.trim(),
                         lastName: _lastName.text.trim(),
+                        age: int.tryParse(_age.text.trim()) ?? 0,
                         phone: _phone.text.trim(),
                         email: _email.text.trim().isEmpty
                             ? null
@@ -419,7 +564,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                             DateTime.now(),
                         birthCertificateRef: null,
                         birthCertificatePath: _birthCertificatePath,
-                        idDocumentPath: null,
+                        idDocumentPath: _idDocumentPath,
                         region: _selectedRegion?.name ?? '',
                         zone: _selectedZone?.name ?? '',
                         woreda: _selectedWoreda?.name ?? '',
@@ -450,7 +595,11 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      decoration: InputDecoration(labelText: label, hintText: hintText),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hintText,
+        alignLabelWithHint: true,
+      ),
       validator: required
           ? (value) =>
                 (value == null || value.trim().isEmpty) ? 'Required' : null

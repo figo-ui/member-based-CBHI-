@@ -1,12 +1,15 @@
+// FIX MJ-8: Sentry MUST be imported before any other module
+import './instrument';
 import 'dotenv/config';
 import { join } from 'path';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
-import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
+import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
 import { CbhiLogger } from './common/logger/cbhi-logger.service';
 
 function assertRequiredEnv(): void {
@@ -73,12 +76,15 @@ async function bootstrap() {
   });
 
   app.setGlobalPrefix('api/v1');
+  app.useWebSocketAdapter(new IoAdapter(app));
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads/',
   });
 
   // ── Global filters & pipes ────────────────────────────────────────────────
   app.useGlobalFilters(new GlobalExceptionFilter());
+  // FIX QW-7: Global 30-second request timeout
+  app.useGlobalInterceptors(new TimeoutInterceptor(30_000));
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

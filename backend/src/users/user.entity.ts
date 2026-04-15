@@ -91,6 +91,13 @@ export class User extends AuditableEntity {
   @Column({ type: 'timestamptz', nullable: true, select: false })
   refreshTokenExpiresAt?: Date | null;
 
+  // ── TOTP 2FA (admin accounts) ───────────────────────────────────────────────
+  @Column({ type: 'varchar', nullable: true, select: false })
+  totpSecret?: string | null;
+
+  @Column({ default: false })
+  totpEnabled!: boolean;
+
   @OneToOne(() => Household, (household) => household.headUser)
   household?: Household | null;
 

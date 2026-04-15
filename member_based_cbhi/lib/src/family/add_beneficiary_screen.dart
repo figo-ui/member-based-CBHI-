@@ -7,7 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../cbhi_data.dart';
-import '../i18n/app_localizations.dart';
+import '../cbhi_localizations.dart';
 import '../shared/ethiopic_date_picker.dart';
 import '../shared/local_attachment_store.dart';
 import 'add_beneficiary_cubit.dart';
@@ -75,7 +75,7 @@ class _AddBeneficiaryScreenState extends State<AddBeneficiaryScreen> {
   }
 
   Future<void> _pickDate() async {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     final now = DateTime.now();
     final initialDate =
         DateTime.tryParse(_dobController.text) ?? DateTime(now.year - 12);
@@ -93,7 +93,7 @@ class _AddBeneficiaryScreenState extends State<AddBeneficiaryScreen> {
   }
 
   Future<void> _selectPhoto() async {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     final cameraStatus = await Permission.camera.request();
     final photoStatus = await Permission.photos.request();
     if (!mounted) {
@@ -141,7 +141,7 @@ class _AddBeneficiaryScreenState extends State<AddBeneficiaryScreen> {
   }
 
   Future<void> _save() async {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -205,13 +205,13 @@ class _AddBeneficiaryScreenState extends State<AddBeneficiaryScreen> {
               appBar: AppBar(
                 title: Text(
                   widget.member == null
-                      ? AppLocalizations.of(context).t('addBeneficiary')
-                      : AppLocalizations.of(context).t('editBeneficiary'),
+                      ? CbhiLocalizations.of(context).t('addBeneficiary')
+                      : CbhiLocalizations.of(context).t('editBeneficiary'),
                 ),
               ),
               body: BlocBuilder<AddBeneficiaryCubit, AddBeneficiaryState>(
                 builder: (context, state) {
-                  final strings = AppLocalizations.of(context);
+                  final strings = CbhiLocalizations.of(context);
                   return SingleChildScrollView(
                     padding: const EdgeInsets.all(20),
                     child: Form(
@@ -487,7 +487,7 @@ class _PhotoPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     final resolvedUrl = repository.resolveMediaUrl(photoPath);
     final hasLocalFile =
         photoPath != null &&

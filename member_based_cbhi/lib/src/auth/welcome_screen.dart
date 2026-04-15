@@ -3,7 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../cbhi_state.dart';
-import '../i18n/app_localizations.dart';
+import '../cbhi_localizations.dart';
 import '../theme/app_theme.dart';
 import 'auth_cubit.dart';
 import 'family_member_login_screen.dart';
@@ -16,7 +16,7 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(gradient: AppTheme.welcomeGradient),
@@ -251,7 +251,7 @@ class _LanguageSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final appCubit = context.read<AppCubit>();
     final currentLocale = context.watch<AppCubit>().state.locale;
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     const languages = [('en', '🇬🇧'), ('am', '🇪🇹'), ('om', '🇪🇹')];
 
     return Container(

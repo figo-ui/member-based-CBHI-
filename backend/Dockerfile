@@ -18,6 +18,8 @@ COPY package*.json ./
 RUN npm ci --only=production --legacy-peer-deps && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/src/database ./src/database
+COPY scripts/run-migrations.js ./scripts/run-migrations.js
 
 # Create uploads directory
 RUN mkdir -p uploads
@@ -27,4 +29,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget -qO- http://localhost:3000/api/health || exit 1
 
-CMD ["node", "dist/main"]
+# Run migrations then start the server
+CMD ["sh", "-c", "node scripts/run-migrations.js && node dist/main"]

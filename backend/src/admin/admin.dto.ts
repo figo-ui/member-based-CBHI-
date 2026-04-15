@@ -1,5 +1,7 @@
 import {
   IsDateString,
+  IsBoolean,
+  IsEmail,
   IsEnum,
   IsIn,
   IsNumber,
@@ -67,4 +69,74 @@ export class ExportQueryDto {
   @IsOptional()
   @IsDateString()
   to?: string;
+}
+
+// ── Facility management DTOs ────────────────────────────────────────────────
+
+export class CreateFacilityDto {
+  @IsString()
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  facilityCode?: string;
+
+  @IsOptional()
+  @IsString()
+  licenseNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  serviceLevel?: string;
+
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  addressLine?: string;
+}
+
+export class UpdateFacilityDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  serviceLevel?: string;
+
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  addressLine?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isAccredited?: boolean;
+}
+
+export class AddFacilityStaffDto {
+  @IsString()
+  identifier!: string;
+
+  @IsOptional()
+  @IsString()
+  firstName?: string;
+
+  @IsOptional()
+  @IsString()
+  lastName?: string;
 }

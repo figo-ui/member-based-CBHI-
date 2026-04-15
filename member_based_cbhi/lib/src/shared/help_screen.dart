@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../i18n/app_localizations.dart';
+import '../cbhi_localizations.dart';
 import '../theme/app_theme.dart';
 
 class HelpScreen extends StatelessWidget {
@@ -11,9 +11,9 @@ class HelpScreen extends StatelessWidget {
       question: 'How do I register my household?',
       questionAm: 'ቤተሰቤን እንዴት መመዝገብ እችላለሁ?',
       answer:
-          'Tap "Start New Registration" on the welcome screen. Complete the 4 steps: personal info, identity verification, and membership selection. You can register offline — data syncs when you connect.',
+          'Tap "Register" on the welcome screen. Complete the steps: personal information (with ID document), review, identity and employment, membership type, and — if you choose indigent membership — supporting documents. You can register offline; data syncs when you connect.',
       answerAm:
-          'በእንኳን ደህና መጡ ማያ ላይ "አዲስ ምዝገባ ጀምር" ን ይጫኑ። 4 ደረጃዎቹን ያጠናቅቁ። ያለ ኢንተርኔትም መመዝገብ ይችላሉ።',
+          'በእንኳን ደህና መጡ ማያ ላይ "ምዝገባ" ን ይጫኑ። የግል መረጃ፣ ማረጋገጫ፣ መታወቂያ እና ሥራ፣ የአባልነት አይነት እና (ለድሆች) ማረጋገጫ ሰነዶችን ያጠናቅቁ። ከኢንተርኔት ውጭም ሊመዘገቡ ይችላሉ።',
     ),
     _Faq(
       question: 'What is a FAN Number?',
@@ -82,7 +82,7 @@ class HelpScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(strings.t('helpAndFaq'))),
       body: ListView(

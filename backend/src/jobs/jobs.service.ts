@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LessThan, Repository } from 'typeorm';
 import { Coverage } from '../coverages/coverage.entity';
@@ -9,16 +9,12 @@ import { SmsService } from '../sms/sms.service';
 import { FcmService } from '../notifications/fcm.service';
 
 /**
- * Background job processor — runs scheduled tasks without external queue.
- * Uses Node.js setInterval for simplicity (no Redis/Bull required).
- *
- * Jobs:
- *   1. Coverage expiry reminders — daily at midnight
- *   2. Expired coverage suspension — daily
- *   3. Notification cleanup — weekly
+ * FIX ME-7: JobsService no longer uses setInterval.
+ * Scheduling is handled by JobsScheduler + Bull queue (multi-instance safe).
+ * This service contains only the business logic for each job.
  */
 @Injectable()
-export class JobsService implements OnModuleInit {
+export class JobsService {
   private readonly logger = new Logger(JobsService.name);
 
   constructor(
@@ -31,23 +27,6 @@ export class JobsService implements OnModuleInit {
     private readonly smsService: SmsService,
     private readonly fcmService: FcmService,
   ) {}
-
-  onModuleInit() {
-    // Run daily jobs every 24 hours
-    const DAILY_MS = 24 * 60 * 60 * 1000;
-
-    // Run once on startup (after 30s delay to let DB settle)
-    setTimeout(() => {
-      void this.runDailyJobs();
-    }, 30_000);
-
-    // Then every 24 hours
-    setInterval(() => {
-      void this.runDailyJobs();
-    }, DAILY_MS);
-
-    this.logger.log('Background jobs scheduled (daily)');
-  }
 
   async runDailyJobs(): Promise<void> {
     this.logger.log('Running daily background jobs...');

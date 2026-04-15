@@ -193,9 +193,8 @@ export class CbhiService {
     beneficiary.identityNumber = user.identityNumber;
     beneficiary.nationalId = user.nationalId;
 
-    const eligibility = this.evaluateEligibility(
-      dto.membershipType,
-      dto.eligibilitySignals.employmentStatus,
+    const eligibility = this.resolveRegistrationEligibility(
+      dto,
       household.memberCount,
     );
 
@@ -216,6 +215,16 @@ export class CbhiService {
       dto.premiumAmount,
       eligibility,
     );
+
+    if (
+      dto.membershipType === MembershipType.INDIGENT &&
+      dto.indigentProofUploads?.length
+    ) {
+      await this.appendIndigentProofDocuments(
+        beneficiary,
+        dto.indigentProofUploads,
+      );
+    }
 
     const fullHousehold = await this.loadHouseholdWithMembers(household.id);
     const fullCoverage = await this.loadLatestCoverage(household.id);
@@ -667,10 +676,64 @@ export class CbhiService {
       await this.userRepository.save(beneficiary.userAccount);
     }
 
-    await this.beneficiaryRepository.remove(beneficiary);
+    // Soft-delete preserves claim history — deletedAt is set, record stays in DB
+    await this.beneficiaryRepository.softRemove(beneficiary);
     await this.recountHouseholdMembers(household.id);
 
     return this.getFamily(userId);
+  }
+
+  /**
+   * Indigent registration uses uploaded proof documents only (no extra form fields).
+   * Paying members use standard premium flow.
+   */
+  private resolveRegistrationEligibility(
+    dto: RegistrationStepTwoDto,
+    householdSize: number,
+  ): EligibilityDecision {
+    if (dto.membershipType === MembershipType.PAYING) {
+      return this.evaluateEligibility(
+        dto.membershipType,
+        dto.eligibilitySignals.employmentStatus,
+        householdSize,
+      );
+    }
+
+    const proofs = dto.indigentProofUploads ?? [];
+    if (proofs.length < 1) {
+      throw new BadRequestException(
+        'Indigent membership requires at least one supporting document (e.g. kebele letter, income proof, or poverty certificate).',
+      );
+    }
+
+    return {
+      score: 100,
+      approved: true,
+      reason:
+        'Indigent pathway: supporting documents submitted with registration.',
+    };
+  }
+
+  private async appendIndigentProofDocuments(
+    beneficiary: Beneficiary,
+    uploads: InlineAttachmentDto[],
+  ) {
+    for (const upload of uploads) {
+      const stored = await this.persistInlineAttachment(
+        DocumentType.OTHER,
+        beneficiary,
+        upload,
+      );
+      const document = this.documentRepository.create({
+        beneficiary,
+        type: DocumentType.OTHER,
+        fileName: stored.fileName,
+        fileUrl: stored.fileUrl,
+        mimeType: stored.mimeType,
+        isVerified: false,
+      });
+      await this.documentRepository.save(document);
+    }
   }
 
   private evaluateEligibility(
@@ -1560,3 +1623,34 @@ export class CbhiService {
       .join('.');
   }
 }
+
+  // ── Coverage History ────────────────────────────────────────────────────────
+
+  /**
+   * Returns all coverage periods for the household (past and current).
+   * Used by the member app's Coverage History screen.
+   */
+  async getCoverageHistory(userId: string) {
+    const access = await this.resolveAccessContext(userId);
+    const coverages = await this.coverageRepository.find({
+      where: { household: { id: access.household.id } },
+      order: { createdAt: 'DESC' },
+    });
+
+    return {
+      householdCode: access.household.householdCode,
+      coverages: coverages.map((c) => ({
+        id: c.id,
+        coverageNumber: c.coverageNumber,
+        status: c.status,
+        startDate: c.startDate?.toISOString() ?? null,
+        endDate: c.endDate?.toISOString() ?? null,
+        nextRenewalDate: c.nextRenewalDate?.toISOString() ?? null,
+        premiumAmount: Number(c.premiumAmount ?? 0),
+        paidAmount: Number(c.paidAmount ?? 0),
+        membershipType: access.household.membershipType ?? null,
+        createdAt: c.createdAt?.toISOString() ?? null,
+      })),
+      syncedAt: new Date().toISOString(),
+    };
+  }

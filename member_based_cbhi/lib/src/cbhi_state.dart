@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'cbhi_data.dart';
+import 'shared/background_sync_service.dart';
 
 class AppState extends Equatable {
   const AppState({
@@ -61,9 +62,34 @@ class AppState extends Equatable {
 }
 
 class AppCubit extends Cubit<AppState> {
-  AppCubit(this.repository) : super(AppState.initial());
+  AppCubit(this.repository) : super(AppState.initial()) {
+    // Register for automatic background sync when connectivity is restored.
+    BackgroundSyncService.instance.addListener(_backgroundSync);
+  }
 
   final CbhiRepository repository;
+
+  @override
+  Future<void> close() {
+    BackgroundSyncService.instance.removeListener(_backgroundSync);
+    return super.close();
+  }
+
+  /// Silent background sync — called automatically when device comes online.
+  /// Does NOT set isSyncing=true so the UI shows no spinner.
+  Future<void> _backgroundSync() async {
+    if (isClosed) return;
+    try {
+      final householdCode = state.snapshot?.householdCode;
+      final snapshot = await repository.sync(
+        householdCode?.isEmpty ?? true ? null : householdCode,
+      );
+      if (!isClosed) emit(state.copyWith(snapshot: snapshot));
+    } catch (_) {
+      // Swallow — background sync failures are silent
+    }
+  }
+
   Future<void> load() async {
     emit(state.copyWith(isLoading: true, error: null));
     try {
@@ -107,9 +133,7 @@ class AppCubit extends Cubit<AppState> {
 
   Future<void> markNotificationRead(String notificationId) async {
     try {
-      final notifications = await repository.markNotificationRead(
-        notificationId,
-      );
+      final notifications = await repository.markNotificationRead(notificationId);
       final currentSnapshot = state.snapshot ?? CbhiSnapshot.empty();
       emit(
         state.copyWith(
@@ -121,13 +145,9 @@ class AppCubit extends Cubit<AppState> {
     }
   }
 
-  void setLocale(Locale locale) {
-    emit(state.copyWith(locale: locale));
-  }
+  void setLocale(Locale locale) => emit(state.copyWith(locale: locale));
 
-  void toggleDarkMode() {
-    emit(state.copyWith(isDarkMode: !state.isDarkMode));
-  }
+  void toggleDarkMode() => emit(state.copyWith(isDarkMode: !state.isDarkMode));
 
   Future<void> refreshFromCache() async {
     final snapshot = await repository.loadCachedSnapshot();

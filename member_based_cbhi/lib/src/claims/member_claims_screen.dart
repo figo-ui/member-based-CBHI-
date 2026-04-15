@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../cbhi_data.dart';
+import '../cbhi_localizations.dart';
 import '../shared/animated_widgets.dart';
 import '../theme/app_theme.dart';
 
@@ -15,17 +16,17 @@ class MemberClaimsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
     final claims = snapshot.claims;
 
     return ListView(
       padding: const EdgeInsets.all(AppTheme.spacingM),
       children: [
-        const AnimatedHeroCard(
+        AnimatedHeroCard(
           icon: Icons.receipt_long_outlined,
-          title: 'My Claims',
-          subtitle:
-              'Track all health service claims submitted on your behalf by accredited facilities.',
-          value: 'Claim History',
+          title: strings.t('myClaims'),
+          subtitle: strings.t('trackClaimsSubtitle'),
+          value: strings.t('claims'),
         ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0),
 
         const SizedBox(height: 16),
@@ -46,7 +47,7 @@ class MemberClaimsScreen extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Claims are submitted by health facility staff when you receive services. Show your digital card at any accredited facility.',
+                  strings.t('claimsSubmittedByFacility'),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
@@ -59,9 +60,8 @@ class MemberClaimsScreen extends StatelessWidget {
         if (claims.isEmpty)
           EmptyState(
             icon: Icons.receipt_long_outlined,
-            title: 'No claims yet',
-            subtitle:
-                'Claims will appear here after you receive services at an accredited health facility.',
+            title: strings.t('noClaimsYet'),
+            subtitle: strings.t('claimsWillAppearHere'),
           ).animate().fadeIn(duration: 400.ms, delay: 150.ms)
         else
           ...claims.asMap().entries.map((entry) {

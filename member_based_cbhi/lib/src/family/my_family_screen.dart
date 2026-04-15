@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../auth/auth_cubit.dart';
 import '../cbhi_data.dart';
-import '../i18n/app_localizations.dart';
+import '../cbhi_localizations.dart';
 import 'add_beneficiary_screen.dart';
 import 'my_family_cubit.dart';
 
@@ -15,7 +15,7 @@ class MyFamilyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     final familyCubit = context.read<MyFamilyCubit>();
     final repository = familyCubit.repository;
     final isFamilyMember = context.watch<AuthCubit>().state.isFamilyMember;
@@ -30,8 +30,7 @@ class MyFamilyScreen extends StatelessWidget {
         }
       },
       builder: (context, state) {
-        return Scaffold(
-          body: RefreshIndicator(
+        return RefreshIndicator(
             onRefresh: familyCubit.load,
             child: ListView(
               padding: const EdgeInsets.all(20),
@@ -253,14 +252,13 @@ class MyFamilyScreen extends StatelessWidget {
                   ),
               ],
             ),
-          ),
-        );
+          );
       },
     );
   }
 
   String _detailLine(BuildContext context, FamilyMember member) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     final details = <String>[
       if (member.dateOfBirth != null && member.dateOfBirth!.isNotEmpty)
         '${strings.t('dobLabel')}: ${member.dateOfBirth!.split('T').first}',

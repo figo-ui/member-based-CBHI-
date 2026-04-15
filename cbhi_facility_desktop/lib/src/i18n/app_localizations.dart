@@ -97,6 +97,16 @@ class AppLocalizations {
       'statusApproved': 'Approved',
       'statusRejected': 'Rejected',
       'statusPaid': 'Paid',
+      // QR scanner
+      'scanQrCard': 'Scan QR Card',
+      'scanMemberCard': 'Scan Member Card',
+      'pointCameraAtCard': 'Point the camera at the member\'s QR code',
+      'toggleFlash': 'Toggle flash',
+      // Document attachment
+      'attachDocument': 'Attach Document',
+      'supportingDocument': 'Supporting Document',
+      // Connectivity
+      'offline': 'Offline',
     },
     'am': {
       'appTitle': 'የማያ ከተማ CBHI ተቋም',
@@ -166,6 +176,16 @@ class AppLocalizations {
       'statusApproved': 'ጸድቋል',
       'statusRejected': 'ተቀባይነት አላገኘም',
       'statusPaid': 'ተከፍሏል',
+      // QR scanner
+      'scanQrCard': 'QR ካርድ ቃኝ',
+      'scanMemberCard': 'የአባል ካርድ ቃኝ',
+      'pointCameraAtCard': 'ካሜራውን ወደ QR ኮዱ ያዙሩ',
+      'toggleFlash': 'ፍላሽ ቀያይር',
+      // Document attachment
+      'attachDocument': 'ሰነድ አያይዝ',
+      'supportingDocument': 'ድጋፍ ሰጪ ሰነድ',
+      // Connectivity
+      'offline': 'ኦፍላይን',
     },
     'om': {
       'appTitle': 'Dhaabbata CBHI Magaalaa Maya',
@@ -236,6 +256,16 @@ class AppLocalizations {
       'statusApproved': 'Raggaafameera',
       'statusRejected': 'Didameera',
       'statusPaid': 'Kaffalameera',
+      // QR scanner
+      'scanQrCard': 'Kaardii QR Qori',
+      'scanMemberCard': 'Kaardii Miseensaa Qori',
+      'pointCameraAtCard': 'Kaameraa gara koodii QR qajeelchi',
+      'toggleFlash': 'Ifaa jijjiiri',
+      // Document attachment
+      'attachDocument': 'Galmee makami',
+      'supportingDocument': 'Galmee deeggarsa',
+      // Connectivity
+      'offline': 'Toora ala',
     },
   };
 

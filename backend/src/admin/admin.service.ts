@@ -1,32 +1,41 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Claim } from '../claims/claim.entity';
 import {
   ClaimStatus,
+  FacilityUserRole,
   IndigentApplicationStatus,
   NotificationType,
   PreferredLanguage,
   UserRole,
 } from '../common/enums/cbhi.enums';
 import { CBHIOfficer } from '../cbhi-officers/cbhi-officer.entity';
+import { FacilityUser } from '../facility-users/facility-user.entity';
 import { HealthFacility } from '../health-facilities/health-facility.entity';
 import { Household } from '../households/household.entity';
 import { IndigentService } from '../indigent/indigent.service';
 import { IndigentApplication } from '../indigent/indigent.entity';
 import { Notification } from '../notifications/notification.entity';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { Payment } from '../payments/payment.entity';
 import { SystemSetting } from '../system-settings/system-setting.entity';
 import { User } from '../users/user.entity';
+import { AuditLog } from '../audit/audit-log.entity';
 import {
   ReportsQueryDto,
   ReviewClaimDto,
   ReviewIndigentApplicationDto,
   UpdateSystemSettingDto,
+  CreateFacilityDto,
+  UpdateFacilityDto,
+  AddFacilityStaffDto,
 } from './admin.dto';
 
 @Injectable()
@@ -46,19 +55,25 @@ export class AdminService {
     private readonly householdRepository: Repository<Household>,
     @InjectRepository(HealthFacility)
     private readonly facilityRepository: Repository<HealthFacility>,
+    @InjectRepository(FacilityUser)
+    private readonly facilityUserRepository: Repository<FacilityUser>,
     @InjectRepository(Notification)
     private readonly notificationRepository: Repository<Notification>,
     @InjectRepository(SystemSetting)
     private readonly settingRepository: Repository<SystemSetting>,
+    @InjectRepository(AuditLog)
+    private readonly auditLogRepository: Repository<AuditLog>,
     private readonly indigentService: IndigentService,
+    @Optional() private readonly wsGateway?: NotificationsGateway,
   ) {}
 
-  async getPendingIndigentApplications(userId: string) {
+  async getPendingIndigentApplications(userId: string, page = 1, limit = 50) {
     await this.assertOfficerAccess(userId, 'claims');
-    const applications = await this.indigentRepository.find({
+    const [applications, total] = await this.indigentRepository.findAndCount({
       where: { status: IndigentApplicationStatus.PENDING },
       order: { createdAt: 'ASC' },
-      take: 50,
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
     return {
@@ -76,6 +91,9 @@ export class AdminService {
         reason: application.reason,
         createdAt: application.createdAt.toISOString(),
       })),
+      total,
+      page,
+      limit,
       syncedAt: new Date().toISOString(),
     };
   }
@@ -161,6 +179,14 @@ export class AdminService {
           approvedAmount: Number(claim.approvedAmount),
         },
       );
+      // Real-time WebSocket push
+      this.wsGateway?.pushClaimUpdate([recipient.id], {
+        claimId: claim.id,
+        claimNumber: claim.claimNumber,
+        status: claim.status,
+        approvedAmount: Number(claim.approvedAmount),
+        decisionNote: claim.decisionNote,
+      });
     }
 
     return {
@@ -173,9 +199,9 @@ export class AdminService {
     };
   }
 
-  async listClaimsForReview(userId: string) {
+  async listClaimsForReview(userId: string, page = 1, limit = 50) {
     await this.assertOfficerAccess(userId, 'claims');
-    const claims = await this.claimRepository.find({
+    const [claims, total] = await this.claimRepository.findAndCount({
       relations: [
         'beneficiary',
         'beneficiary.userAccount',
@@ -183,7 +209,8 @@ export class AdminService {
         'facility',
       ],
       order: { createdAt: 'DESC' },
-      take: 50,
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
     return {
@@ -202,6 +229,9 @@ export class AdminService {
         householdCode: claim.household?.householdCode ?? null,
         facilityName: claim.facility?.name ?? null,
       })),
+      total,
+      page,
+      limit,
       syncedAt: new Date().toISOString(),
     };
   }
@@ -510,5 +540,276 @@ export class AdminService {
     }
 
     return 'No data';
+  }
+
+  // ── Audit log viewer ────────────────────────────────────────────────────────
+
+  async getAuditLogs(userId: string, entityType?: string, entityId?: string, page = 1, limit = 100) {
+    await this.assertOfficerAccess(userId, 'claims');
+    const qb = this.auditLogRepository
+      .createQueryBuilder('log')
+      .orderBy('log.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (entityType) qb.andWhere('log.entityType = :entityType', { entityType });
+    if (entityId) qb.andWhere('log.entityId = :entityId', { entityId });
+
+    const [logs, total] = await qb.getManyAndCount();
+    return {
+      logs,
+      total,
+      page,
+      limit,
+      hasMore: page * limit < total,
+      syncedAt: new Date().toISOString(),
+    };
+  }
+
+  // ── Facility management ─────────────────────────────────────────────────────
+
+  async listFacilities(userId: string) {
+    await this.assertOfficerAccess(userId, 'settings');
+    const facilities = await this.facilityRepository.find({
+      relations: ['facilityUsers', 'facilityUsers.user'],
+      order: { name: 'ASC' },
+      take: 200,
+    });
+    return {
+      facilities: facilities.map((f) => this.toFacilitySummary(f)),
+      syncedAt: new Date().toISOString(),
+    };
+  }
+
+  async createFacility(userId: string, dto: CreateFacilityDto) {
+    await this.assertOfficerAccess(userId, 'settings');
+    const existing = dto.facilityCode
+      ? await this.facilityRepository.findOne({ where: { facilityCode: dto.facilityCode } })
+      : null;
+    if (existing) throw new BadRequestException(`Facility code ${dto.facilityCode} already exists.`);
+
+    const facility = await this.facilityRepository.save(
+      this.facilityRepository.create({
+        name: dto.name.trim(),
+        facilityCode: dto.facilityCode?.trim() || null,
+        licenseNumber: dto.licenseNumber?.trim() || null,
+        serviceLevel: dto.serviceLevel?.trim() || null,
+        phoneNumber: dto.phoneNumber?.trim() || null,
+        email: dto.email?.trim().toLowerCase() || null,
+        addressLine: dto.addressLine?.trim() || null,
+        isAccredited: true,
+      }),
+    );
+    return this.toFacilitySummary(facility);
+  }
+
+  async updateFacility(userId: string, facilityId: string, dto: UpdateFacilityDto) {
+    await this.assertOfficerAccess(userId, 'settings');
+    const facility = await this.facilityRepository.findOne({ where: { id: facilityId } });
+    if (!facility) throw new NotFoundException('Facility not found.');
+
+    if (dto.name) facility.name = dto.name.trim();
+    if (dto.serviceLevel !== undefined) facility.serviceLevel = dto.serviceLevel?.trim() || null;
+    if (dto.phoneNumber !== undefined) facility.phoneNumber = dto.phoneNumber?.trim() || null;
+    if (dto.email !== undefined) facility.email = dto.email?.trim().toLowerCase() || null;
+    if (dto.addressLine !== undefined) facility.addressLine = dto.addressLine?.trim() || null;
+    if (dto.isAccredited !== undefined) facility.isAccredited = dto.isAccredited;
+
+    await this.facilityRepository.save(facility);
+    return this.toFacilitySummary(facility);
+  }
+
+  async addFacilityStaff(userId: string, facilityId: string, dto: AddFacilityStaffDto) {
+    await this.assertOfficerAccess(userId, 'settings');
+    const facility = await this.facilityRepository.findOne({ where: { id: facilityId } });
+    if (!facility) throw new NotFoundException('Facility not found.');
+
+    const identifier = dto.identifier.trim();
+    const isEmail = identifier.includes('@');
+    let staffUser = await this.userRepository.findOne({
+      where: isEmail ? { email: identifier.toLowerCase() } : { phoneNumber: identifier },
+    });
+
+    if (!staffUser) {
+      staffUser = await this.userRepository.save(
+        this.userRepository.create({
+          firstName: dto.firstName?.trim() || 'Staff',
+          lastName: dto.lastName?.trim() || null,
+          email: isEmail ? identifier.toLowerCase() : null,
+          phoneNumber: isEmail ? null : identifier,
+          role: UserRole.HEALTH_FACILITY_STAFF,
+          isActive: true,
+        }),
+      );
+    } else {
+      staffUser.role = UserRole.HEALTH_FACILITY_STAFF;
+      await this.userRepository.save(staffUser);
+    }
+
+    const existing = await this.facilityUserRepository.findOne({
+      where: { user: { id: staffUser.id }, facility: { id: facilityId } },
+    });
+    if (existing) {
+      existing.isActive = true;
+      await this.facilityUserRepository.save(existing);
+    } else {
+      await this.facilityUserRepository.save(
+        this.facilityUserRepository.create({
+          facility,
+          user: staffUser,
+          role: FacilityUserRole.REGISTRAR,
+          isActive: true,
+        }),
+      );
+    }
+
+    return { message: 'Staff member added to facility.', userId: staffUser.id };
+  }
+
+  async deactivateFacilityStaff(userId: string, facilityId: string, staffUserId: string) {
+    await this.assertOfficerAccess(userId, 'settings');
+    const facilityUser = await this.facilityUserRepository.findOne({
+      where: { user: { id: staffUserId }, facility: { id: facilityId } },
+    });
+    if (!facilityUser) throw new NotFoundException('Staff member not found in this facility.');
+    facilityUser.isActive = false;
+    await this.facilityUserRepository.save(facilityUser);
+    return { message: 'Staff member deactivated.' };
+  }
+
+  private toFacilitySummary(facility: HealthFacility) {
+    return {
+      id: facility.id,
+      name: facility.name,
+      facilityCode: facility.facilityCode ?? null,
+      licenseNumber: facility.licenseNumber ?? null,
+      serviceLevel: facility.serviceLevel ?? null,
+      phoneNumber: facility.phoneNumber ?? null,
+      email: facility.email ?? null,
+      addressLine: facility.addressLine ?? null,
+      isAccredited: facility.isAccredited,
+      staffCount: facility.facilityUsers?.filter((fu) => fu.isActive).length ?? 0,
+      createdAt: facility.createdAt?.toISOString() ?? null,
+    };
+  }
+
+  // ── User management ────────────────────────────────────────────────────────
+
+  async listUsers(userId: string, role?: string, page = 1, limit = 50) {
+    await this.assertOfficerAccess(userId, 'settings');
+    const qb = this.userRepository.createQueryBuilder('user')
+      .orderBy('user.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+    if (role) qb.where('user.role = :role', { role });
+    const [users, total] = await qb.getManyAndCount();
+    return {
+      users: users.map((u) => ({
+        id: u.id,
+        displayName: [u.firstName, u.middleName, u.lastName].filter(Boolean).join(' '),
+        phoneNumber: u.phoneNumber,
+        email: u.email,
+        role: u.role,
+        isActive: u.isActive,
+        lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
+        createdAt: u.createdAt.toISOString(),
+      })),
+      total, page, limit,
+    };
+  }
+
+  async deactivateUser(adminId: string, targetUserId: string) {
+    await this.assertOfficerAccess(adminId, 'settings');
+    const user = await this.userRepository.findOne({ where: { id: targetUserId } });
+    if (!user) throw new NotFoundException('User not found.');
+    user.isActive = false;
+    await this.userRepository.save(user);
+    return { message: 'User deactivated.' };
+  }
+
+  async activateUser(adminId: string, targetUserId: string) {
+    await this.assertOfficerAccess(adminId, 'settings');
+    const user = await this.userRepository.findOne({ where: { id: targetUserId } });
+    if (!user) throw new NotFoundException('User not found.');
+    user.isActive = true;
+    await this.userRepository.save(user);
+    return { message: 'User activated.' };
+  }
+
+  async resetUserPassword(adminId: string, targetUserId: string) {
+    await this.assertOfficerAccess(adminId, 'settings');
+    const user = await this.userRepository.findOne({ where: { id: targetUserId } });
+    if (!user) throw new NotFoundException('User not found.');
+    // Clear password — user must use OTP to set a new one
+    user.passwordHash = null;
+    await this.userRepository.save(user);
+    return { message: 'Password reset. User must sign in via OTP to set a new password.' };
+  }
+
+  // ── Financial dashboard ────────────────────────────────────────────────────
+
+  async getFinancialDashboard(userId: string, query: { from?: string; to?: string }) {
+    await this.assertOfficerAccess(userId, 'claims');
+    const from = query.from ? new Date(query.from) : null;
+    const to = query.to ? new Date(query.to) : null;
+
+    const paymentsQb = this.paymentRepository.createQueryBuilder('payment');
+    const claimsQb = this.claimRepository.createQueryBuilder('claim');
+    if (from) { paymentsQb.andWhere('payment.createdAt >= :from', { from }); claimsQb.andWhere('claim.createdAt >= :from', { from }); }
+    if (to) { paymentsQb.andWhere('payment.createdAt <= :to', { to }); claimsQb.andWhere('claim.createdAt <= :to', { to }); }
+
+    const [payments, claims, households] = await Promise.all([
+      paymentsQb.getMany(),
+      claimsQb.getMany(),
+      this.householdRepository.count(),
+    ]);
+
+    const totalRevenue = payments.filter(p => p.status === 'SUCCESS').reduce((s, p) => s + Number(p.amount), 0);
+    const totalClaims = claims.reduce((s, c) => s + Number(c.approvedAmount ?? 0), 0);
+    const netPosition = totalRevenue - totalClaims;
+
+    return {
+      totalRevenue,
+      totalClaimsPaid: totalClaims,
+      netPosition,
+      totalHouseholds: households,
+      claimApprovalRate: claims.length > 0
+        ? Math.round((claims.filter(c => c.status === 'APPROVED' || c.status === 'PAID').length / claims.length) * 100)
+        : 0,
+      averageClaimAmount: claims.length > 0 ? totalClaims / claims.length : 0,
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  // ── Facility performance ───────────────────────────────────────────────────
+
+  async getFacilityPerformance(userId: string, query: { from?: string; to?: string }) {
+    await this.assertOfficerAccess(userId, 'claims');
+    const facilities = await this.facilityRepository.find({ relations: ['facilityUsers'] });
+    const from = query.from ? new Date(query.from) : null;
+    const to = query.to ? new Date(query.to) : null;
+
+    const results = await Promise.all(facilities.map(async (facility) => {
+      const qb = this.claimRepository.createQueryBuilder('claim')
+        .where('claim.facilityId = :fid', { fid: facility.id });
+      if (from) qb.andWhere('claim.createdAt >= :from', { from });
+      if (to) qb.andWhere('claim.createdAt <= :to', { to });
+      const claims = await qb.getMany();
+      const approved = claims.filter(c => c.status === 'APPROVED' || c.status === 'PAID');
+      return {
+        facilityId: facility.id,
+        facilityName: facility.name,
+        facilityCode: facility.facilityCode,
+        serviceLevel: facility.serviceLevel,
+        totalClaims: claims.length,
+        approvedClaims: approved.length,
+        approvalRate: claims.length > 0 ? Math.round((approved.length / claims.length) * 100) : 0,
+        totalClaimedAmount: claims.reduce((s, c) => s + Number(c.claimedAmount), 0),
+        totalApprovedAmount: approved.reduce((s, c) => s + Number(c.approvedAmount ?? 0), 0),
+        staffCount: facility.facilityUsers?.filter(fu => fu.isActive).length ?? 0,
+      };
+    }));
+
+    return { facilities: results.sort((a, b) => b.totalClaims - a.totalClaims), generatedAt: new Date().toISOString() };
   }
 }

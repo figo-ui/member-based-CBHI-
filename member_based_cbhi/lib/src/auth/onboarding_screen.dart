@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../i18n/app_localizations.dart';
+import '../cbhi_localizations.dart';
 import '../theme/app_theme.dart';
 
 const _kOnboardingDoneKey = 'cbhi_onboarding_done';
@@ -69,7 +69,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     final isLast = _currentPage == _pages.length - 1;
 
     return Scaffold(
@@ -161,7 +161,7 @@ class _OnboardingPage {
   final Color color;
 
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(

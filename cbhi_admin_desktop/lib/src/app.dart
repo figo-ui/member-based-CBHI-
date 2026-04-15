@@ -4,6 +4,7 @@ import 'data/admin_repository.dart';
 import 'i18n/app_localizations.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_shell.dart';
+import 'screens/totp_setup_screen.dart';
 import 'theme/admin_theme.dart';
 
 class CbhiAdminApp extends StatefulWidget {
@@ -18,6 +19,8 @@ class CbhiAdminApp extends StatefulWidget {
 class _CbhiAdminAppState extends State<CbhiAdminApp> {
   bool _isLoading = true;
   bool _isAuthenticated = false;
+  // FIX: Track whether TOTP setup is needed after first login
+  bool _needsTotpSetup = false;
   Locale _locale = AppLocalizations.resolveAppLocale(
     WidgetsBinding.instance.platformDispatcher.locale,
   );
@@ -33,6 +36,16 @@ class _CbhiAdminAppState extends State<CbhiAdminApp> {
     setState(() {
       _isAuthenticated = widget.repository.isAuthenticated;
       _isLoading = false;
+    });
+  }
+
+  void _onLogin() {
+    // After login, check if TOTP needs to be set up
+    // totpEnabled is returned in the login response via repository
+    final totpEnabled = widget.repository.totpEnabled;
+    setState(() {
+      _isAuthenticated = true;
+      _needsTotpSetup = !totpEnabled;
     });
   }
 
@@ -53,16 +66,25 @@ class _CbhiAdminAppState extends State<CbhiAdminApp> {
       theme: AdminTheme.theme,
       home: _isLoading
           ? const _SplashScreen()
-          : _isAuthenticated
-          ? MainShell(
+          : !_isAuthenticated
+          ? LoginScreen(
               repository: widget.repository,
-              onLogout: () => setState(() => _isAuthenticated = false),
+              onLogin: _onLogin,
               locale: _locale,
               onLocaleChanged: (locale) => setState(() => _locale = locale),
             )
-          : LoginScreen(
+          : _needsTotpSetup
+          // Show TOTP setup screen for admins who haven't enabled 2FA yet
+          ? TotpSetupScreen(
               repository: widget.repository,
-              onLogin: () => setState(() => _isAuthenticated = true),
+              onComplete: () => setState(() => _needsTotpSetup = false),
+            )
+          : MainShell(
+              repository: widget.repository,
+              onLogout: () => setState(() {
+                _isAuthenticated = false;
+                _needsTotpSetup = false;
+              }),
               locale: _locale,
               onLocaleChanged: (locale) => setState(() => _locale = locale),
             ),

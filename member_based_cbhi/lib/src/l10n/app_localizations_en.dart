@@ -84,12 +84,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get credentialLogin => 'Credential Login';
 
   @override
-  String get forHouseholdHeads =>
-      'For household heads, facility staff, and administrators.';
+  String get forHouseholdHeads => 'For household heads, facility staff, and administrators.';
 
   @override
-  String get sendVerificationCode =>
-      'We\'ll send a verification code to your Ethiopian mobile number.';
+  String get sendVerificationCode => 'We\'ll send a verification code to your Ethiopian mobile number.';
 
   @override
   String get developmentOtp => 'Development OTP';
@@ -98,8 +96,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notShownInProduction => 'not shown in production';
 
   @override
-  String get welcomeSubtitle =>
-      'Member-centered community-based health insurance for Ethiopian households, health facilities, and CBHI officers.';
+  String get welcomeSubtitle => 'Member-centered community-based health insurance for Ethiopian households, health facilities, and CBHI officers.';
 
   @override
   String get multilingual => 'Multilingual';
@@ -114,15 +111,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offlineReady => 'Offline Ready';
 
   @override
-  String get householdHeadsUseSignIn =>
-      'Household heads, facility staff, and administrators use Sign In. Adult beneficiaries use family member login.';
+  String get householdHeadsUseSignIn => 'Household heads, facility staff, and administrators use Sign In. Adult beneficiaries use family member login.';
 
   @override
   String get privacyConsent => 'Privacy & Data Consent';
 
   @override
-  String get privacyConsentSubtitle =>
-      'Please read and accept before using Maya City CBHI';
+  String get privacyConsentSubtitle => 'Please read and accept before using Maya City CBHI';
 
   @override
   String get scrollToRead => 'Scroll down to read all terms';
@@ -131,8 +126,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get iAcceptContinue => 'I Accept — Continue to App';
 
   @override
-  String get byAccepting =>
-      'By accepting, you consent to the collection and use of your data as described above.';
+  String get byAccepting => 'By accepting, you consent to the collection and use of your data as described above.';
 
   @override
   String get dataWeCollect => '1. Data We Collect';
@@ -159,29 +153,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingTitle1 => 'Welcome to Maya City CBHI';
 
   @override
-  String get onboardingBody1 =>
-      'Community-Based Health Insurance protects your family from unexpected medical costs. Register once and access healthcare services across accredited facilities.';
+  String get onboardingBody1 => 'Community-Based Health Insurance protects your family from unexpected medical costs. Register once and access healthcare services across accredited facilities.';
 
   @override
   String get onboardingTitle2 => 'Easy Registration';
 
   @override
-  String get onboardingBody2 =>
-      'Register your household in 4 simple steps. Capture your ID, add family members, and choose your membership type — even without internet.';
+  String get onboardingBody2 => 'Register your household in 4 simple steps. Capture your ID, add family members, and choose your membership type — even without internet.';
 
   @override
   String get onboardingTitle3 => 'Your Digital CBHI Card';
 
   @override
-  String get onboardingBody3 =>
-      'Your digital membership card is always in your pocket. Show the QR code at any accredited health facility to verify your coverage instantly.';
+  String get onboardingBody3 => 'Your digital membership card is always in your pocket. Show the QR code at any accredited health facility to verify your coverage instantly.';
 
   @override
   String get onboardingTitle4 => 'Works Offline';
 
   @override
-  String get onboardingBody4 =>
-      'No internet? No problem. Register and manage your household offline. Your data syncs automatically when connectivity is restored.';
+  String get onboardingBody4 => 'No internet? No problem. Register and manage your household offline. Your data syncs automatically when connectivity is restored.';
 
   @override
   String get getStarted => 'Get Started';
@@ -208,8 +198,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personalInformation => 'Personal information';
 
   @override
-  String get captureHouseholdDetails =>
-      'Capture household head details and supporting documents before identity verification.';
+  String get captureHouseholdDetails => 'Capture household head details and supporting documents before identity verification.';
 
   @override
   String get firstName => 'First name';
@@ -296,8 +285,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirmDetails => 'Confirm your details';
 
   @override
-  String get reviewBeforeContinuing =>
-      'Review your information before continuing to identity verification.';
+  String get reviewBeforeContinuing => 'Review your information before continuing to identity verification.';
 
   @override
   String get editInformation => 'Edit information';
@@ -309,8 +297,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get identityVerification => 'Identity verification';
 
   @override
-  String get collectIdForScreening =>
-      'Collect the member identification number and employment status needed for CBHI eligibility screening.';
+  String get collectIdForScreening => 'Collect the member identification number and employment status needed for CBHI eligibility screening.';
 
   @override
   String get identityDocumentType => 'Identity document type';
@@ -334,8 +321,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get identityDocument => 'Identity document';
 
   @override
-  String get nationalIdOrPassportPhoto =>
-      'National ID, local ID, or passport photo';
+  String get nationalIdOrPassportPhoto => 'National ID, local ID, or passport photo';
 
   @override
   String get employmentStatus => 'Employment status';
@@ -383,22 +369,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get membershipSelection => 'Membership selection';
 
   @override
-  String get chooseMembershipPathway =>
-      'Choose the household membership pathway. Paying members can enter a premium estimate while indigent members use employment screening.';
+  String get chooseMembershipPathway => 'Choose the household membership pathway. Paying members can enter a premium estimate while indigent members use employment screening.';
 
   @override
   String get indigentMembership => 'Indigent membership';
 
   @override
-  String get indigentMembershipSubtitle =>
-      'Zero-touch eligibility screening with subsidized premium if approved.';
+  String get indigentMembershipSubtitle => 'Zero-touch eligibility screening with subsidized premium if approved.';
 
   @override
   String get payingMembership => 'Paying membership';
 
   @override
-  String get payingMembershipSubtitle =>
-      'Standard membership with annual household premium payment.';
+  String get payingMembershipSubtitle => 'Standard membership with annual household premium payment.';
 
   @override
   String get estimatedPremiumAmount => 'Estimated premium amount (ETB)';
@@ -410,15 +393,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get indigentApplication => 'Indigent Application';
 
   @override
-  String get indigentApplicationSubtitle =>
-      'Qualifying households receive subsidized or free CBHI coverage. Upload supporting documents from your kebele. Documents are verified automatically by AI.';
+  String get indigentApplicationSubtitle => 'Qualifying households receive subsidized or free CBHI coverage. Upload supporting documents from your kebele. Documents are verified automatically by AI.';
 
   @override
   String get monthlyIncome => 'Monthly Income';
 
   @override
-  String get monthlyIncomeSubtitle =>
-      'Enter your household monthly income in ETB.';
+  String get monthlyIncomeSubtitle => 'Enter your household monthly income in ETB.';
 
   @override
   String get monthlyIncomeEtb => 'Monthly income (ETB)';
@@ -430,8 +411,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ownsProperty => 'Owns property (land, house, or business)';
 
   @override
-  String get hasMemberWithDisability =>
-      'Has a household member with disability';
+  String get hasMemberWithDisability => 'Has a household member with disability';
 
   @override
   String get supportingDocuments => 'Supporting Documents';
@@ -458,8 +438,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get validatingDocuments => 'Validating documents...';
 
   @override
-  String get expiredDocumentsCannotSubmit =>
-      'Expired documents — cannot submit';
+  String get expiredDocumentsCannotSubmit => 'Expired documents — cannot submit';
 
   @override
   String get documentExpired => 'EXPIRED';
@@ -471,8 +450,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get issueDetected => 'Issue detected';
 
   @override
-  String get documentExpiredMessage =>
-      'This document has expired. Please obtain a new certificate from your kebele.';
+  String get documentExpiredMessage => 'This document has expired. Please obtain a new certificate from your kebele.';
 
   @override
   String get incomeCertificate => 'Income Certificate';
@@ -511,12 +489,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registrationCompleted => 'Registration completed';
 
   @override
-  String get offlineQueueMessage =>
-      'Your household record is safely queued offline. As soon as the app syncs online, your member account will activate automatically.';
+  String get offlineQueueMessage => 'Your household record is safely queued offline. As soon as the app syncs online, your member account will activate automatically.';
 
   @override
-  String get registrationSuccessMessage =>
-      'Your Maya City household account is active and your digital CBHI card is now available from the home screen.';
+  String get registrationSuccessMessage => 'Your Maya City household account is active and your digital CBHI card is now available from the home screen.';
 
   @override
   String get syncNow => 'Sync now';
@@ -576,8 +552,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personalEligibility => 'Personal Eligibility';
 
   @override
-  String get coverageEligibilityDetails =>
-      'Coverage eligibility details will appear after sync.';
+  String get coverageEligibilityDetails => 'Coverage eligibility details will appear after sync.';
 
   @override
   String get renewCoverage => 'Renew Coverage';
@@ -592,8 +567,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noPaymentsRecorded => 'No payments recorded';
 
   @override
-  String get renewalTransactionsHere =>
-      'Renewal and contribution transactions will appear here.';
+  String get renewalTransactionsHere => 'Renewal and contribution transactions will appear here.';
 
   @override
   String get recentNotifications => 'Recent Notifications';
@@ -602,8 +576,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noNotificationsYet => 'No notifications yet';
 
   @override
-  String get coverageAlertsHere =>
-      'Coverage alerts and benefit updates will appear here.';
+  String get coverageAlertsHere => 'Coverage alerts and benefit updates will appear here.';
 
   @override
   String get viewAllNotifications => 'View all notifications';
@@ -627,8 +600,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirmFreeRenewal => 'Confirm Free Renewal';
 
   @override
-  String get freeRenewalMessage =>
-      'This household qualifies for subsidized coverage. Tap confirm to extend your coverage for another year at no cost.';
+  String get freeRenewalMessage => 'This household qualifies for subsidized coverage. Tap confirm to extend your coverage for another year at no cost.';
 
   @override
   String get confirmFreeRenewalButton => 'Confirm Free Renewal';
@@ -674,8 +646,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get completePaymentOnChapa =>
-      'Complete your payment on the Chapa checkout page, then tap \"Verify Payment\" below.';
+  String get completePaymentOnChapa => 'Complete your payment on the Chapa checkout page, then tap \"Verify Payment\" below.';
 
   @override
   String get verifyPayment => 'Verify Payment';
@@ -684,8 +655,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentSuccessful => 'Payment successful! Coverage activated.';
 
   @override
-  String get paymentFailed =>
-      'Payment could not be completed. Please try again.';
+  String get paymentFailed => 'Payment could not be completed. Please try again.';
 
   @override
   String get myFamily => 'My family';
@@ -694,12 +664,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get householdMembers => 'Household members';
 
   @override
-  String get viewHouseholdMembers =>
-      'View your household members and their current coverage details.';
+  String get viewHouseholdMembers => 'View your household members and their current coverage details.';
 
   @override
-  String get manageHouseholdBeneficiaries =>
-      'Manage household beneficiaries, capture photos, and prepare family-member OTP access from one place.';
+  String get manageHouseholdBeneficiaries => 'Manage household beneficiaries, capture photos, and prepare family-member OTP access from one place.';
 
   @override
   String get addBeneficiary => 'Add beneficiary';
@@ -708,8 +676,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noBeneficiariesAvailable => 'No beneficiaries available';
 
   @override
-  String get addFamilyMembersOnceActive =>
-      'Add family members once the household account is active.';
+  String get addFamilyMembersOnceActive => 'Add family members once the household account is active.';
 
   @override
   String get edit => 'Edit';
@@ -741,15 +708,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get beneficiaryDetails => 'Beneficiary details';
 
   @override
-  String get captureBeneficiaryProfile =>
-      'Capture the beneficiary profile, photo, and optional OTP access phone number.';
+  String get captureBeneficiaryProfile => 'Capture the beneficiary profile, photo, and optional OTP access phone number.';
 
   @override
   String get beneficiaryPhoto => 'Beneficiary photo';
 
   @override
-  String get useCamera =>
-      'Use the camera or gallery and confirm the preview before saving.';
+  String get useCamera => 'Use the camera or gallery and confirm the preview before saving.';
 
   @override
   String get addOrChangePhoto => 'Add or change photo';
@@ -758,8 +723,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullName => 'Full name';
 
   @override
-  String get enterFirstAndLastName =>
-      'Enter at least first name and last name.';
+  String get enterFirstAndLastName => 'Enter at least first name and last name.';
 
   @override
   String get relationshipToHouseholdHead => 'Relationship to household head';
@@ -780,19 +744,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get independentAccessSection => 'Independent access';
 
   @override
-  String get independentAccessDescription =>
-      'Non-child beneficiaries must have a phone number. Adult beneficiaries can then use OTP or a password for independent access.';
+  String get independentAccessDescription => 'Non-child beneficiaries must have a phone number. Adult beneficiaries can then use OTP or a password for independent access.';
 
   @override
-  String get phoneRequired =>
-      'Phone number is required for non-child beneficiaries.';
+  String get phoneRequired => 'Phone number is required for non-child beneficiaries.';
 
   @override
   String get identityDetails => 'Identity details';
 
   @override
-  String get nationalIdOrLocalIdOptional =>
-      'National ID or local ID is optional for beneficiaries.';
+  String get nationalIdOrLocalIdOptional => 'National ID or local ID is optional for beneficiaries.';
 
   @override
   String get idTypeOptional => 'ID type (optional)';
@@ -825,26 +786,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareCardInfo => 'Share Card Info';
 
   @override
-  String get cardDetailsCopied =>
-      'Card details copied — share with facility staff if needed.';
+  String get cardDetailsCopied => 'Card details copied — share with facility staff if needed.';
 
   @override
   String get myClaims => 'My Claims';
 
   @override
-  String get trackClaimsSubtitle =>
-      'Track all health service claims submitted on your behalf by accredited facilities.';
+  String get trackClaimsSubtitle => 'Track all health service claims submitted on your behalf by accredited facilities.';
 
   @override
-  String get claimsSubmittedByFacility =>
-      'Claims are submitted by health facility staff when you receive services. Show your digital card at any accredited facility.';
+  String get claimsSubmittedByFacility => 'Claims are submitted by health facility staff when you receive services. Show your digital card at any accredited facility.';
 
   @override
   String get noClaimsYet => 'No claims yet';
 
   @override
-  String get claimsWillAppearHere =>
-      'Claims will appear here after you receive services at an accredited health facility.';
+  String get claimsWillAppearHere => 'Claims will appear here after you receive services at an accredited health facility.';
 
   @override
   String get serviceDate => 'Service Date';
@@ -928,78 +885,67 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ehiaHelpline => 'EHIA Helpline';
 
   @override
-  String get ehiaContact =>
-      'info@ehia.gov.et  |  Ethiopian Health Insurance Agency';
+  String get ehiaContact => 'info@ehia.gov.et  |  Ethiopian Health Insurance Agency';
 
   @override
   String get faqQ1 => 'How do I register my household?';
 
   @override
-  String get faqA1 =>
-      'Tap \"Start New Registration\" on the welcome screen. Complete the 4 steps: personal info, identity verification, and membership selection. You can register offline — data syncs when you connect.';
+  String get faqA1 => 'Tap \"Start New Registration\" on the welcome screen. Complete the 4 steps: personal info, identity verification, and membership selection. You can register offline — data syncs when you connect.';
 
   @override
   String get faqQ2 => 'What is a FAN Number?';
 
   @override
-  String get faqA2 =>
-      'FAN stands for Fayda Authentication Number — your 12-digit Ethiopian National ID number. You can find it on your Fayda ID card.';
+  String get faqA2 => 'FAN stands for Fayda Authentication Number — your 12-digit Ethiopian National ID number. You can find it on your Fayda ID card.';
 
   @override
   String get faqQ3 => 'How do I pay my premium?';
 
   @override
-  String get faqA3 =>
-      'Tap \"Renew Coverage\" on the Home screen. You can pay via Telebirr, CBE Birr, Amole, HelloCash, or bank transfer through the Chapa payment page.';
+  String get faqA3 => 'Tap \"Renew Coverage\" on the Home screen. You can pay via Telebirr, CBE Birr, Amole, HelloCash, or bank transfer through the Chapa payment page.';
 
   @override
   String get faqQ4 => 'How do I add family members?';
 
   @override
-  String get faqA4 =>
-      'Go to the Family tab and tap \"Add beneficiary\". You need to capture a photo and provide basic details. Non-child members need a phone number for independent access.';
+  String get faqA4 => 'Go to the Family tab and tap \"Add beneficiary\". You need to capture a photo and provide basic details. Non-child members need a phone number for independent access.';
 
   @override
   String get faqQ5 => 'How do I use my digital CBHI card?';
 
   @override
-  String get faqA5 =>
-      'Go to the Card tab to view your digital membership card with QR code. Show this to health facility staff to verify your eligibility for services.';
+  String get faqA5 => 'Go to the Card tab to view your digital membership card with QR code. Show this to health facility staff to verify your eligibility for services.';
 
   @override
   String get faqQ6 => 'What if I have no internet connection?';
 
   @override
-  String get faqA6 =>
-      'The app works offline. Registration and changes are saved locally and sync automatically when you reconnect. Look for the \"Offline queue active\" indicator on the Home screen.';
+  String get faqA6 => 'The app works offline. Registration and changes are saved locally and sync automatically when you reconnect. Look for the \"Offline queue active\" indicator on the Home screen.';
 
   @override
   String get faqQ7 => 'How do I track my claims?';
 
   @override
-  String get faqA7 =>
-      'Go to the Claims tab to see all claims submitted by health facilities on your behalf. You will see the status (Submitted, Under Review, Approved, Paid, or Rejected).';
+  String get faqA7 => 'Go to the Claims tab to see all claims submitted by health facilities on your behalf. You will see the status (Submitted, Under Review, Approved, Paid, or Rejected).';
 
   @override
   String get faqQ8 => 'How do I find accredited health facilities?';
 
   @override
-  String get faqA8 =>
-      'Go to the Facilities tab and search by name. All listed facilities are accredited by EHIA and accept your CBHI membership card.';
+  String get faqA8 => 'Go to the Facilities tab and search by name. All listed facilities are accredited by EHIA and accept your CBHI membership card.';
 
   @override
   String get faqQ9 => 'Who do I contact for help?';
 
   @override
-  String get faqA9 =>
-      'Contact the Ethiopian Health Insurance Agency (EHIA) at info@ehia.gov.et or visit your local CBHI office. You can also call the EHIA helpline.';
+  String get faqA9 => 'Contact the Ethiopian Health Insurance Agency (EHIA) at info@ehia.gov.et or visit your local CBHI office. You can also call the EHIA helpline.';
 
   @override
   String get required => 'Required';
 
   @override
-  String get invalidPhone =>
-      'Enter a valid Ethiopian mobile number (+2519XXXXXXXX)';
+  String get invalidPhone => 'Enter a valid Ethiopian mobile number (+2519XXXXXXXX)';
 
   @override
   String get invalidEmail => 'Enter a valid email address';
@@ -1014,12 +960,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unknownError => 'An unexpected error occurred. Please try again.';
 
   @override
-  String get networkUnavailable =>
-      'No internet connection. Changes saved offline.';
+  String get networkUnavailable => 'No internet connection. Changes saved offline.';
 
   @override
-  String get sessionExpired =>
-      'Your session has expired. Please sign in again.';
+  String get sessionExpired => 'Your session has expired. Please sign in again.';
 
   @override
   String get loading => 'Loading your health coverage...';
@@ -1073,19 +1017,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminPortalTitle => 'Admin Portal';
 
   @override
-  String get adminPortalSubtitle =>
-      'For CBHI Officers and System Administrators.';
+  String get adminPortalSubtitle => 'For CBHI Officers and System Administrators.';
 
   @override
   String get facilityPortalTitle => 'Facility Staff Portal';
 
   @override
-  String get facilityPortalSubtitle =>
-      'Health Facility Staff use the dedicated desktop application.';
+  String get facilityPortalSubtitle => 'Health Facility Staff use the dedicated desktop application.';
 
   @override
-  String get useDesktopApp =>
-      'Please use the dedicated desktop application for your role.';
+  String get useDesktopApp => 'Please use the dedicated desktop application for your role.';
 
   @override
   String get installAdminApp => 'Install: cbhi_admin_desktop';

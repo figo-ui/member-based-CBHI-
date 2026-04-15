@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomBytes } from 'crypto';
@@ -28,6 +29,7 @@ import {
   VerifyEligibilityQueryDto,
 } from './facility.dto';
 import { Notification } from '../notifications/notification.entity';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { User } from '../users/user.entity';
 
 @Injectable()
@@ -47,6 +49,7 @@ export class FacilityService {
     private readonly documentRepository: Repository<Document>,
     @InjectRepository(Notification)
     private readonly notificationRepository: Repository<Notification>,
+    @Optional() private readonly wsGateway?: NotificationsGateway,
   ) {}
 
   async verifyBeneficiaryEligibility(
@@ -342,6 +345,13 @@ export class FacilityService {
           isRead: false,
         }),
       );
+      // Real-time WebSocket push
+      this.wsGateway?.pushClaimUpdate([recipient.id], {
+        claimId: claim.id,
+        claimNumber: claim.claimNumber,
+        status: claim.status,
+        facilityName: claim.facility?.name ?? null,
+      });
     }
   }
 

@@ -6,23 +6,26 @@ class PersonalInfoModel {
     required this.firstName,
     this.middleName,
     required this.lastName,
+    required this.age,
     this.phone,
     this.email,
     required this.gender,
     required this.dateOfBirth,
     this.birthCertificateRef,
-    this.birthCertificatePath,     // New
-    this.idDocumentPath,           // New
+    this.birthCertificatePath,
+    this.idDocumentPath,
     required this.region,
     required this.zone,
     this.woreda,
     this.kebele,
     required this.householdSize,
+    this.preferredLanguage = 'en',
   });
 
   final String firstName;
   final String? middleName;
   final String lastName;
+  final int age;
   final String? phone;
   final String? email;
   final String gender;
@@ -37,6 +40,9 @@ class PersonalInfoModel {
   final String? kebele;
   final int householdSize;
 
+  /// BCP-47 language code: en, am, om
+  final String preferredLanguage;
+
   String get fullName => [firstName, middleName, lastName]
       .where((e) => e != null && e.trim().isNotEmpty)
       .join(' ');
@@ -45,6 +51,7 @@ class PersonalInfoModel {
         'firstName': firstName,
         'middleName': middleName,
         'lastName': lastName,
+        'age': age,
         'phone': phone,
         'email': email,
         'gender': gender,
@@ -59,6 +66,7 @@ class PersonalInfoModel {
           'kebele': kebele,
         },
         'householdSize': householdSize,
+        'preferredLanguage': preferredLanguage,
       };
 
   factory PersonalInfoModel.fromJson(Map<String, dynamic> json) {
@@ -67,6 +75,7 @@ class PersonalInfoModel {
       firstName: json['firstName']?.toString() ?? '',
       middleName: json['middleName']?.toString(),
       lastName: json['lastName']?.toString() ?? '',
+      age: (json['age'] as num?)?.toInt() ?? 0,
       phone: json['phone']?.toString(),
       email: json['email']?.toString(),
       gender: json['gender']?.toString() ?? 'OTHER',
@@ -79,6 +88,7 @@ class PersonalInfoModel {
       woreda: address['woreda']?.toString(),
       kebele: address['kebele']?.toString(),
       householdSize: (json['householdSize'] as num?)?.toInt() ?? 1,
+      preferredLanguage: json['preferredLanguage']?.toString() ?? 'en',
     );
   }
 }

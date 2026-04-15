@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:app_links/app_links.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../cbhi_data.dart';
-import '../i18n/app_localizations.dart';
+import '../cbhi_localizations.dart';
 import '../theme/app_theme.dart';
 
 /// Payment screen for CBHI premium renewal via Chapa
@@ -30,6 +32,31 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _paymentInitiated = false;
   bool _verifying = false;
   Map<String, dynamic>? _verifyResult;
+  // FIX QW-5: Only show demo banner when backend confirms test mode
+  bool _isTestMode = false;
+
+  // FIX ME-5: Deep link listener for automatic payment verification
+  late final AppLinks _appLinks;
+
+  @override
+  void initState() {
+    super.initState();
+    _appLinks = AppLinks();
+    _appLinks.uriLinkStream.listen((uri) {
+      // Chapa redirects to cbhi://payment-callback?tx_ref=CBHI-xxx
+      if (uri.path.contains('payment-callback') || uri.queryParameters.containsKey('tx_ref')) {
+        final txRef = uri.queryParameters['tx_ref'];
+        if (txRef != null && txRef == _txRef && mounted) {
+          _verifyPayment();
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
   double get _premiumAmount => widget.snapshot.premiumAmount;
 
@@ -51,6 +78,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
         _checkoutUrl = result['checkoutUrl']?.toString();
         _paymentInitiated = true;
         _isLoading = false;
+        // FIX QW-5: Read isTestMode from API response
+        _isTestMode = result['isTestMode'] == true;
       });
     } catch (e) {
       setState(() {
@@ -61,7 +90,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _verifyPayment() async {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     if (_txRef == null) return;
     setState(() => _verifying = true);
 
@@ -91,7 +120,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(strings.t('payPremium'))),
       body: SingleChildScrollView(
@@ -99,8 +128,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Demo mode banner
-            Container(
+            // Demo mode banner — only shown when backend confirms test/sandbox mode
+            if (_isTestMode)
+              Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -302,15 +332,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     const SizedBox(height: 12),
                     Text(strings.t('completePaymentOnChapa')),
                     const SizedBox(height: 16),
-                    // Show checkout URL as a copyable link
-                    SelectableText(
-                      _checkoutUrl!,
-                      style: const TextStyle(
-                        color: AppTheme.primary,
-                        decoration: TextDecoration.underline,
-                        fontSize: 12,
+                    // Open Chapa in external browser
+                    FilledButton.icon(
+                      onPressed: () async {
+                        final uri = Uri.tryParse(_checkoutUrl!);
+                        if (uri != null) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        }
+                      },
+                      icon: const Icon(Icons.open_in_new),
+                      label: Text(strings.t('openChapaCheckout')),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
                       ),
-                    ),
+                    ).animate().fadeIn(duration: 300.ms),
                   ],
                 ),
               ).animate().fadeIn(duration: 300.ms),

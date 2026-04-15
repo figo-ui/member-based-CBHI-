@@ -1,47 +1,149 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../auth/account_setup_screen.dart';
+import '../auth/auth_cubit.dart';
+import '../auth/auth_state.dart';
 import 'registration_cubit.dart';
 import 'personal_info/personal_info_form.dart';
 import 'confirmation/personal_info_confirmation.dart';
 import 'identity/identity_verification_screen.dart';
 import 'membership/membership_selection_screen.dart';
+import 'indigent_proof_screen.dart';
 
-class RegistrationFlow extends StatelessWidget {
+class RegistrationFlow extends StatefulWidget {
   const RegistrationFlow({super.key});
 
   @override
+  State<RegistrationFlow> createState() => _RegistrationFlowState();
+}
+
+class _RegistrationFlowState extends State<RegistrationFlow> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<RegistrationCubit>().startRegistration();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => RegistrationCubit(context.read<CBHIData>()),
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<RegistrationCubit, RegistrationState>(
+          listenWhen: (prev, curr) =>
+              curr.currentStep == RegistrationStep.completed &&
+              prev.currentStep != RegistrationStep.completed,
+          listener: (context, _) {
+            context.read<AuthCubit>().adoptRegisteredSession();
+          },
+        ),
+      ],
       child: BlocBuilder<RegistrationCubit, RegistrationState>(
         builder: (context, state) {
+          final regCubit = context.read<RegistrationCubit>();
+          final authCubit = context.read<AuthCubit>();
+          final repo = authCubit.repository;
+
           switch (state.currentStep) {
             case RegistrationStep.personalInfo:
-              return const PersonalInfoForm();
+              return PersonalInfoForm(
+                repository: repo,
+                onNext: regCubit.submitPersonalInfo,
+              );
             case RegistrationStep.confirmation:
               return const PersonalInfoConfirmation();
             case RegistrationStep.identity:
               return const IdentityVerificationScreen();
             case RegistrationStep.membership:
               return const MembershipSelectionScreen();
-            case RegistrationStep.completed:
-              return const Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check_circle, size: 80, color: Colors.green),
-                      SizedBox(height: 16),
-                      Text('Registration Completed!', style: TextStyle(fontSize: 24)),
-                      Text('Your digital card is now available.'),
-                    ],
-                  ),
-                ),
+            case RegistrationStep.indigentProof:
+              return const IndigentProofScreen();
+
+            // ── NEW: account setup after registration ──────────────────────
+            case RegistrationStep.setupAccount:
+              final phone = state.registeredPhone ?? '';
+              final challenge = state.setupChallenge;
+              if (challenge == null || phone.isEmpty) {
+                // Fallback: no challenge available — go straight to completed
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  regCubit.reset();
+                  authCubit.adoptRegisteredSession();
+                });
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+              return AccountSetupScreen(
+                authCubit: authCubit,
+                repository: repo,
+                phoneNumber: phone,
+                challenge: challenge,
               );
+
+            case RegistrationStep.completed:
+              return const _RegistrationCompletedView();
             default:
-              return const Scaffold(body: Center(child: Text('Welcome to CBHI Registration')));
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
           }
         },
+      ),
+    );
+  }
+}
+
+class _RegistrationCompletedView extends StatelessWidget {
+  const _RegistrationCompletedView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: BlocBuilder<AuthCubit, AuthState>(
+            builder: (context, auth) {
+              final authenticated = auth.status == AuthStatus.authenticated;
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    size: 80,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    authenticated ? 'Registration complete' : 'Registration saved',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    authenticated
+                        ? 'You are signed in. Continue to your dashboard below.'
+                        : 'When you are online, open the app again and sign in with your phone number to finish syncing your account.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 28),
+                  if (!authenticated)
+                    FilledButton(
+                      onPressed: () {
+                        context.read<RegistrationCubit>().reset();
+                        context.read<AuthCubit>().leaveGuest();
+                      },
+                      child: const Text('Back to sign in'),
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }

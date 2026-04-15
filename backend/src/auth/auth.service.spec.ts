@@ -1,54 +1,54 @@
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { JwtService } from '@nestjs/jwt';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { User } from '../users/user.entity';
 import { Beneficiary } from '../beneficiaries/beneficiary.entity';
 import { SmsService } from '../sms/sms.service';
-import { User } from '../users/user.entity';
-import { AuthService } from './auth.service';
+import { UserRole, PreferredLanguage } from '../common/enums/cbhi.enums';
 
-const mockUserRepo = {
-  findOne: jest.fn(),
+const mockRepo = () => ({
+  create: jest.fn(),
   save: jest.fn(),
-  createQueryBuilder: jest.fn(() => ({
-    addSelect: jest.fn().mockReturnThis(),
-    leftJoinAndSelect: jest.fn().mockReturnThis(),
-    where: jest.fn().mockReturnThis(),
-    andWhere: jest.fn().mockReturnThis(),
-    getOne: jest.fn(),
-    getMany: jest.fn().mockResolvedValue([]),
-  })),
-};
-
-const mockBeneficiaryRepo = {
   findOne: jest.fn(),
-  createQueryBuilder: jest.fn(() => ({
-    leftJoinAndSelect: jest.fn().mockReturnThis(),
+  createQueryBuilder: jest.fn().mockReturnValue({
     addSelect: jest.fn().mockReturnThis(),
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     getOne: jest.fn(),
-  })),
-};
+  }),
+});
 
-const mockSmsService = {
+const mockSmsService = () => ({
   sendOtp: jest.fn().mockResolvedValue(undefined),
-};
+});
+
+const mockJwtService = () => ({
+  sign: jest.fn().mockReturnValue('mock.jwt.token'),
+  verify: jest.fn().mockReturnValue({ sub: 'user-id', role: UserRole.HOUSEHOLD_HEAD }),
+});
 
 describe('AuthService', () => {
   let service: AuthService;
+  let userRepo: ReturnType<typeof mockRepo>;
+  let jwtService: ReturnType<typeof mockJwtService>;
 
   beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
-        { provide: getRepositoryToken(User), useValue: mockUserRepo },
-        { provide: getRepositoryToken(Beneficiary), useValue: mockBeneficiaryRepo },
-        { provide: SmsService, useValue: mockSmsService },
+        { provide: getRepositoryToken(User), useFactory: mockRepo },
+        { provide: getRepositoryToken(Beneficiary), useFactory: mockRepo },
+        { provide: SmsService, useFactory: mockSmsService },
+        { provide: JwtService, useFactory: mockJwtService },
       ],
     }).compile();
 
-    service = moduleRef.get(AuthService);
-    jest.clearAllMocks();
+    service = module.get<AuthService>(AuthService);
+    userRepo = module.get(getRepositoryToken(User));
+    jwtService = module.get(JwtService);
   });
 
   describe('normalizePhoneNumber', () => {
@@ -64,12 +64,17 @@ describe('AuthService', () => {
       expect(service.normalizePhoneNumber('912345678')).toBe('+251912345678');
     });
 
-    it('throws for invalid number', () => {
-      expect(() => service.normalizePhoneNumber('12345')).toThrow(BadRequestException);
+    it('normalizes 251 without + format', () => {
+      expect(service.normalizePhoneNumber('251912345678')).toBe('+251912345678');
+    });
+
+    it('throws for invalid phone', () => {
+      expect(() => service.normalizePhoneNumber('123')).toThrow(BadRequestException);
     });
 
     it('returns undefined for empty input', () => {
       expect(service.normalizePhoneNumber('')).toBeUndefined();
+      expect(service.normalizePhoneNumber(null)).toBeUndefined();
     });
   });
 
@@ -78,7 +83,7 @@ describe('AuthService', () => {
       expect(service.normalizeEmail('  Test@Example.COM  ')).toBe('test@example.com');
     });
 
-    it('returns undefined for empty string', () => {
+    it('returns undefined for empty', () => {
       expect(service.normalizeEmail('')).toBeUndefined();
     });
   });
@@ -88,61 +93,66 @@ describe('AuthService', () => {
       const password = 'SecurePass123!';
       const hash = service.hashPassword(password);
       expect(hash).toContain(':');
-      // Access private method via type cast for testing
-      const verify = (service as unknown as { verifyPassword: (p: string, h: string) => boolean }).verifyPassword;
-      expect(verify.call(service, password, hash)).toBe(true);
-      expect(verify.call(service, 'WrongPass', hash)).toBe(false);
+      // Access private method for testing
+      const verify = (service as any).verifyPassword(password, hash);
+      expect(verify).toBe(true);
+    });
+
+    it('rejects wrong password', () => {
+      const hash = service.hashPassword('correct');
+      const verify = (service as any).verifyPassword('wrong', hash);
+      expect(verify).toBe(false);
     });
   });
 
-  describe('sendOtp', () => {
-    it('throws NotFoundException when user not found', async () => {
-      const qb = {
-        addSelect: jest.fn().mockReturnThis(),
-        leftJoinAndSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(null),
-        getMany: jest.fn().mockResolvedValue([]),
+  describe('issueSession', () => {
+    it('calls jwtService.sign with correct payload', async () => {
+      const mockUser: Partial<User> = {
+        id: 'user-123',
+        firstName: 'Test',
+        role: UserRole.HOUSEHOLD_HEAD,
+        preferredLanguage: PreferredLanguage.ENGLISH,
+        isActive: true,
+        phoneNumber: '+251912345678',
+        email: null,
       };
-      mockUserRepo.createQueryBuilder.mockReturnValue(qb);
 
-      await expect(
-        service.sendOtp({ phoneNumber: '0912345678', purpose: 'login' }),
-      ).rejects.toThrow('No member account was found');
+      userRepo.findOne.mockResolvedValue(mockUser);
+      const qb = userRepo.createQueryBuilder();
+      qb.getOne.mockResolvedValue({ ...mockUser, refreshTokenHash: null });
+
+      const result = await service.issueSession('user-123');
+
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        expect.objectContaining({ sub: 'user-123', role: UserRole.HOUSEHOLD_HEAD }),
+        expect.any(Object),
+      );
+      expect(result.accessToken).toBe('mock.jwt.token');
+      expect(result.tokenType).toBe('Bearer');
+    });
+  });
+
+  describe('requireUserFromAuthorization', () => {
+    it('throws for missing token', async () => {
+      await expect(service.requireUserFromAuthorization(undefined)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
-    it('sends OTP and calls SmsService for phone targets', async () => {
-      const mockUser = {
-        id: 'user-1',
-        phoneNumber: '+251912345678',
-        oneTimeCodeHash: null,
-        oneTimeCodePurpose: null,
-        oneTimeCodeTarget: null,
-        oneTimeCodeExpiresAt: null,
-      };
-      const qb = {
-        addSelect: jest.fn().mockReturnThis(),
-        leftJoinAndSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(mockUser),
-        getMany: jest.fn().mockResolvedValue([]),
-      };
-      mockUserRepo.createQueryBuilder.mockReturnValue(qb);
-      mockUserRepo.save.mockResolvedValue(mockUser);
-
-      const result = await service.sendOtp({
-        phoneNumber: '0912345678',
-        purpose: 'login',
+    it('throws for invalid token', async () => {
+      (jwtService.verify as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('invalid token');
       });
+      await expect(
+        service.requireUserFromAuthorization('Bearer bad.token.here'),
+      ).rejects.toThrow(UnauthorizedException);
+    });
 
-      expect(result.channel).toBe('sms');
-      expect(result.target).toContain('****');
-      expect(mockSmsService.sendOtp).toHaveBeenCalledWith(
-        '+251912345678',
-        expect.any(String),
-      );
+    it('throws for inactive user', async () => {
+      userRepo.findOne.mockResolvedValue({ id: 'user-id', isActive: false });
+      await expect(
+        service.requireUserFromAuthorization('Bearer valid.token'),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 });

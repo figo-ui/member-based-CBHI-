@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../cbhi_data.dart';
+import '../cbhi_localizations.dart';
 import '../shared/image_utils.dart';
 import '../shared/local_attachment_store.dart';
 import '../theme/app_theme.dart';
@@ -63,7 +64,7 @@ class _IndigentApplicationScreenState
   Future<void> _pickDocument() async {
     if (_documents.length >= 3) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maximum 3 documents allowed.')),
+        SnackBar(content: Text(CbhiLocalizations.of(context).t('maxDocumentsReached'))),
       );
       return;
     }
@@ -72,6 +73,7 @@ class _IndigentApplicationScreenState
     await Permission.photos.request();
     if (!mounted) return;
 
+    final strings = CbhiLocalizations.of(context);
     final source = await showModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -79,17 +81,17 @@ class _IndigentApplicationScreenState
           children: [
             ListTile(
               leading: const Icon(Icons.camera_alt_outlined),
-              title: const Text('Take photo'),
+              title: Text(strings.t('takePhoto')),
               onTap: () => Navigator.pop(ctx, 'camera'),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Choose from gallery'),
+              title: Text(strings.t('chooseFromGallery')),
               onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
             ListTile(
               leading: const Icon(Icons.picture_as_pdf_outlined),
-              title: const Text('Choose PDF or image file'),
+              title: Text(strings.t('choosePdfOrImage')),
               onTap: () => Navigator.pop(ctx, 'file'),
             ),
           ],
@@ -184,20 +186,21 @@ class _IndigentApplicationScreenState
   }
 
   Future<void> _submit() async {
+    final strings = CbhiLocalizations.of(context);
     if (!_formKey.currentState!.validate()) return;
 
     if (_documents.isEmpty) {
       setState(() =>
-          _submitError = 'Please upload at least one supporting document.');
+          _submitError = strings.t('pleaseUploadAtLeastOneDocument'));
       return;
     }
 
     final expiredDocs = _documents.where((d) => d.isExpired).toList();
     if (expiredDocs.isNotEmpty) {
       setState(() {
-        _submitError =
-            'Cannot submit: ${expiredDocs.map((d) => d.documentType ?? "document").join(", ")} '
-            'is expired. Please upload a valid document from your kebele.';
+        _submitError = strings.f('expiredDocumentError', {
+          'docs': expiredDocs.map((d) => d.documentType ?? 'document').join(', '),
+        });
       });
       return;
     }
@@ -205,7 +208,7 @@ class _IndigentApplicationScreenState
     final stillValidating = _documents.any((d) => d.isValidating);
     if (stillValidating) {
       setState(() =>
-          _submitError = 'Please wait for all documents to finish validating.');
+          _submitError = strings.t('waitForValidation'));
       return;
     }
 
@@ -236,8 +239,9 @@ class _IndigentApplicationScreenState
 
   @override
   Widget build(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Indigent Application')),
+      appBar: AppBar(title: Text(strings.t('indigentApplication'))),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -262,34 +266,35 @@ class _IndigentApplicationScreenState
   }
 
   Widget _buildIncomeCard() {
+    final strings = CbhiLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Monthly Income',
-                style: TextStyle(
+            Text(strings.t('monthlyIncome'),
+                style: const TextStyle(
                     fontWeight: FontWeight.w700, fontSize: 15)),
             const SizedBox(height: 4),
-            const Text(
-              'Enter your household monthly income in ETB.\nየቤተሰብ ወርሃዊ ገቢ በብር ያስገቡ።',
-              style: TextStyle(
+            Text(
+              strings.t('monthlyIncomeSubtitle'),
+              style: const TextStyle(
                   color: AppTheme.textSecondary, fontSize: 13, height: 1.5),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _incomeController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Monthly income (ETB)',
-                prefixIcon: Icon(Icons.payments_outlined),
+              decoration: InputDecoration(
+                labelText: strings.t('monthlyIncomeEtb'),
+                prefixIcon: const Icon(Icons.payments_outlined),
                 hintText: 'e.g. 500',
               ),
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Income is required';
+                if (v == null || v.trim().isEmpty) return strings.t('required');
                 if (int.tryParse(v.trim()) == null) {
-                  return 'Enter a valid number';
+                  return strings.t('invalidNumber');
                 }
                 return null;
               },
@@ -301,19 +306,20 @@ class _IndigentApplicationScreenState
   }
 
   Widget _buildStatusCard() {
+    final strings = CbhiLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Household Status',
-                style: TextStyle(
+            Text(strings.t('householdStatus'),
+                style: const TextStyle(
                     fontWeight: FontWeight.w700, fontSize: 15)),
             const SizedBox(height: 12),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Owns property (land, house, or business)'),
+              title: Text(strings.t('ownsProperty')),
               subtitle: const Text('ቤት፣ መሬት ወይም ንግድ ያለዎት ከሆነ'),
               value: _hasProperty,
               onChanged: (v) => setState(() => _hasProperty = v),
@@ -322,8 +328,7 @@ class _IndigentApplicationScreenState
             const Divider(),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text(
-                  'Has a household member with disability'),
+              title: Text(strings.t('hasMemberWithDisability')),
               subtitle: const Text('የቤተሰብ አባል አካል ጉዳት ካለው'),
               value: _hasDisability,
               onChanged: (v) => setState(() => _hasDisability = v),
@@ -336,6 +341,7 @@ class _IndigentApplicationScreenState
   }
 
   Widget _buildDocumentsCard() {
+    final strings = CbhiLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -344,17 +350,17 @@ class _IndigentApplicationScreenState
           children: [
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Supporting Documents',
-                          style: TextStyle(
+                      Text(strings.t('supportingDocuments'),
+                          style: const TextStyle(
                               fontWeight: FontWeight.w700, fontSize: 15)),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
-                        'Upload 1-3 documents from your kebele.',
-                        style: TextStyle(
+                        strings.t('upload1To3Documents'),
+                        style: const TextStyle(
                             color: AppTheme.textSecondary, fontSize: 13),
                       ),
                     ],
@@ -364,7 +370,7 @@ class _IndigentApplicationScreenState
                   FilledButton.tonalIcon(
                     onPressed: _pickDocument,
                     icon: const Icon(Icons.add_a_photo_outlined, size: 18),
-                    label: const Text('Add'),
+                    label: Text(strings.t('addDocument')),
                   ),
               ],
             ),
@@ -379,16 +385,16 @@ class _IndigentApplicationScreenState
                   borderRadius: BorderRadius.circular(AppTheme.radiusS),
                   border: Border.all(color: Colors.grey.shade200),
                 ),
-                child: const Center(
+                child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.upload_file_outlined,
+                      const Icon(Icons.upload_file_outlined,
                           size: 40, color: AppTheme.textSecondary),
-                      SizedBox(height: 8),
-                      Text('No documents uploaded yet',
-                          style: TextStyle(color: AppTheme.textSecondary)),
-                      Text('Tap Add to upload a document',
-                          style: TextStyle(
+                      const SizedBox(height: 8),
+                      Text(strings.t('noDocumentsYet'),
+                          style: const TextStyle(color: AppTheme.textSecondary)),
+                      Text(strings.t('tapAddToUpload'),
+                          style: const TextStyle(
                               color: AppTheme.textSecondary, fontSize: 12)),
                     ],
                   ),
@@ -411,6 +417,7 @@ class _IndigentApplicationScreenState
   }
 
   Widget _buildSubmitButton() {
+    final strings = CbhiLocalizations.of(context);
     final hasExpired = _documents.any((d) => d.isExpired);
     final isValidating = _documents.any((d) => d.isValidating);
 
@@ -426,10 +433,10 @@ class _IndigentApplicationScreenState
           : const Icon(Icons.send_outlined),
       label: Text(
         isValidating
-            ? 'Validating documents...'
+            ? strings.t('validatingDocuments')
             : hasExpired
-                ? 'Expired documents — cannot submit'
-                : 'Submit Application',
+                ? strings.t('expiredDocumentsCannotSubmit')
+                : strings.t('submitApplication'),
       ),
     ).animate().fadeIn(duration: 400.ms, delay: 300.ms);
   }

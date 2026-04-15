@@ -26,11 +26,6 @@ class AuthState extends Equatable {
   bool get isFamilyMember => session?.user.role?.toUpperCase() == 'BENEFICIARY';
   bool get isHouseholdHead =>
       session?.user.role?.toUpperCase() == 'HOUSEHOLD_HEAD';
-  bool get isFacilityStaff =>
-      session?.user.role?.toUpperCase() == 'HEALTH_FACILITY_STAFF';
-  bool get isAdmin =>
-      session?.user.role?.toUpperCase() == 'SYSTEM_ADMIN' ||
-      session?.user.role?.toUpperCase() == 'CBHI_OFFICER';
 
   AuthState copyWith({
     AuthStatus? status,

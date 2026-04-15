@@ -3,12 +3,12 @@ import {
   Controller,
   Delete,
   Get,
-  Headers,
   Param,
   Patch,
   Post,
 } from '@nestjs/common';
-import { AuthService } from '../auth/auth.service';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { User } from '../users/user.entity';
 import {
   CreateFamilyMemberDto,
   RegistrationStepOneDto,
@@ -17,121 +17,97 @@ import {
   UpdateFamilyMemberDto,
 } from './cbhi.dto';
 import { CbhiService } from './cbhi.service';
+import { Public } from '../common/decorators/public.decorator';
 
 @Controller('cbhi')
 export class CbhiController {
-  constructor(
-    private readonly cbhiService: CbhiService,
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly cbhiService: CbhiService) {}
 
+  @Public()
   @Post('registration/step-1')
   registerStepOne(@Body() dto: RegistrationStepOneDto) {
     return this.cbhiService.registerStepOne(dto);
   }
 
+  @Public()
   @Post('registration/step-2')
   registerStepTwo(@Body() dto: RegistrationStepTwoDto) {
     return this.cbhiService.registerStepTwo(dto);
   }
 
   @Get('me')
-  async getSnapshot(@Headers('authorization') authorization?: string) {
-    const user =
-      await this.authService.requireUserFromAuthorization(authorization);
+  getSnapshot(@CurrentUser() user: User) {
     return this.cbhiService.getMemberSnapshot(user.id);
   }
 
   @Get('family')
-  async getFamily(@Headers('authorization') authorization?: string) {
-    const user =
-      await this.authService.requireUserFromAuthorization(authorization);
+  getFamily(@CurrentUser() user: User) {
     return this.cbhiService.getFamily(user.id);
   }
 
   @Get('profile')
-  async getProfile(@Headers('authorization') authorization?: string) {
-    const user =
-      await this.authService.requireUserFromAuthorization(authorization);
+  getProfile(@CurrentUser() user: User) {
     return this.cbhiService.getProfile(user.id);
   }
 
   @Get('eligibility')
-  async getEligibility(@Headers('authorization') authorization?: string) {
-    const user =
-      await this.authService.requireUserFromAuthorization(authorization);
+  getEligibility(@CurrentUser() user: User) {
     return this.cbhiService.getViewerEligibility(user.id);
   }
 
   @Get('payments')
-  async getPayments(@Headers('authorization') authorization?: string) {
-    const user =
-      await this.authService.requireUserFromAuthorization(authorization);
+  getPayments(@CurrentUser() user: User) {
     return this.cbhiService.getPaymentHistory(user.id);
   }
 
   @Post('coverage/renew')
-  async renewCoverage(
-    @Headers('authorization') authorization: string | undefined,
-    @Body() dto: RenewCoverageDto,
-  ) {
-    const user =
-      await this.authService.requireUserFromAuthorization(authorization);
+  renewCoverage(@CurrentUser() user: User, @Body() dto: RenewCoverageDto) {
     return this.cbhiService.renewCoverage(user.id, dto);
   }
 
   @Get('cards')
-  async getDigitalCards(@Headers('authorization') authorization?: string) {
-    const user =
-      await this.authService.requireUserFromAuthorization(authorization);
+  getDigitalCards(@CurrentUser() user: User) {
     return this.cbhiService.getDigitalCards(user.id);
   }
 
   @Get('notifications')
-  async getNotifications(@Headers('authorization') authorization?: string) {
-    const user =
-      await this.authService.requireUserFromAuthorization(authorization);
+  getNotifications(@CurrentUser() user: User) {
     return this.cbhiService.getNotifications(user.id);
   }
 
   @Post('notifications/:notificationId/read')
-  async markNotificationRead(
-    @Headers('authorization') authorization: string | undefined,
+  markNotificationRead(
+    @CurrentUser() user: User,
     @Param('notificationId') notificationId: string,
   ) {
-    const user =
-      await this.authService.requireUserFromAuthorization(authorization);
     return this.cbhiService.markNotificationRead(user.id, notificationId);
   }
 
   @Post('family')
-  async addFamilyMember(
-    @Headers('authorization') authorization: string | undefined,
-    @Body() dto: CreateFamilyMemberDto,
-  ) {
-    const user =
-      await this.authService.requireUserFromAuthorization(authorization);
+  addFamilyMember(@CurrentUser() user: User, @Body() dto: CreateFamilyMemberDto) {
     return this.cbhiService.addFamilyMember(user.id, dto);
   }
 
   @Patch('family/:memberId')
-  async updateFamilyMember(
-    @Headers('authorization') authorization: string | undefined,
+  updateFamilyMember(
+    @CurrentUser() user: User,
     @Param('memberId') memberId: string,
     @Body() dto: UpdateFamilyMemberDto,
   ) {
-    const user =
-      await this.authService.requireUserFromAuthorization(authorization);
     return this.cbhiService.updateFamilyMember(user.id, memberId, dto);
   }
 
   @Delete('family/:memberId')
-  async removeFamilyMember(
-    @Headers('authorization') authorization: string | undefined,
+  removeFamilyMember(
+    @CurrentUser() user: User,
     @Param('memberId') memberId: string,
   ) {
-    const user =
-      await this.authService.requireUserFromAuthorization(authorization);
     return this.cbhiService.removeFamilyMember(user.id, memberId);
+  }
+
+  /** Coverage history — all past and current coverage periods */
+  @Get('coverage/history')
+  getCoverageHistory(@CurrentUser() user: User) {
+    return this.cbhiService.getCoverageHistory(user.id);
   }
 }

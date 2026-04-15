@@ -13,6 +13,7 @@ import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'registration/models/identity_model.dart';
 import 'registration/models/membership_type.dart';
 import 'registration/models/personal_info_model.dart';
+import 'shared/secure_storage_service.dart';
 
 String get kDefaultApiBaseUrl {
   const envUrl = String.fromEnvironment('CBHI_API_BASE_URL');
@@ -547,6 +548,7 @@ class CbhiLocalDb {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             type TEXT NOT NULL,
             payload TEXT NOT NULL,
+            retry_count INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL
           )
         ''');
@@ -593,8 +595,16 @@ class CbhiLocalDb {
     return _db.insert('pending_actions', {
       'type': type,
       'payload': jsonEncode(payload),
+      'retry_count': 0,
       'created_at': DateTime.now().toIso8601String(),
     });
+  }
+
+  Future<void> incrementRetryCount(int id) async {
+    await _db.rawUpdate(
+      'UPDATE pending_actions SET retry_count = retry_count + 1 WHERE id = ?',
+      [id],
+    );
   }
 
   Future<List<Map<String, Object?>>> readPendingActionRows() async {
@@ -633,6 +643,25 @@ class CbhiRepository {
   final String apiBaseUrl;
 
   static const _sessionStorageKey = 'cbhi_auth_session';
+
+  Future<void> _persistSession(AuthSession session) async {
+    await SecureStorageService.instance.write(
+      _sessionStorageKey,
+      jsonEncode(session.toJson()),
+    );
+  }
+
+  Future<AuthSession?> _readStoredSession() async {
+    final raw = await SecureStorageService.instance.read(_sessionStorageKey);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return AuthSession.fromJson(
+        (jsonDecode(raw) as Map).cast<String, dynamic>(),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 
   static Future<CbhiRepository> create({
     String? apiBaseUrl,
@@ -831,26 +860,33 @@ class CbhiRepository {
   }
 
   Future<void> logout() async {
-    await _prefs.remove(_sessionStorageKey);
+    await SecureStorageService.instance.delete(_sessionStorageKey);
   }
 
   Future<CbhiSnapshot> registerFull({
     required PersonalInfoModel personalInfo,
     required IdentityModel identity,
     required MembershipSelection membership,
+    List<String> indigentProofPaths = const [],
   }) async {
     final stepOnePayload = await _buildRegistrationStepOnePayload(personalInfo);
+    final indigentProofUploads =
+        await _buildIndigentProofUploads(indigentProofPaths);
     final stepTwoPayload = {
       'identityType': identity.identityType,
       'identityNumber': identity.identityNumber,
       'membershipType': membership.membershipType.value,
       'premiumAmount': membership.premiumAmount,
-      'eligibilitySignals': {'employmentStatus': identity.employmentStatus},
+      'eligibilitySignals': {
+        'employmentStatus': identity.employmentStatusForApi,
+      },
+      if (indigentProofUploads != null) 'indigentProofUploads': indigentProofUploads,
     };
     final fullPayload = {
       'personalInfo': personalInfo.toJson(),
       'identity': identity.toJson(),
       'membership': membership.toJson(),
+      'indigentProofPaths': indigentProofPaths,
       'stepOnePayload': stepOnePayload,
       'stepTwoPayload': stepTwoPayload,
     };
@@ -860,6 +896,7 @@ class CbhiRepository {
         personalInfo: personalInfo,
         identity: identity,
         membership: membership,
+        indigentProofPaths: indigentProofPaths,
       );
     } on _ApiException catch (error) {
       if (!error.retryable) {
@@ -916,6 +953,18 @@ class CbhiRepository {
     return _applyFamilyPayload(response);
   }
 
+  /// Set the initial password after account setup (called from AccountSetupScreen).
+  /// Requires an active authenticated session.
+  Future<void> setInitialPassword({required String password}) async {
+    await _postJson('/auth/set-password', {'password': password}, authorized: true);
+  }
+
+  /// GDPR: anonymise and deactivate the account.
+  Future<void> deleteAccount() async {
+    await _postJson('/auth/delete-account', const <String, dynamic>{}, authorized: true);
+    await logout();
+  }
+
   Future<CbhiSnapshot> renewCoverage({
     String? paymentMethod,
     String? providerName,
@@ -951,104 +1000,6 @@ class CbhiRepository {
       ),
     );
     return notifications;
-  }
-
-  Future<Map<String, dynamic>> verifyFacilityEligibility({
-    String? membershipId,
-    String? phoneNumber,
-    String? householdCode,
-    String? fullName,
-  }) async {
-    final query = <String, String>{
-      if (membershipId != null && membershipId.trim().isNotEmpty)
-        'membershipId': membershipId.trim(),
-      if (phoneNumber != null && phoneNumber.trim().isNotEmpty)
-        'phoneNumber': phoneNumber.trim(),
-      if (householdCode != null && householdCode.trim().isNotEmpty)
-        'householdCode': householdCode.trim(),
-      if (fullName != null && fullName.trim().isNotEmpty)
-        'fullName': fullName.trim(),
-    };
-    return _getJson(
-      '/facility/eligibility?${Uri(queryParameters: query).query}',
-      authorized: true,
-    );
-  }
-
-  Future<Map<String, dynamic>> submitFacilityClaim({
-    String? membershipId,
-    String? phoneNumber,
-    String? householdCode,
-    String? fullName,
-    required DateTime serviceDate,
-    required List<Map<String, dynamic>> items,
-    String? supportingDocumentPath,
-  }) async {
-    return _postJson('/facility/claims', {
-      'membershipId': membershipId,
-      'phoneNumber': phoneNumber,
-      'householdCode': householdCode,
-      'fullName': fullName,
-      'serviceDate': DateFormat('yyyy-MM-dd').format(serviceDate),
-      'items': items,
-      'supportingDocumentPath': supportingDocumentPath,
-      'supportingDocumentUpload':
-          await _buildAttachmentPayload(supportingDocumentPath),
-    }, authorized: true);
-  }
-
-  Future<List<Map<String, dynamic>>> fetchFacilityClaims() async {
-    final response = await _getJson('/facility/claims', authorized: true);
-    return (response['claims'] as List? ?? const [])
-        .map((item) => (item as Map).cast<String, dynamic>())
-        .toList(growable: false);
-  }
-
-  Future<List<Map<String, dynamic>>> fetchAdminClaims() async {
-    final response = await _getJson('/admin/claims', authorized: true);
-    return (response['claims'] as List? ?? const [])
-        .map((item) => (item as Map).cast<String, dynamic>())
-        .toList(growable: false);
-  }
-
-  Future<Map<String, dynamic>> reviewAdminClaim({
-    required String claimId,
-    required String status,
-    double? approvedAmount,
-    String? decisionNote,
-  }) async {
-    return _patchJson('/admin/claims/$claimId/decision', {
-      'status': status,
-      'approvedAmount': approvedAmount,
-      'decisionNote': decisionNote,
-    }, authorized: true);
-  }
-
-  Future<List<Map<String, dynamic>>> fetchAdminConfiguration() async {
-    final response = await _getJson('/admin/configuration', authorized: true);
-    return (response['settings'] as List? ?? const [])
-        .map((item) => (item as Map).cast<String, dynamic>())
-        .toList(growable: false);
-  }
-
-  Future<List<Map<String, dynamic>>> updateAdminConfiguration({
-    required String key,
-    required Map<String, dynamic> value,
-    String? label,
-    String? description,
-  }) async {
-    final response = await _putJson('/admin/configuration/$key', {
-      'label': label,
-      'description': description,
-      'value': value,
-    }, authorized: true);
-    return (response['settings'] as List? ?? const [])
-        .map((item) => (item as Map).cast<String, dynamic>())
-        .toList(growable: false);
-  }
-
-  Future<Map<String, dynamic>> fetchAdminSummaryReport() async {
-    return _getJson('/admin/reports/summary', authorized: true);
   }
 
   /// Validate an ID document image using Google Vision API (server-side)
@@ -1140,12 +1091,7 @@ class CbhiRepository {
         .toList();
   }
 
-  Future<List<Map<String, dynamic>>> fetchPendingIndigentApplications() async {
-    final response = await _getJson('/admin/indigent/pending', authorized: true);
-    return (response['applications'] as List? ?? const [])
-        .map((item) => (item as Map).cast<String, dynamic>())
-        .toList(growable: false);
-  }
+
 
   Future<CbhiSnapshot> sync([String? householdCode]) async {
     await syncPendingActions();
@@ -1170,8 +1116,15 @@ class CbhiRepository {
     for (final row in rows) {
       final id = row['id'] as int;
       final type = row['type'] as String;
+      final retryCount = (row['retry_count'] as int?) ?? 0;
       final payload =
           jsonDecode(row['payload'] as String) as Map<String, dynamic>;
+
+      // Dead-letter: skip permanently failed actions (>= 5 attempts)
+      if (retryCount >= 5) {
+        await localDb.removeAction(id);
+        continue;
+      }
 
       try {
         if (type == 'registration_full') {
@@ -1199,6 +1152,10 @@ class CbhiRepository {
             await _storeAuthIfPresent(response);
             await localDb.writeSnapshot(snapshot);
           } else {
+            final proofRaw = payload['indigentProofPaths'];
+            final proofPaths = proofRaw is List
+                ? proofRaw.map((e) => e.toString()).toList()
+                : const <String>[];
             await _registerFullRemote(
               personalInfo: PersonalInfoModel.fromJson(
                 (payload['personalInfo'] as Map).cast<String, dynamic>(),
@@ -1209,6 +1166,7 @@ class CbhiRepository {
               membership: MembershipSelection.fromJson(
                 (payload['membership'] as Map).cast<String, dynamic>(),
               ),
+              indigentProofPaths: proofPaths,
             );
           }
         } else if (type == 'registration_step_two') {
@@ -1223,10 +1181,12 @@ class CbhiRepository {
         await localDb.removeAction(id);
       } catch (error) {
         if (error is _ApiException && !error.retryable) {
+          // Permanent failure — remove immediately
           await localDb.removeAction(id);
           continue;
         }
-        break;
+        // Transient failure — increment retry count and continue to next action
+        await localDb.incrementRetryCount(id);
       }
     }
   }
@@ -1235,6 +1195,7 @@ class CbhiRepository {
     required PersonalInfoModel personalInfo,
     required IdentityModel identity,
     required MembershipSelection membership,
+    List<String> indigentProofPaths = const [],
   }) async {
     final stepOnePayload = await _buildRegistrationStepOnePayload(personalInfo);
     final stepOneResponse = await _postJson(
@@ -1247,13 +1208,18 @@ class CbhiRepository {
       throw const _ApiException('Registration step 1 did not return an id.');
     }
 
+    final indigentProofUploads =
+        await _buildIndigentProofUploads(indigentProofPaths);
     final stepTwoPayload = {
       'registrationId': registrationId,
       'identityType': identity.identityType,
       'identityNumber': identity.identityNumber,
       'membershipType': membership.membershipType.value,
       'premiumAmount': membership.premiumAmount,
-      'eligibilitySignals': {'employmentStatus': identity.employmentStatus},
+      'eligibilitySignals': {
+        'employmentStatus': identity.employmentStatusForApi,
+      },
+      if (indigentProofUploads != null) 'indigentProofUploads': indigentProofUploads,
     };
 
     try {
@@ -1343,6 +1309,18 @@ class CbhiRepository {
       ),
       'idDocumentUpload': await _buildAttachmentPayload(draft.idDocumentPath),
     };
+  }
+
+  Future<List<Map<String, dynamic>>?> _buildIndigentProofUploads(
+    List<String> paths,
+  ) async {
+    if (paths.isEmpty) return null;
+    final out = <Map<String, dynamic>>[];
+    for (final path in paths) {
+      final one = await _buildAttachmentPayload(path);
+      if (one != null) out.add(one);
+    }
+    return out.isEmpty ? null : out;
   }
 
   Future<Map<String, dynamic>?> _buildAttachmentPayload(
@@ -1654,3 +1632,93 @@ class CbhiRepository {
     );
   }
 }
+
+  // ── Grievances ────────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getMyGrievances() async {
+    try {
+      final response = await _getJson('/grievances/mine', authorized: true);
+      return (response['grievances'] as List? ?? [])
+          .map((item) => (item as Map).cast<String, dynamic>())
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> submitGrievance({
+    required String type,
+    required String subject,
+    required String description,
+    String? referenceId,
+    String? referenceType,
+  }) async {
+    return _postJson('/grievances', {
+      'type': type,
+      'subject': subject,
+      'description': description,
+      if (referenceId != null) 'referenceId': referenceId,
+      if (referenceType != null) 'referenceType': referenceType,
+    }, authorized: true);
+  }
+
+  // ── Benefit Package ───────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getActiveBenefitPackage() async {
+    try {
+      return await _getJson('/benefit-packages/active');
+    } catch (_) {
+      return {'name': 'Standard CBHI Package', 'items': [], 'premiumPerMember': '120', 'annualCeiling': '0'};
+    }
+  }
+
+  // ── Coverage History ──────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getCoverageHistory() async {
+    try {
+      final response = await _getJson('/cbhi/coverage/history', authorized: true);
+      return (response['coverages'] as List? ?? [])
+          .map((item) => (item as Map).cast<String, dynamic>())
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // ── Payment ───────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> initiatePayment({
+    required double amount,
+    String? description,
+  }) async {
+    return _postJson('/payments/initiate', {
+      'amount': amount,
+      if (description != null) 'description': description,
+    }, authorized: true);
+  }
+
+  Future<Map<String, dynamic>> verifyPayment(String txRef) async {
+    return _getJson('/payments/verify/$txRef', authorized: true);
+  }
+
+  // ── Media URL resolver ────────────────────────────────────────────────────
+
+  String resolveMediaUrl(String? path) {
+    if (path == null || path.isEmpty) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    if (path.startsWith('/')) return '$apiBaseUrl$path';
+    return path;
+  }
+
+  // ── Public HTTP wrappers (used by extension methods) ─────────────────────
+
+  Future<Map<String, dynamic>> postJson(
+    String path,
+    Map<String, dynamic> body, {
+    bool authorized = false,
+  }) => _postJson(path, body, authorized: authorized);
+
+  Future<Map<String, dynamic>> getJson(
+    String path, {
+    bool authorized = false,
+  }) => _getJson(path, authorized: authorized);

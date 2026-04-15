@@ -15,16 +15,16 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
   final _formKey = GlobalKey<FormState>();
   final _idNumberController = TextEditingController();
 
-  // Employment Status Options (as per your requirement)
+  /// Values match backend [IndigentEmploymentStatus] (snake_case).
   final List<Map<String, String>> employmentOptions = [
-    {'value': 'FARMER', 'label': 'Farmer (ገበሬ)'},
-    {'value': 'MERCHANT', 'label': 'Merchant / Trader (ነጋዴ)'},
-    {'value': 'DAILY_LABORER', 'label': 'Daily Laborer (የቀን ሰራተኛ)'},
-    {'value': 'EMPLOYED', 'label': 'Employed / Salaried (መደበኛ ሰራተኛ)'},
-    {'value': 'HOUSEWIFE', 'label': 'Housewife (የቤት እመቤት)'},
-    {'value': 'STUDENT', 'label': 'Student (ተማሪ)'},
-    {'value': 'UNEMPLOYED', 'label': 'Unemployed (ሥራ የለውም)'},
-    {'value': 'OTHER', 'label': 'Other'},
+    {'value': 'farmer', 'label': 'Farmer (ገበሬ)'},
+    {'value': 'merchant', 'label': 'Merchant / Trader (ነጋዴ)'},
+    {'value': 'daily_laborer', 'label': 'Daily Laborer (የቀን ሰራተኛ)'},
+    {'value': 'employed', 'label': 'Employed / Salaried (መደበኛ ሰራተኛ)'},
+    {'value': 'homemaker', 'label': 'Homemaker (የቤት እመቤት)'},
+    {'value': 'student', 'label': 'Student (ተማሪ)'},
+    {'value': 'unemployed', 'label': 'Unemployed (ሥራ የለውም)'},
+    {'value': 'pensioner', 'label': 'Pensioner (ጡረተኛ)'},
   ];
 
   String? selectedIdentityType;
@@ -59,7 +59,7 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
                     // Identity Type Picker
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Identity Type'),
-                      initialValue: selectedIdentityType,
+                      value: selectedIdentityType,
                       items: const [
                         DropdownMenuItem(value: 'NATIONAL_ID', child: Text('National ID')),
                         DropdownMenuItem(value: 'PASSPORT', child: Text('Passport')),
@@ -91,7 +91,7 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Main Occupation'),
-                      initialValue: selectedEmploymentStatus,
+                      value: selectedEmploymentStatus,
                       items: employmentOptions
                           .map((option) => DropdownMenuItem(
                                 value: option['value'],

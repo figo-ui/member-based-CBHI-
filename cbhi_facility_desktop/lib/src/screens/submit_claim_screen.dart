@@ -1,8 +1,13 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../app.dart';
 import '../data/facility_repository.dart';
 import '../i18n/app_localizations.dart';
+import 'qr_scanner_screen.dart';
 
 class SubmitClaimScreen extends StatefulWidget {
   const SubmitClaimScreen({super.key, required this.repository});
@@ -21,17 +26,50 @@ class _SubmitClaimScreenState extends State<SubmitClaimScreen> {
   DateTime _serviceDate = DateTime.now();
   final List<_ServiceItem> _items = [_ServiceItem()];
 
+  // Supporting document attachment
+  String? _attachmentPath;
+  String? _attachmentName;
+  String? _attachmentMime;
+
   bool _submitting = false;
   String? _message;
   bool _isSuccess = false;
 
+  Future<void> _scanQr() async {
+    final result = await Navigator.of(context).push<QrScanResult>(
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+    );
+    if (result == null) return;
+    setState(() {
+      if (result.membershipId != null) {
+        _membershipIdCtrl.text = result.membershipId!;
+      } else if (result.householdCode != null) {
+        _householdCodeCtrl.text = result.householdCode!;
+      }
+    });
+  }
+
+  Future<void> _pickAttachment() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+    );
+    if (result?.files.single.path == null) return;
+    final file = result!.files.single;
+    setState(() {
+      _attachmentPath = file.path;
+      _attachmentName = file.name;
+      _attachmentMime = file.extension == 'pdf'
+          ? 'application/pdf'
+          : 'image/${file.extension ?? 'jpeg'}';
+    });
+  }
+
   Future<void> _submit() async {
     final strings = AppLocalizations.of(context);
     final items = _items
-        .where(
-          (item) =>
-              item.name.isNotEmpty && item.quantity > 0 && item.unitPrice > 0,
-        )
+        .where((item) =>
+            item.name.isNotEmpty && item.quantity > 0 && item.unitPrice > 0)
         .toList();
     if (items.isEmpty) {
       setState(() {
@@ -46,6 +84,17 @@ class _SubmitClaimScreenState extends State<SubmitClaimScreen> {
       _message = null;
     });
     try {
+      // Encode attachment as base64 if present
+      Map<String, dynamic>? attachmentUpload;
+      if (_attachmentPath != null && _attachmentName != null) {
+        final bytes = await File(_attachmentPath!).readAsBytes();
+        attachmentUpload = {
+          'fileName': _attachmentName,
+          'contentBase64': base64Encode(bytes),
+          'mimeType': _attachmentMime ?? 'application/octet-stream',
+        };
+      }
+
       final response = await widget.repository.submitClaim(
         membershipId: _membershipIdCtrl.text.trim().isEmpty
             ? null
@@ -61,15 +110,14 @@ class _SubmitClaimScreenState extends State<SubmitClaimScreen> {
             : _fullNameCtrl.text.trim(),
         serviceDate: DateFormat('yyyy-MM-dd').format(_serviceDate),
         items: items
-            .map(
-              (item) => {
-                'serviceName': item.name,
-                'quantity': item.quantity,
-                'unitPrice': item.unitPrice,
-                if (item.notes.isNotEmpty) 'notes': item.notes,
-              },
-            )
+            .map((item) => {
+                  'serviceName': item.name,
+                  'quantity': item.quantity,
+                  'unitPrice': item.unitPrice,
+                  if (item.notes.isNotEmpty) 'notes': item.notes,
+                })
             .toList(),
+        supportingDocumentUpload: attachmentUpload,
       );
       setState(() {
         _isSuccess = true;
@@ -82,6 +130,9 @@ class _SubmitClaimScreenState extends State<SubmitClaimScreen> {
         _phoneCtrl.text = '+2519';
         _householdCodeCtrl.clear();
         _fullNameCtrl.clear();
+        _attachmentPath = null;
+        _attachmentName = null;
+        _attachmentMime = null;
       });
     } catch (e) {
       setState(() {
@@ -109,13 +160,28 @@ class _SubmitClaimScreenState extends State<SubmitClaimScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      strings.t('beneficiary'),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                        color: kTextDark,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          strings.t('beneficiary'),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            color: kTextDark,
+                          ),
+                        ),
+                        const Spacer(),
+                        OutlinedButton.icon(
+                          onPressed: _scanQr,
+                          icon: const Icon(Icons.qr_code_scanner, size: 16, color: kPrimary),
+                          label: Text(strings.t('scanQrCard'),
+                              style: const TextStyle(color: kPrimary, fontSize: 12)),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: kPrimary),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     TextField(
@@ -172,37 +238,68 @@ class _SubmitClaimScreenState extends State<SubmitClaimScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(
-                              Icons.event_outlined,
-                              color: kPrimary,
-                              size: 20,
-                            ),
+                            const Icon(Icons.event_outlined, color: kPrimary, size: 20),
                             const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  strings.t('serviceDate'),
-                                  style: const TextStyle(
-                                    color: kTextSecondary,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                Text(
-                                  DateFormat(
-                                    'dd MMM yyyy',
-                                  ).format(_serviceDate),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: kTextDark,
-                                  ),
-                                ),
+                                Text(strings.t('serviceDate'),
+                                    style: const TextStyle(color: kTextSecondary, fontSize: 12)),
+                                Text(DateFormat('dd MMM yyyy').format(_serviceDate),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600, color: kTextDark)),
                               ],
                             ),
                           ],
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    // Supporting document attachment
+                    Text(strings.t('supportingDocument'),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, color: kTextDark, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    if (_attachmentName != null)
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: kSuccess.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: kSuccess.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.attach_file, color: kSuccess, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(_attachmentName!,
+                                  style: const TextStyle(color: kSuccess, fontSize: 12),
+                                  overflow: TextOverflow.ellipsis),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, size: 16, color: kError),
+                              onPressed: () => setState(() {
+                                _attachmentPath = null;
+                                _attachmentName = null;
+                                _attachmentMime = null;
+                              }),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      OutlinedButton.icon(
+                        onPressed: _pickAttachment,
+                        icon: const Icon(Icons.upload_file_outlined, size: 16),
+                        label: Text(strings.t('attachDocument')),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: kPrimary,
+                          side: const BorderSide(color: kPrimary),
+                        ),
+                      ),
                   ],
                 ),
               ),

@@ -1,4 +1,5 @@
 import {
+  DeleteDateColumn,
   Column,
   Entity,
   JoinColumn,
@@ -19,6 +20,10 @@ import { Claim } from '../claims/claim.entity';
 
 @Entity('beneficiaries')
 export class Beneficiary extends AuditableEntity {
+  /** Soft-delete: set when a beneficiary is removed so claim history is preserved */
+  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+  deletedAt?: Date | null;
+
   @Column({ length: 80, unique: true })
   memberNumber!: string;
 
@@ -30,6 +35,9 @@ export class Beneficiary extends AuditableEntity {
 
   @Column({ type: 'date', nullable: true })
   dateOfBirth?: Date | null;
+
+  @Column({ type: 'int', nullable: true })
+  age?: number | null;
 
   @Column({ type: 'enum', enum: Gender, nullable: true })
   gender?: Gender | null;

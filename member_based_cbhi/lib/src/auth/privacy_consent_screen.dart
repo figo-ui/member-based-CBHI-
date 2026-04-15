@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../i18n/app_localizations.dart';
+import '../cbhi_localizations.dart';
 import '../theme/app_theme.dart';
 
 const _kConsentKey = 'cbhi_privacy_consent_v1';
@@ -54,7 +54,7 @@ class _PrivacyConsentScreenState extends State<PrivacyConsentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
         child: Column(

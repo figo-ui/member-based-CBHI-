@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../app.dart';
 import '../data/facility_repository.dart';
 import '../i18n/app_localizations.dart';
+import 'qr_scanner_screen.dart';
 
 class VerifyScreen extends StatefulWidget {
   const VerifyScreen({super.key, required this.repository});
@@ -20,6 +21,22 @@ class _VerifyScreenState extends State<VerifyScreen> {
   bool _loading = false;
   Map<String, dynamic>? _result;
   String? _error;
+
+  Future<void> _scanQr() async {
+    final result = await Navigator.of(context).push<QrScanResult>(
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+    );
+    if (result == null) return;
+    setState(() {
+      if (result.membershipId != null) {
+        _membershipIdCtrl.text = result.membershipId!;
+      } else if (result.householdCode != null) {
+        _householdCodeCtrl.text = result.householdCode!;
+      }
+    });
+    // Auto-verify after scan
+    await _verify();
+  }
 
   Future<void> _verify() async {
     setState(() {
@@ -105,7 +122,36 @@ class _VerifyScreenState extends State<VerifyScreen> {
                   strings.t('enterMemberDetails'),
                   style: const TextStyle(color: kTextSecondary, fontSize: 13),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
+                // QR scan button
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _loading ? null : _scanQr,
+                    icon: const Icon(Icons.qr_code_scanner, color: kPrimary),
+                    label: Text(
+                      strings.t('scanQrCard'),
+                      style: const TextStyle(color: kPrimary),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: kPrimary),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(strings.t('or'),
+                          style: const TextStyle(color: kTextSecondary, fontSize: 12)),
+                    ),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 TextField(
                   controller: _membershipIdCtrl,
                   decoration: InputDecoration(

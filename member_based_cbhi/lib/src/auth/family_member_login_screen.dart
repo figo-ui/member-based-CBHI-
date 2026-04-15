@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../i18n/app_localizations.dart';
+import '../cbhi_localizations.dart';
 import 'auth_cubit.dart';
 import 'otp_screen.dart';
 
@@ -52,7 +52,7 @@ class _FamilyMemberLoginScreenState extends State<FamilyMemberLoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(strings.t('familyLogin')),
@@ -105,7 +105,7 @@ class _FamilyOtpTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.all(20),
       child: ListView(
@@ -186,7 +186,7 @@ class _FamilyPasswordTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.all(20),
       child: ListView(
@@ -287,7 +287,7 @@ class _FamilyLookupFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     return Column(
       children: [
         TextField(
@@ -332,7 +332,7 @@ _FamilyLookupInput? _validateLookup(
   required TextEditingController householdCodeController,
   required TextEditingController fullNameController,
 }) {
-  final strings = AppLocalizations.of(context);
+  final strings = CbhiLocalizations.of(context);
   final phone = phoneController.text.trim();
   final membershipId = membershipIdController.text.trim();
   final householdCode = householdCodeController.text.trim();

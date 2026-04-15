@@ -16,6 +16,10 @@ import { StorageModule } from '../storage/storage.module';
 import { User } from '../users/user.entity';
 import { CbhiController } from './cbhi.controller';
 import { CbhiService } from './cbhi.service';
+// FIX ME-2: Register extracted services
+import { CoverageService } from './coverage.service';
+import { DigitalCardService } from './digital-card.service';
+import { RegistrationService } from './registration.service';
 
 @Module({
   imports: [
@@ -37,7 +41,12 @@ import { CbhiService } from './cbhi.service';
     ]),
   ],
   controllers: [CbhiController],
-  providers: [CbhiService],
-  exports: [CbhiService],
+  providers: [
+    CbhiService,
+    CoverageService,
+    DigitalCardService,
+    RegistrationService,
+  ],
+  exports: [CbhiService, CoverageService, DigitalCardService],
 })
 export class CbhiModule {}

@@ -5,7 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../theme/app_theme.dart';
 import '../cbhi_data.dart';
-import '../i18n/app_localizations.dart';
+import '../cbhi_localizations.dart';
 import 'auth_cubit.dart';
 
 enum OtpMode { login, passwordReset }
@@ -87,7 +87,7 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   Future<void> _verify() async {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     final code = _enteredCode;
     if (code.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -120,7 +120,7 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   Future<void> _resend() async {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     setState(() {
       _canResend = false;
       _secondsRemaining = 300;
@@ -164,7 +164,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = CbhiLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
       body: SingleChildScrollView(
