@@ -1,12 +1,12 @@
 {
-    "name": "cbhi_admin_desktop",
-    "short_name": "cbhi_admin_desktop",
+    "name": "CBHI Admin — Maya City",
+    "short_name": "CBHI Admin",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#0D7A5F",
+    "theme_color": "#0D7A5F",
+    "description": "Maya City CBHI Administration — claims review, financial dashboard, facility management, and system configuration.",
+    "orientation": "landscape-primary",
     "prefer_related_applications": false,
     "icons": [
         {

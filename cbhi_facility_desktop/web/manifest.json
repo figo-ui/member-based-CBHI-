@@ -1,12 +1,12 @@
 {
-    "name": "cbhi_facility_desktop",
-    "short_name": "cbhi_facility_desktop",
+    "name": "CBHI Facility — Maya City",
+    "short_name": "CBHI Facility",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#0D7A5F",
+    "theme_color": "#0D7A5F",
+    "description": "Maya City CBHI Health Facility Portal — member eligibility verification and medical claims submission.",
+    "orientation": "landscape-primary",
     "prefer_related_applications": false,
     "icons": [
         {
