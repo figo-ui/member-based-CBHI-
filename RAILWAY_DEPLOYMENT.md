@@ -1,44 +1,49 @@
-# Deploy Backend to Railway
+# Deploy NestJS Backend to Railway
 
-## Why Railway (not Vercel)
+## Why not Vercel?
 
-Vercel is serverless — it can't run NestJS because the app needs:
-- Persistent process (WebSockets, Bull queues)
-- Long-lived DB connections (TypeORM connection pool)
-- File upload storage (`/uploads/`)
-- Stateful in-memory cache fallback
-
-Railway runs your app as a persistent container, exactly like a VPS but with zero DevOps.
+Vercel is serverless — it deployed your Flutter web app, not the NestJS backend.
+NestJS needs a persistent process (connection pool, Bull queues, WebSockets).
+Railway runs it as a real server.
 
 ---
 
-## Step 1 — Create Railway Account
+## Step 1 — Create Railway Project
 
-Go to [railway.app](https://railway.app) → Sign up with GitHub.
-
----
-
-## Step 2 — New Project from GitHub
-
-1. Click **New Project**
-2. Select **Deploy from GitHub repo**
-3. Choose your repo (`Member_Based_CBHI` or whatever it's named)
-4. Railway will detect the `backend/railway.toml` automatically
-
-> If Railway asks which folder to deploy from, set the **Root Directory** to `backend`
+1. Go to [railway.app](https://railway.app) → **New Project**
+2. Click **Deploy from GitHub repo**
+3. Authorize Railway to access your repo
+4. Select your repo
 
 ---
 
-## Step 3 — Set Environment Variables
+## Step 2 — Set Root Directory (CRITICAL)
 
-In Railway → your service → **Variables** tab, add each variable below.
+After selecting the repo, Railway shows a **"Configure"** screen.
 
-**Copy these exact key=value pairs** (no quotes around values):
+**Before clicking Deploy:**
+- Look for **"Root Directory"** field
+- Type: `backend`
+- Click **Deploy**
+
+**If you already deployed without setting it:**
+1. Go to your service → **Settings** tab
+2. Scroll to **"Source"** section
+3. Find **"Root Directory"** → set to `backend`
+4. Click **Save** → Railway redeploys automatically
+
+> The repo root also has a `railway.toml` now that uses `cd backend && ...`
+> so even if Railway reads from root, it will still work.
+
+---
+
+## Step 3 — Add Environment Variables
+
+Railway → your service → **Variables** tab → **Raw Editor** → paste this entire block:
 
 ```
 PORT=3000
 NODE_ENV=production
-
 DB_HOST=aws-0-eu-west-1.pooler.supabase.com
 DB_PORT=6543
 DB_USERNAME=postgres.nauyjsrhykayyzqomiyx
@@ -49,11 +54,9 @@ TYPEORM_SYNCHRONIZE=false
 TYPEORM_LOGGING=false
 DB_POOL_MAX=10
 DB_POOL_MIN=2
-
 AUTH_JWT_SECRET=b5b35c8d9e8318f3021fc2bf320c3029d6659013a2b0b5863c9c26f92073c9bfabf7ea8320fbd49f7f1f83c6dee4af21
 AUTH_ACCESS_TOKEN_TTL_SECONDS=86400
 DIGITAL_CARD_SECRET=c2c27af2ce4cb269b3870c89a10d66f862f3d269de620231eaf7d529df44d235
-
 DEMO_MODE=true
 AT_USERNAME=sandbox
 AT_API_KEY=
@@ -68,90 +71,68 @@ FCM_CLIENT_EMAIL=
 FCM_PRIVATE_KEY=
 CHAPA_SECRET_KEY=
 CHAPA_WEBHOOK_SECRET=
-
 INDIGENT_INCOME_THRESHOLD=1000
 INDIGENT_FAMILY_SIZE_THRESHOLD=5
 INDIGENT_APPROVAL_THRESHOLD=70
-
 OPENIMIS_BASE_URL=
 NATIONAL_ID_API_BASE_URL=
 NATIONAL_ID_API_KEY=
-
 DEFAULT_LANGUAGE=en
 SUPPORTED_LANGUAGES=am,om,en
 CBHI_PREMIUM_PER_MEMBER=120
 ```
 
-> **CORS and APP_BASE_URL** — set these AFTER Railway gives you a domain (Step 5)
+Click **Update Variables** — Railway redeploys.
 
 ---
 
-## Step 4 — Deploy
+## Step 4 — Generate a Public Domain
 
-Click **Deploy** (or push to your main branch — Railway auto-deploys on push).
+Railway → Service → **Settings** → **Networking** → **Generate Domain**
 
-Railway will:
-1. Run `npm install --legacy-peer-deps && npm run build`
-2. Start with `node scripts/run-migrations-prod.js && node dist/main`
-3. Health-check `GET /api/v1/health` every 30s
+You'll get: `something.up.railway.app`
 
-Watch the build logs — it takes ~2 minutes.
-
----
-
-## Step 5 — Set Your Railway Domain
-
-After deploy succeeds:
-
-1. Railway → Service → **Settings** → **Networking** → **Generate Domain**
-2. You'll get something like: `cbhi-backend-production.up.railway.app`
-3. Go back to **Variables** and update:
+Then add these two more variables (replace with your actual domain):
 
 ```
-CORS_ALLOWED_ORIGINS=https://cbhi-backend-production.up.railway.app,http://localhost:3000,http://10.0.2.2:3000
-APP_BASE_URL=https://cbhi-backend-production.up.railway.app
-CHAPA_CALLBACK_URL=https://cbhi-backend-production.up.railway.app/api/v1/payments/webhook/chapa
-CHAPA_RETURN_URL=https://cbhi-backend-production.up.railway.app/api/v1/payments/verify
+CORS_ALLOWED_ORIGINS=https://YOUR_DOMAIN.up.railway.app,http://localhost:3000,http://10.0.2.2:3000
+APP_BASE_URL=https://YOUR_DOMAIN.up.railway.app
+CHAPA_CALLBACK_URL=https://YOUR_DOMAIN.up.railway.app/api/v1/payments/webhook/chapa
+CHAPA_RETURN_URL=https://YOUR_DOMAIN.up.railway.app/api/v1/payments/verify
 ```
-
-4. Railway will redeploy automatically.
 
 ---
 
-## Step 6 — Verify
+## Step 5 — Verify
 
 ```bash
-# Health check
-curl https://cbhi-backend-production.up.railway.app/api/v1/health
+curl https://YOUR_DOMAIN.up.railway.app/api/v1/health
+# → {"status":"ok","timestamp":"..."}
 
-# Demo status
-curl https://cbhi-backend-production.up.railway.app/api/v1/demo/status
+curl https://YOUR_DOMAIN.up.railway.app/api/v1/demo/status
+# → {"demoMode":true,...}
 
-# Admin login
-curl -X POST https://cbhi-backend-production.up.railway.app/api/v1/auth/login \
+curl -X POST https://YOUR_DOMAIN.up.railway.app/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"identifier":"+251900000001","password":"Admin@1234"}'
-```
-
-Expected health response:
-```json
-{"status":"ok","timestamp":"...","uptime":...}
+# → {"accessToken":"eyJ...","user":{"role":"SYSTEM_ADMIN",...}}
 ```
 
 ---
 
-## Step 7 — Update Flutter Apps
+## Step 6 — Update Flutter Apps
 
-Once you have the Railway URL, update the API base URL in each Flutter app.
+Once you have the Railway URL, build each Flutter app with:
 
-In each app's `main.dart` or build config, set:
-```
-CBHI_API_BASE_URL=https://cbhi-backend-production.up.railway.app/api/v1
-```
-
-Or pass it at build time:
 ```bash
-flutter build apk --dart-define=CBHI_API_BASE_URL=https://cbhi-backend-production.up.railway.app/api/v1
+# Member app
+flutter build apk --dart-define=CBHI_API_BASE_URL=https://YOUR_DOMAIN.up.railway.app/api/v1
+
+# Admin desktop
+flutter build windows --dart-define=CBHI_API_BASE_URL=https://YOUR_DOMAIN.up.railway.app/api/v1
+
+# Facility desktop
+flutter build windows --dart-define=CBHI_API_BASE_URL=https://YOUR_DOMAIN.up.railway.app/api/v1
 ```
 
 ---
@@ -167,16 +148,16 @@ flutter build apk --dart-define=CBHI_API_BASE_URL=https://cbhi-backend-productio
 
 ## Troubleshooting
 
-**Build fails with "Cannot find module"**
-→ Make sure Root Directory is set to `backend` in Railway settings
+**"Cannot find module '../dist/database/data-source'"**
+→ Build didn't complete. Check build logs. Make sure Root Directory = `backend`.
 
-**DB connection error on startup**
-→ Check DB_PASSWORD has no surrounding quotes in Railway Variables
-→ The Supabase pooler password `v!GAPf#g,Maa@5r` must be entered as-is
+**"password authentication failed for user postgres"**
+→ DB_PASSWORD was entered with quotes. In Railway Variables, enter the raw value:
+  `v!GAPf#g,Maa@5r` (no quotes)
 
-**Health check fails (503)**
-→ Check deploy logs for startup errors
-→ Increase `healthcheckTimeout` in `railway.toml` if DB connection is slow
+**Health check failing (app keeps restarting)**
+→ Check deploy logs for the actual error
+→ DB connection issues are the most common cause
 
-**CORS errors from Flutter app**
-→ Add your Railway domain to `CORS_ALLOWED_ORIGINS`
+**CORS error from Flutter**
+→ Add your domain to CORS_ALLOWED_ORIGINS
