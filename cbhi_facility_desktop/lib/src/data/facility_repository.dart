@@ -80,8 +80,7 @@ class FacilityRepository {
       'fullName': fullName,
       'serviceDate': serviceDate,
       'items': items,
-      if (supportingDocumentUpload != null)
-        'supportingDocumentUpload': supportingDocumentUpload,
+      'supportingDocumentUpload': ?supportingDocumentUpload,
     });
   }
 

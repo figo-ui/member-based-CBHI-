@@ -1,5 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'personal_info_state.dart';
 import '../models/personal_info_model.dart';
 
 part 'personal_info_state.dart';
@@ -52,21 +51,23 @@ class PersonalInfoCubit extends Cubit<PersonalInfoState> {
   }
 
   PersonalInfoModel toModel() {
+    final dob = state.dateOfBirth!;
+    final age = DateTime.now().difference(dob).inDays ~/ 365;
     return PersonalInfoModel(
       firstName: state.firstName.trim(),
       middleName: state.middleName.trim(),
       lastName: state.lastName.trim(),
+      age: age,
       phone: state.phone.trim(),
       email: state.email?.trim(),
       gender: state.gender,
-      dateOfBirth: state.dateOfBirth!,
+      dateOfBirth: dob,
       birthCertificateRef: state.birthCertificateRef?.trim(),
       region: state.region,
       zone: state.zone,
       woreda: state.woreda?.trim(),
       kebele: state.kebele?.trim(),
       householdSize: state.householdSize,
-      
     );
   }
 }

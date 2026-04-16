@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../cbhi_data.dart';
 import '../cbhi_localizations.dart';
@@ -50,20 +49,6 @@ class _GrievanceScreenState extends State<GrievanceScreen>
     }
   }
 
-  Future<void> _showSubmitSheet() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => _SubmitGrievanceSheet(
-        repository: widget.repository,
-        onSubmitted: () {
-          Navigator.pop(ctx);
-          _load();
-        },
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +82,7 @@ class _GrievanceScreenState extends State<GrievanceScreen>
                     itemCount: _grievances.length,
                     itemBuilder: (_, i) => _GrievanceCard(
                       grievance: _grievances[i],
-                    ).animate().fadeIn(duration: 350.ms, delay: (i * 60).ms).slideY(begin: 0.05, end: 0),
+                    ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.05, end: 0),
                   ),
                 ),
 
@@ -174,7 +159,6 @@ class _GrievanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = CbhiLocalizations.of(context);
     final status = grievance['status']?.toString() ?? 'OPEN';
     final type = grievance['type']?.toString() ?? 'OTHER';
     final color = _statusColor(status);
@@ -420,23 +404,6 @@ class _SubmitGrievanceFormState extends State<_SubmitGrievanceForm> {
           const SizedBox(height: 24),
         ],
       ),
-    );
-  }
-}
-
-class _SubmitGrievanceSheet extends StatelessWidget {
-  const _SubmitGrievanceSheet({required this.repository, required this.onSubmitted});
-  final CbhiRepository repository;
-  final VoidCallback onSubmitted;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: _SubmitGrievanceForm(repository: repository, onSubmitted: onSubmitted),
     );
   }
 }

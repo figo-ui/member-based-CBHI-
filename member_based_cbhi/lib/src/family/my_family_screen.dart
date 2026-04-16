@@ -308,9 +308,9 @@ class _MemberAvatar extends StatelessWidget {
             width: 56,
             height: 56,
             fit: BoxFit.cover,
-            placeholder: (_, __) =>
+            placeholder: (context, url) =>
                 const CircularProgressIndicator(strokeWidth: 2),
-            errorWidget: (_, __, ___) => Text(_initials(member.fullName)),
+            errorWidget: (context, url, error) => Text(_initials(member.fullName)),
           ),
         ),
       );

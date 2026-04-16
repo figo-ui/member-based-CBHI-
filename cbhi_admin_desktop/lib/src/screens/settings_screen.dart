@@ -125,27 +125,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString()),
             backgroundColor: AdminTheme.error,
           ),
         );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
-    if (_loading)
+    if (_loading) {
       return const Center(
         child: CircularProgressIndicator(color: AdminTheme.primary),
       );
-    if (_error != null)
+    }
+    if (_error != null) {
       return Center(
         child: Text(_error!, style: const TextStyle(color: AdminTheme.error)),
       );
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),

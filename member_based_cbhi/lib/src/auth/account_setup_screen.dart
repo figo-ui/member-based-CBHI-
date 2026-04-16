@@ -138,7 +138,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       _isResending = true;
       _canResend = false;
       _secondsRemaining = 300;
-      for (final c in _digitControllers) c.clear();
+      for (final c in _digitControllers) { c.clear(); }
     });
     _startCountdown();
     _focusNodes[0].requestFocus();
@@ -164,8 +164,8 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
   @override
   void dispose() {
     _timer?.cancel();
-    for (final c in _digitControllers) c.dispose();
-    for (final f in _focusNodes) f.dispose();
+    for (final c in _digitControllers) { c.dispose(); }
+    for (final f in _focusNodes) { f.dispose(); }
     _passwordController.dispose();
     _confirmController.dispose();
     super.dispose();

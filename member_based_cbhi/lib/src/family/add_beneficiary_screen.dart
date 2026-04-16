@@ -510,9 +510,9 @@ class _PhotoPreview extends StatelessWidget {
             width: 84,
             height: 84,
             fit: BoxFit.cover,
-            placeholder: (_, __) =>
+            placeholder: (context, url) =>
                 const CircularProgressIndicator(strokeWidth: 2),
-            errorWidget: (_, __, ___) => Text(
+            errorWidget: (context, url, error) => Text(
               fallbackLabel,
               style: Theme.of(context).textTheme.titleLarge,
             ),

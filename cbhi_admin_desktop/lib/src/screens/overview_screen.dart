@@ -44,14 +44,16 @@ class _OverviewScreenState extends State<OverviewScreen> {
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
-    if (_loading)
+    if (_loading) {
       return const Center(
         child: CircularProgressIndicator(color: AdminTheme.primary),
       );
-    if (_error != null)
+    }
+    if (_error != null) {
       return Center(
         child: Text(_error!, style: const TextStyle(color: AdminTheme.error)),
       );
+    }
 
     final claims = (_report['claims'] as Map?)?.cast<String, dynamic>() ?? {};
     final payments =

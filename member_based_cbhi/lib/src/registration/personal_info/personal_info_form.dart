@@ -7,10 +7,8 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../models/personal_info_model.dart';
 import '../../cbhi_data.dart';
-import '../../shared/image_utils.dart';
 import '../../shared/local_attachment_store.dart';
 import '../../shared/location_service.dart';
-import '../../shared/ethiopic_date_utils.dart';
 import '../../shared/ethiopic_date_picker.dart';
 
 class PersonalInfoForm extends StatefulWidget {
@@ -376,7 +374,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _gender,
+                      initialValue: _gender,
                       decoration: const InputDecoration(labelText: 'Gender'),
                       items: const [
                         DropdownMenuItem(value: 'FEMALE', child: Text('Female')),
@@ -405,7 +403,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _preferredLanguage,
+                initialValue: _preferredLanguage,
                 decoration: const InputDecoration(
                   labelText: 'Preferred language',
                 ),
@@ -438,7 +436,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<LocationItem>(
-                        value: _selectedRegion,
+                        initialValue: _selectedRegion,
                         decoration: const InputDecoration(labelText: 'Region'),
                         items: _regions.map((r) => DropdownMenuItem(
                           value: r,
@@ -451,7 +449,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<LocationItem>(
-                        value: _selectedZone,
+                        initialValue: _selectedZone,
                         decoration: const InputDecoration(labelText: 'Zone'),
                         items: _zones.map((z) => DropdownMenuItem(
                           value: z,
@@ -468,7 +466,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<LocationItem>(
-                        value: _selectedWoreda,
+                        initialValue: _selectedWoreda,
                         decoration: const InputDecoration(labelText: 'Woreda'),
                         items: _woredas.map((w) => DropdownMenuItem(
                           value: w,
@@ -481,7 +479,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<LocationItem>(
-                        value: _selectedKebele,
+                        initialValue: _selectedKebele,
                         decoration: const InputDecoration(labelText: 'Kebele'),
                         items: _kebeles.map((k) => DropdownMenuItem(
                           value: k,

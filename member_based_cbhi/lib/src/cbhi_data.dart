@@ -6,9 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 import 'registration/models/identity_model.dart';
 import 'registration/models/membership_type.dart';
@@ -18,18 +16,7 @@ import 'shared/secure_storage_service.dart';
 String get kDefaultApiBaseUrl {
   const envUrl = String.fromEnvironment('CBHI_API_BASE_URL');
   if (envUrl.isNotEmpty) return envUrl;
-  // Always use the deployed backend — works on all platforms including Android devices
-  // For local dev on Android emulator, pass:
-  //   --dart-define=CBHI_API_BASE_URL=http://10.0.2.2:3000/api/v1
   return 'https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app/api/v1';
-}
-
-bool get _isAndroid {
-  try {
-    return !kIsWeb && Platform.isAndroid;
-  } catch (_) {
-    return false;
-  }
 }
 
 @immutable
@@ -517,22 +504,25 @@ class CbhiLocalDb {
   static final CbhiLocalDb instance = CbhiLocalDb._();
 
   Database? _database;
+  // Web fallback: SharedPreferences-based storage (no WASM needed)
+  SharedPreferences? _webPrefs;
 
   Future<void> init() async {
-    if (_database != null) {
+    if (_database != null || _webPrefs != null) return;
+
+    if (kIsWeb) {
+      // On web, use SharedPreferences instead of SQLite to avoid
+      // the WASM worker requirement of sqflite_common_ffi_web.
+      _webPrefs = await SharedPreferences.getInstance();
       return;
     }
 
-    if (kIsWeb) {
-      databaseFactory = databaseFactoryFfiWeb;
-    } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }
 
-    final dbPath = kIsWeb
-        ? 'cbhi_local_web.db'
-        : p.join(await getDatabasesPath(), 'cbhi_local.db');
+    final dbPath = p.join(await getDatabasesPath(), 'cbhi_local.db');
     _database = await openDatabase(
       dbPath,
       version: 1,
@@ -559,22 +549,34 @@ class CbhiLocalDb {
 
   Database get _db {
     final db = _database;
-    if (db == null) {
-      throw StateError('Database not initialized');
-    }
+    if (db == null) throw StateError('Database not initialized');
     return db;
   }
 
+  // ── Web SharedPreferences helpers ─────────────────────────────────────────
+
+  static const _snapshotPrefix = 'cbhi_snapshot_';
+  static const _pendingActionsKey = 'cbhi_pending_actions';
+
   Future<CbhiSnapshot?> readSnapshot([String cacheKey = 'active']) async {
+    if (kIsWeb) {
+      final raw = _webPrefs!.getString('$_snapshotPrefix$cacheKey');
+      if (raw == null || raw.isEmpty) return null;
+      try {
+        return CbhiSnapshot.fromJson(
+          (jsonDecode(raw) as Map).cast<String, dynamic>(),
+        );
+      } catch (_) {
+        return null;
+      }
+    }
     final rows = await _db.query(
       'snapshot_cache',
       where: 'cache_key = ?',
       whereArgs: [cacheKey],
       limit: 1,
     );
-    if (rows.isEmpty) {
-      return null;
-    }
+    if (rows.isEmpty) return null;
     return CbhiSnapshot.fromJson(
       (jsonDecode(rows.first['payload'] as String) as Map)
           .cast<String, dynamic>(),
@@ -585,6 +587,13 @@ class CbhiLocalDb {
     CbhiSnapshot snapshot, [
     String cacheKey = 'active',
   ]) async {
+    if (kIsWeb) {
+      await _webPrefs!.setString(
+        '$_snapshotPrefix$cacheKey',
+        jsonEncode(snapshot.toJson()),
+      );
+      return;
+    }
     await _db.insert('snapshot_cache', {
       'cache_key': cacheKey,
       'payload': jsonEncode(snapshot.toJson()),
@@ -592,7 +601,21 @@ class CbhiLocalDb {
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<int> queueAction(String type, Map<String, dynamic> payload) {
+  Future<int> queueAction(String type, Map<String, dynamic> payload) async {
+    if (kIsWeb) {
+      final raw = _webPrefs!.getString(_pendingActionsKey) ?? '[]';
+      final list = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+      final id = DateTime.now().millisecondsSinceEpoch;
+      list.add({
+        'id': id,
+        'type': type,
+        'payload': jsonEncode(payload),
+        'retry_count': 0,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      await _webPrefs!.setString(_pendingActionsKey, jsonEncode(list));
+      return id;
+    }
     return _db.insert('pending_actions', {
       'type': type,
       'payload': jsonEncode(payload),
@@ -602,6 +625,17 @@ class CbhiLocalDb {
   }
 
   Future<void> incrementRetryCount(int id) async {
+    if (kIsWeb) {
+      final raw = _webPrefs!.getString(_pendingActionsKey) ?? '[]';
+      final list = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+      for (final item in list) {
+        if (item['id'] == id) {
+          item['retry_count'] = (item['retry_count'] as int? ?? 0) + 1;
+        }
+      }
+      await _webPrefs!.setString(_pendingActionsKey, jsonEncode(list));
+      return;
+    }
     await _db.rawUpdate(
       'UPDATE pending_actions SET retry_count = retry_count + 1 WHERE id = ?',
       [id],
@@ -609,10 +643,23 @@ class CbhiLocalDb {
   }
 
   Future<List<Map<String, Object?>>> readPendingActionRows() async {
+    if (kIsWeb) {
+      final raw = _webPrefs!.getString(_pendingActionsKey) ?? '[]';
+      return (jsonDecode(raw) as List).cast<Map<String, Object?>>();
+    }
     return _db.query('pending_actions', orderBy: 'id ASC');
   }
 
   Future<void> removeAction(int id) async {
+    if (kIsWeb) {
+      final raw = _webPrefs!.getString(_pendingActionsKey) ?? '[]';
+      final list = (jsonDecode(raw) as List)
+          .cast<Map<String, dynamic>>()
+          .where((item) => item['id'] != id)
+          .toList();
+      await _webPrefs!.setString(_pendingActionsKey, jsonEncode(list));
+      return;
+    }
     await _db.delete('pending_actions', where: 'id = ?', whereArgs: [id]);
   }
 }
@@ -631,15 +678,13 @@ class _ApiException implements Exception {
 class CbhiRepository {
   CbhiRepository({
     required this.localDb,
-    required SharedPreferences prefs,
+    SharedPreferences? prefs,
     http.Client? client,
     String? apiBaseUrl,
-  }) : _prefs = prefs,
-       _client = client ?? http.Client(),
+  }) : _client = client ?? http.Client(),
        apiBaseUrl = apiBaseUrl ?? kDefaultApiBaseUrl;
 
   final CbhiLocalDb localDb;
-  final SharedPreferences _prefs;
   final http.Client _client;
   final String apiBaseUrl;
 
@@ -669,10 +714,8 @@ class CbhiRepository {
   }) async {
     final db = CbhiLocalDb.instance;
     await db.init();
-    final prefs = await SharedPreferences.getInstance();
     return CbhiRepository(
       localDb: db,
-      prefs: prefs,
       apiBaseUrl: apiBaseUrl,
     );
   }
@@ -881,7 +924,7 @@ class CbhiRepository {
       'eligibilitySignals': {
         'employmentStatus': identity.employmentStatusForApi,
       },
-      if (indigentProofUploads != null) 'indigentProofUploads': indigentProofUploads,
+      'indigentProofUploads': ?indigentProofUploads,
     };
     final fullPayload = {
       'personalInfo': personalInfo.toJson(),
@@ -1220,7 +1263,7 @@ class CbhiRepository {
       'eligibilitySignals': {
         'employmentStatus': identity.employmentStatusForApi,
       },
-      if (indigentProofUploads != null) 'indigentProofUploads': indigentProofUploads,
+      'indigentProofUploads': ?indigentProofUploads,
     };
 
     try {
@@ -1253,36 +1296,6 @@ class CbhiRepository {
     if (auth is Map) {
       await _persistSession(AuthSession.fromJson(auth.cast<String, dynamic>()));
     }
-  }
-
-  Future<void> _persistSession(AuthSession session) async {
-    await _prefs.setString(_sessionStorageKey, jsonEncode(session.toJson()));
-  }
-
-  Future<AuthSession?> _readStoredSession() async {
-    final raw = _prefs.getString(_sessionStorageKey);
-    if (raw == null || raw.isEmpty) {
-      return null;
-    }
-    return AuthSession.fromJson(
-      (jsonDecode(raw) as Map).cast<String, dynamic>(),
-    );
-  }
-
-  String resolveMediaUrl(String? path) {
-    if (path == null || path.isEmpty) {
-      return '';
-    }
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
-    if (path.startsWith('/')) {
-      final baseUri = Uri.parse(apiBaseUrl);
-      return baseUri
-          .replace(path: path, query: null, fragment: null)
-          .toString();
-    }
-    return path;
   }
 
   Future<Map<String, dynamic>> _buildRegistrationStepOnePayload(
@@ -1415,26 +1428,6 @@ class CbhiRepository {
   }) async {
     try {
       final response = await _client.patch(
-        Uri.parse('$apiBaseUrl$path'),
-        headers: await _headers(authorized: authorized),
-        body: jsonEncode(payload),
-      );
-      return _decodeResponse(path, response);
-    } catch (error) {
-      if (error is _ApiException) {
-        rethrow;
-      }
-      throw const _ApiException('Network unavailable.', retryable: true);
-    }
-  }
-
-  Future<Map<String, dynamic>> _putJson(
-    String path,
-    Map<String, dynamic> payload, {
-    bool authorized = false,
-  }) async {
-    try {
-      final response = await _client.put(
         Uri.parse('$apiBaseUrl$path'),
         headers: await _headers(authorized: authorized),
         body: jsonEncode(payload),
@@ -1632,7 +1625,6 @@ class CbhiRepository {
       syncedAt: now,
     );
   }
-}
 
   // ── Grievances ────────────────────────────────────────────────────────────
 
@@ -1658,8 +1650,8 @@ class CbhiRepository {
       'type': type,
       'subject': subject,
       'description': description,
-      if (referenceId != null) 'referenceId': referenceId,
-      if (referenceType != null) 'referenceType': referenceType,
+      'referenceId': ?referenceId,
+      'referenceType': ?referenceType,
     }, authorized: true);
   }
 
@@ -1686,15 +1678,6 @@ class CbhiRepository {
     }
   }
 
-  // ── Media URL resolver ────────────────────────────────────────────────────
-
-  String resolveMediaUrl(String? path) {
-    if (path == null || path.isEmpty) return '';
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    if (path.startsWith('/')) return '$apiBaseUrl$path';
-    return path;
-  }
-
   // ── Public HTTP wrappers (used by extension methods) ─────────────────────
 
   Future<Map<String, dynamic>> postJson(
@@ -1707,3 +1690,15 @@ class CbhiRepository {
     String path, {
     bool authorized = false,
   }) => _getJson(path, authorized: authorized);
+
+  /// Resolves a stored media path to a displayable URL.
+  /// - If the path is already an http/https URL, returns it as-is.
+  /// - If the path is a relative server path (e.g. /uploads/...), prepends the API base.
+  /// - If null or empty, returns an empty string.
+  String resolveMediaUrl(String? path) {
+    if (path == null || path.isEmpty) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    if (path.startsWith('/')) return '$apiBaseUrl$path';
+    return path;
+  }
+}

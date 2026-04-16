@@ -330,8 +330,8 @@ class DashboardScreen extends StatelessWidget {
                       ),
                     )
                         .animate()
-                        .fadeIn(duration: 350.ms, delay: (450 + entry.key * 80).ms)
-                        .slideX(begin: 0.05, end: 0, duration: 350.ms, delay: (450 + entry.key * 80).ms),
+                        .fadeIn(duration: 350.ms, delay: 450.ms)
+                        .slideX(begin: 0.05, end: 0, duration: 350.ms, delay: 450.ms),
                   );
                 },
               ),
@@ -427,8 +427,8 @@ class DashboardScreen extends StatelessWidget {
                       ),
                     )
                         .animate()
-                        .fadeIn(duration: 350.ms, delay: (550 + entry.key * 80).ms)
-                        .slideX(begin: 0.05, end: 0, duration: 350.ms, delay: (550 + entry.key * 80).ms),
+                        .fadeIn(duration: 350.ms, delay: 550.ms)
+                        .slideX(begin: 0.05, end: 0, duration: 350.ms, delay: 550.ms),
                   );
                 },
               ),

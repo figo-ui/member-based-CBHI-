@@ -222,13 +222,11 @@ class DigitalCardScreen extends StatelessWidget {
                     ),
                   )
                       .animate()
-                      .fadeIn(
-                          duration: 500.ms, delay: (entry.key * 100).ms)
+                      .fadeIn(duration: 500.ms)
                       .scale(
                         begin: const Offset(0.95, 0.95),
                         end: const Offset(1, 1),
                         duration: 500.ms,
-                        delay: (entry.key * 100).ms,
                         curve: Curves.easeOutCubic,
                       ),
                 );

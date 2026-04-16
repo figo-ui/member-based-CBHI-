@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -143,10 +142,10 @@ class AdminRepository {
   }) async {
     return _post('/admin/facilities', {
       'name': name,
-      if (facilityCode != null) 'facilityCode': facilityCode,
-      if (serviceLevel != null) 'serviceLevel': serviceLevel,
-      if (phoneNumber != null) 'phoneNumber': phoneNumber,
-      if (addressLine != null) 'addressLine': addressLine,
+      'facilityCode': ?facilityCode,
+      'serviceLevel': ?serviceLevel,
+      'phoneNumber': ?phoneNumber,
+      'addressLine': ?addressLine,
     });
   }
 
@@ -158,8 +157,8 @@ class AdminRepository {
   }) async {
     await _post('/admin/facilities/$facilityId/staff', {
       'identifier': identifier,
-      if (firstName != null) 'firstName': firstName,
-      if (lastName != null) 'lastName': lastName,
+      'firstName': ?firstName,
+      'lastName': ?lastName,
     });
   }
 
@@ -168,8 +167,8 @@ class AdminRepository {
     String? entityId,
   }) async {
     final query = <String, String>{
-      if (entityType != null) 'entityType': entityType,
-      if (entityId != null) 'entityId': entityId,
+      'entityType': ?entityType,
+      'entityId': ?entityId,
     };
     final qs = query.isEmpty ? '' : '?${Uri(queryParameters: query).query}';
     final response = await _get('/admin/audit-logs$qs');
@@ -232,7 +231,7 @@ class AdminRepository {
   }) async {
     return _post('/benefit-packages', {
       'name': name,
-      if (description != null) 'description': description,
+      'description': ?description,
       'premiumPerMember': premiumPerMember,
       'annualCeiling': annualCeiling,
     });
@@ -249,7 +248,7 @@ class AdminRepository {
   }) async {
     return _post('/benefit-packages/$packageId/items', {
       'serviceName': serviceName,
-      if (serviceCode != null) 'serviceCode': serviceCode,
+      'serviceCode': ?serviceCode,
       'category': category,
       'maxClaimAmount': maxClaimAmount,
       'coPaymentPercent': coPaymentPercent,
@@ -259,7 +258,7 @@ class AdminRepository {
 
   Future<Map<String, dynamic>> updateBenefitItem(String itemId, {bool? isCovered}) async {
     return _patch('/benefit-packages/items/$itemId', {
-      if (isCovered != null) 'isCovered': isCovered,
+      'isCovered': ?isCovered,
     });
   }
 
@@ -277,8 +276,8 @@ class AdminRepository {
     String? resolution,
   }) async {
     return _patch('/grievances/$grievanceId', {
-      if (status != null) 'status': status,
-      if (resolution != null) 'resolution': resolution,
+      'status': ?status,
+      'resolution': ?resolution,
     });
   }
 
@@ -306,8 +305,8 @@ class AdminRepository {
 
   Future<Map<String, dynamic>> getFinancialDashboard({String? from, String? to}) async {
     final query = <String, String>{
-      if (from != null) 'from': from,
-      if (to != null) 'to': to,
+      'from': ?from,
+      'to': ?to,
     };
     final qs = query.isEmpty ? '' : '?${Uri(queryParameters: query).query}';
     return _get('/admin/reports/financial$qs');
@@ -317,8 +316,8 @@ class AdminRepository {
 
   Future<List<Map<String, dynamic>>> getFacilityPerformance({String? from, String? to}) async {
     final query = <String, String>{
-      if (from != null) 'from': from,
-      if (to != null) 'to': to,
+      'from': ?from,
+      'to': ?to,
     };
     final qs = query.isEmpty ? '' : '?${Uri(queryParameters: query).query}';
     final response = await _get('/admin/reports/facility-performance$qs');

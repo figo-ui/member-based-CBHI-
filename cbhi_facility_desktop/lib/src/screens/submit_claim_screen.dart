@@ -226,8 +226,9 @@ class _SubmitClaimScreenState extends State<SubmitClaimScreen> {
                           ),
                           lastDate: DateTime.now(),
                         );
-                        if (picked != null)
+                        if (picked != null) {
                           setState(() => _serviceDate = picked);
+                        }
                       },
                       child: Container(
                         padding: const EdgeInsets.all(14),

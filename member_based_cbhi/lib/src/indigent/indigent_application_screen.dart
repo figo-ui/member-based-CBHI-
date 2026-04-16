@@ -620,7 +620,7 @@ class _DocumentCard extends StatelessWidget {
                       : Image.file(
                           File(doc.localPath),
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          errorBuilder: (context, error, stackTrace) => Container(
                             color: AppTheme.surfaceLight,
                             child: const Icon(
                                 Icons.broken_image_outlined,

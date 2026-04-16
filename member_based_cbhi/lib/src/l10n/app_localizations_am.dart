@@ -1204,18 +1204,16 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get verifyYourPhone => 'Verify Your Phone';
+  String get verifyYourPhone => 'ስልክዎን ያረጋግጡ';
 
   @override
-  String get phonePlusOtp => 'Phone + OTP';
+  String get phonePlusOtp => 'ስልክ + OTP';
 
   @override
-  String get otpPhoneSubtitle =>
-      'We\'ll send a 6-digit code to your Ethiopian mobile number.';
+  String get otpPhoneSubtitle => 'ወደ ኢትዮጵያ ስልክ ቁጥርዎ 6-አሃዝ ኮድ እንልካለን።';
 
   @override
-  String get credentialLoginSubtitle =>
-      'Sign in with your email or phone and password.';
+  String get credentialLoginSubtitle => 'ኢሜይል ወይም ስልክ እና የይለፍ ቃልዎን ይጠቀሙ።';
 
   @override
   String get emailOrPhoneNumber => 'ኢሜይል ወይም ስልክ ቁጥር';
@@ -1460,87 +1458,83 @@ class AppLocalizationsAm extends AppLocalizations {
   String get idLabel => 'መታወቂያ';
 
   @override
-  String get setupTwoFactor => 'Set Up Two-Factor Authentication';
+  String get setupTwoFactor => 'ሁለት-ደረጃ ማረጋገጫ አዘጋጅ';
 
   @override
-  String get twoFactorRequired => 'Two-Factor Authentication Required';
+  String get twoFactorRequired => 'ሁለት-ደረጃ ማረጋገጫ ያስፈልጋል';
 
   @override
   String get twoFactorRequiredSubtitle =>
-      'Admin accounts must enable 2FA to protect sensitive health insurance data.';
+      'የአስተዳዳሪ መለያዎች ሚስጥራዊ ውሂብ ለመጠበቅ 2FA ማንቃት አለባቸው።';
 
   @override
-  String get totpStep1Title => 'Install an Authenticator App';
+  String get totpStep1Title => 'የማረጋገጫ መተግበሪያ ጫን';
 
   @override
   String get totpStep1Body =>
-      'Download Google Authenticator, Authy, or any TOTP-compatible app on your phone.';
+      'Google Authenticator፣ Authy ወይም ሌላ TOTP-ተኳሃኝ መተግበሪያ ጫን።';
 
   @override
-  String get totpStep2Title => 'Scan the QR Code';
+  String get totpStep2Title => 'QR ኮዱን ቃኝ';
 
   @override
-  String get totpStep2Body =>
-      'Open your authenticator app and scan the QR code below, or enter the secret key manually.';
+  String get totpStep2Body => 'የማረጋገጫ መተግበሪያህን ክፈት እና ከዚህ በታች ያለውን QR ኮድ ቃኝ።';
 
   @override
-  String get totpQrHint => 'Scan this QR code with your authenticator app';
+  String get totpQrHint => 'ይህን QR ኮድ በማረጋገጫ መተግበሪያህ ቃኝ';
 
   @override
-  String get totpManualEntry =>
-      'Or enter this key manually in your authenticator app:';
+  String get totpManualEntry => 'ወይም ይህን ቁልፍ በእጅ ያስገቡ:';
 
   @override
-  String get copySecret => 'Copy secret key';
+  String get copySecret => 'ሚስጥራዊ ቁልፍ ቅዳ';
 
   @override
-  String get secretCopied => 'Secret key copied to clipboard';
+  String get secretCopied => 'ሚስጥራዊ ቁልፍ ተቀድቷል';
 
   @override
-  String get totpStep3Title => 'Enter Verification Code';
+  String get totpStep3Title => 'የማረጋገጫ ኮድ ያስገቡ';
 
   @override
   String get totpStep3Body =>
-      'Enter the 6-digit code shown in your authenticator app to confirm setup.';
+      'ቅንብሩን ለማረጋገጥ በማረጋገጫ መተግበሪያህ ላይ የሚታየውን 6-አሃዝ ኮድ ያስገቡ።';
 
   @override
-  String get totpTokenLabel => '6-digit code';
+  String get totpTokenLabel => '6-አሃዝ ኮድ';
 
   @override
-  String get activateTwoFactor => 'Activate Two-Factor Authentication';
+  String get activateTwoFactor => 'ሁለት-ደረጃ ማረጋገጫ አንቃ';
 
   @override
-  String get totpActivated => 'Two-Factor Authentication Active';
+  String get totpActivated => 'ሁለት-ደረጃ ማረጋገጫ ነቅቷል';
 
   @override
-  String get totpActivatedSubtitle =>
-      'Your admin account is now protected with two-factor authentication.';
+  String get totpActivatedSubtitle => 'የአስተዳዳሪ መለያህ አሁን ሁለት-ደረጃ ማረጋገጫ ተጠብቋል።';
 
   @override
-  String get continueToAdmin => 'Continue to Admin Panel';
+  String get continueToAdmin => 'ወደ አስተዳዳሪ ፓነል ቀጥል';
 
   @override
-  String get benefitPackage => 'Benefit Package';
+  String get benefitPackage => 'የጥቅም ፓኬጅ';
 
   @override
-  String get coveredServices => 'Covered Services';
+  String get coveredServices => 'የሚሸፈኑ አገልግሎቶች';
 
   @override
-  String get packageStatus => 'Status';
+  String get packageStatus => 'ሁኔታ';
 
   @override
   String get benefitPackageInfo =>
-      'These are the services covered by your CBHI membership. Co-payments and annual limits apply.';
+      'እነዚህ በሲቢኤችአይ አባልነትዎ የሚሸፈኑ አገልግሎቶች ናቸው። ተጋሪ ክፍያ እና ዓመታዊ ወሰን ይተገበራሉ።';
 
   @override
-  String get noBenefitPackage => 'No benefit package found';
+  String get noBenefitPackage => 'ምንም የጥቅም ፓኬጅ አልተገኘም';
 
   @override
-  String get noBenefitPackageSubtitle =>
-      'Contact your CBHI officer for benefit package information.';
+  String get noBenefitPackageSubtitle => 'ለፓኬጅ መረጃ ሲቢኤችአይ ጽ/ቤትዎን ያነጋግሩ።';
 
   @override
-  String get grievances => 'Grievances';
+  String get grievances => 'ቅሬታዎች';
 
   @override
   String get myGrievances => 'ቅሬታዎቼ';
@@ -1549,16 +1543,16 @@ class AppLocalizationsAm extends AppLocalizations {
   String get submitNew => 'አዲስ አስገባ';
 
   @override
-  String get noGrievancesYet => 'No grievances submitted';
+  String get noGrievancesYet => 'ምንም ቅሬታ አልቀረበም';
 
   @override
   String get noGrievancesSubtitle => 'ምንም ቅሬታ አላቀረቡም። ችግር ካለ ለመርዳት ዝግጁ ነን።';
 
   @override
-  String get grievanceSubmitted => 'Grievance submitted successfully';
+  String get grievanceSubmitted => 'ቅሬታ ተቀብሏል';
 
   @override
-  String get whatIsYourIssue => 'What is your issue?';
+  String get whatIsYourIssue => 'ችግርዎ ምንድን ነው?';
 
   @override
   String get grievanceSubject => 'ርዕስ';
@@ -1574,7 +1568,7 @@ class AppLocalizationsAm extends AppLocalizations {
       'ችግርዎን በዝርዝር ይግለጹ። ቀናት፣ ስሞች እና ማጣቀሻዎችን ያካትቱ።';
 
   @override
-  String get referenceIdOptional => 'Reference ID (optional)';
+  String get referenceIdOptional => 'ማጣቀሻ መለያ (አማራጭ)';
 
   @override
   String get referenceIdHint => 'የጥያቄ ቁጥር፣ የቤተሰብ ኮድ ወዘተ';
@@ -1586,22 +1580,22 @@ class AppLocalizationsAm extends AppLocalizations {
   String get coverageHistory => 'Coverage History';
 
   @override
-  String get benefitUtilization => 'Benefit Utilization';
+  String get benefitUtilization => 'የጥቅም አጠቃቀም';
 
   @override
-  String get claimsByStatus => 'Claims by Status';
+  String get claimsByStatus => 'ጥያቄዎች በሁኔታ';
 
   @override
-  String get claimsUtilizationBar => 'Claim approval rate';
+  String get claimsUtilizationBar => 'የጥያቄ ፍቃድ ምጣኔ';
 
   @override
-  String get approvalRate => 'Approval Rate';
+  String get approvalRate => 'የፍቃድ ምጣኔ';
 
   @override
-  String get totalClaimed => 'Total Claimed';
+  String get totalClaimed => 'ጠቅላላ የተጠየቀ';
 
   @override
-  String get totalApproved => 'Total Approved';
+  String get totalApproved => 'ጠቅላላ የጸደቀ';
 
   @override
   String get grievancesTitle => 'ቅሬታዎች እና ይግባኞች';
@@ -1668,7 +1662,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get noCoverageHistorySubtitle => 'ከተመዘገቡ በኋላ የሽፋን ታሪክዎ ይታያል።';
 
   @override
-  String get benefitUtilizationTitle => 'Benefit Utilization';
+  String get benefitUtilizationTitle => 'የጥቅም አጠቃቀም';
 
   @override
   String get used => 'ጥቅም ላይ ዋለ';

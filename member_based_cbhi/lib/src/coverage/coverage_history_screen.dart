@@ -119,7 +119,7 @@ class _CoverageHistoryScreenState extends State<CoverageHistoryScreen> {
                         ],
                       ),
                     ),
-                  ).animate().fadeIn(duration: 350.ms, delay: (i * 60).ms).slideY(begin: 0.05, end: 0);
+                  ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.05, end: 0);
                 },
               ),
             ),

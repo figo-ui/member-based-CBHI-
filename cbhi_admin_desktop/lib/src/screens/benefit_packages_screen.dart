@@ -121,7 +121,7 @@ class _BenefitPackagesScreenState extends State<BenefitPackagesScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: category,
+                      initialValue: category,
                       decoration: InputDecoration(labelText: strings.t('category')),
                       items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c.toUpperCase()))).toList(),
                       onChanged: (v) => setS(() => category = v ?? category),
@@ -457,7 +457,7 @@ class _PackageDetail extends StatelessWidget {
                           onRefresh();
                         } catch (_) {}
                       },
-                      activeColor: AdminTheme.success,
+                      activeThumbColor: AdminTheme.success,
                     ),
                   ],
                 ),

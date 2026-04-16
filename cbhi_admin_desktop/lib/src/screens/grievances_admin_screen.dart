@@ -73,7 +73,7 @@ class _GrievancesAdminScreenState extends State<GrievancesAdminScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: newStatus,
+                  initialValue: newStatus,
                   decoration: InputDecoration(labelText: strings.t('newStatus')),
                   items: ['UNDER_REVIEW', 'RESOLVED', 'CLOSED'].map((s) => DropdownMenuItem(value: s, child: Text(s.replaceAll('_', ' ')))).toList(),
                   onChanged: (v) => setS(() => newStatus = v ?? newStatus),

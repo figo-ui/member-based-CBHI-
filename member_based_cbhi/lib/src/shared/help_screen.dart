@@ -203,8 +203,6 @@ class _FaqCard extends StatefulWidget {
 }
 
 class _FaqCardState extends State<_FaqCard> {
-  bool _expanded = false;
-
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -237,7 +235,7 @@ class _FaqCardState extends State<_FaqCard> {
             widget.faq.questionAm,
             style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
           ),
-          onExpansionChanged: (v) => setState(() => _expanded = v),
+          onExpansionChanged: (_) {},
           children: [
             const Divider(),
             const SizedBox(height: 8),

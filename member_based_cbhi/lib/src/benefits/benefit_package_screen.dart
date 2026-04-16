@@ -182,7 +182,6 @@ class _BenefitPackageBody extends StatelessWidget {
           )
         else
           ...filtered.asMap().entries.map((entry) {
-            final i = entry.key;
             final item = entry.value;
             final category = item['category']?.toString() ?? 'other';
             final color = categoryColors[category] ?? AppTheme.textSecondary;
@@ -244,7 +243,7 @@ class _BenefitPackageBody extends StatelessWidget {
                   ),
                 ],
               ),
-            ).animate().fadeIn(duration: 350.ms, delay: (i * 50).ms).slideY(begin: 0.04, end: 0);
+            ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.04, end: 0);
           }),
 
         const SizedBox(height: 24),

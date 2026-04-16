@@ -667,7 +667,7 @@ class AppLocalizationsOm extends AppLocalizations {
   String get householdManaged => 'Household-managed';
 
   @override
-  String get beneficiaryProfile => 'Beneficiary Profile';
+  String get beneficiaryProfile => 'Profaayilii Fayyadamaa';
 
   @override
   String get offlineIndicator => 'Offline';
@@ -778,13 +778,14 @@ class AppLocalizationsOm extends AppLocalizations {
   String get cancel => 'Dhiisi';
 
   @override
-  String get accessThroughHouseholdHead => 'Access through household head';
+  String get accessThroughHouseholdHead => 'Hogganaa maatii dhaan seeni';
 
   @override
-  String get independentLoginNotEnabled => 'Independent login not yet enabled';
+  String get independentLoginNotEnabled =>
+      'Seensa of-danda\'aa hin dandeeffamne';
 
   @override
-  String get otpEnabled => 'OTP enabled';
+  String get otpEnabled => 'OTP dandeeffameera';
 
   @override
   String get beneficiaryDetails => 'Beneficiary details';
@@ -930,7 +931,7 @@ class AppLocalizationsOm extends AppLocalizations {
   String get searchByFacilityName => 'Search by facility name...';
 
   @override
-  String get noFacilitiesFound => 'No facilities found.';
+  String get noFacilitiesFound => 'Dhaabbanni hin argamne.';
 
   @override
   String get tryDifferentSearch => 'Try a different search term';
@@ -1179,7 +1180,7 @@ class AppLocalizationsOm extends AppLocalizations {
   }
 
   @override
-  String get backgroundSyncComplete => 'Coverage synced';
+  String get backgroundSyncComplete => 'Tajaajilli walsimsiifameera';
 
   @override
   String get offlineBadge => 'Toora ala';
@@ -1291,46 +1292,46 @@ class AppLocalizationsOm extends AppLocalizations {
   String get installFacilityApp => 'Install: cbhi_facility_desktop';
 
   @override
-  String get navFacilities => 'Facilities';
+  String get navFacilities => 'Dhaabbilee';
 
   @override
-  String get healthFacilities => 'Health Facilities';
+  String get healthFacilities => 'Dhaabbilee fayyaa';
 
   @override
-  String get addFacility => 'Add Facility';
+  String get addFacility => 'Dhaabbata dabali';
 
   @override
-  String get facilityName => 'Facility Name';
+  String get facilityName => 'Maqaa dhaabbataa';
 
   @override
-  String get facilityCode => 'Facility Code';
+  String get facilityCode => 'Koodii dhaabbataa';
 
   @override
-  String get staffCount => 'Staff';
+  String get staffCount => 'Hojjettootaa';
 
   @override
-  String get address => 'Address';
+  String get address => 'Teessoo';
 
   @override
-  String get addStaff => 'Add Staff';
+  String get addStaff => 'Hojjettaa dabali';
 
   @override
-  String get staffAdded => 'Staff member added successfully.';
+  String get staffAdded => 'Hojjettaan dabalameera.';
 
   @override
-  String get create => 'Create';
+  String get create => 'Uumi';
 
   @override
-  String get offline => 'Offline';
+  String get offline => 'Toora ala';
 
   @override
-  String get connected => 'Connected';
+  String get connected => 'Walitti hidhameera';
 
   @override
-  String get online => 'Online';
+  String get online => 'Toora irratti';
 
   @override
-  String get refresh => 'Refresh';
+  String get refresh => 'Haaromsi';
 
   @override
   String get maxDocumentsReached => 'Galmee 3 ol hin ta\'u.';
@@ -1351,7 +1352,7 @@ class AppLocalizationsOm extends AppLocalizations {
   String get invalidNumber => 'Lakkoofsa sirrii galchi';
 
   @override
-  String get invalidIncome => 'Income is required';
+  String get invalidIncome => 'Galii barbaachisaa dha';
 
   @override
   String get selectDateRange => 'Guyyoota filadhu';
@@ -1384,34 +1385,34 @@ class AppLocalizationsOm extends AppLocalizations {
   String get supportingDocument => 'Galmee deeggarsa';
 
   @override
-  String get navAuditLog => 'Audit Log';
+  String get navAuditLog => 'Galmee Dhugoomsa';
 
   @override
-  String get entityType => 'Entity Type';
+  String get entityType => 'Gosa';
 
   @override
-  String get entityId => 'Entity ID';
+  String get entityId => 'ID';
 
   @override
-  String get search => 'Search';
+  String get search => 'Barbaadi';
 
   @override
-  String get records => 'records';
+  String get records => 'galmeewwan';
 
   @override
-  String get noAuditLogsFound => 'No audit logs found.';
+  String get noAuditLogsFound => 'Galmeen dhugoomsa hin argamne';
 
   @override
-  String get timestamp => 'Timestamp';
+  String get timestamp => 'Yeroo';
 
   @override
-  String get action => 'Action';
+  String get action => 'Tarkaanfii';
 
   @override
-  String get userRole => 'Role';
+  String get userRole => 'Gahee';
 
   @override
-  String get ipAddress => 'IP Address';
+  String get ipAddress => 'Teessoo IP';
 
   @override
   String get changePassword => 'Jecha darbii jijjiiri';
@@ -1474,87 +1475,86 @@ class AppLocalizationsOm extends AppLocalizations {
   String get idLabel => 'ID';
 
   @override
-  String get setupTwoFactor => 'Set Up Two-Factor Authentication';
+  String get setupTwoFactor => 'Mirkaneessa Sadarkaa Lama Qindeessi';
 
   @override
-  String get twoFactorRequired => 'Two-Factor Authentication Required';
+  String get twoFactorRequired => 'Mirkaneessa Sadarkaa Lama Barbaachisaa';
 
   @override
   String get twoFactorRequiredSubtitle =>
-      'Admin accounts must enable 2FA to protect sensitive health insurance data.';
+      'Herreggaan bulchiinsaa odeeffannoo eeguuf 2FA dandeessisuu qaba.';
 
   @override
-  String get totpStep1Title => 'Install an Authenticator App';
+  String get totpStep1Title => 'Appii Mirkaneessaa Buusi';
 
   @override
   String get totpStep1Body =>
-      'Download Google Authenticator, Authy, or any TOTP-compatible app on your phone.';
+      'Google Authenticator, Authy, ykn appii TOTP-walsimu kamiiyyuu buusi.';
 
   @override
-  String get totpStep2Title => 'Scan the QR Code';
+  String get totpStep2Title => 'Koodii QR Qori';
 
   @override
   String get totpStep2Body =>
-      'Open your authenticator app and scan the QR code below, or enter the secret key manually.';
+      'Appii mirkaneessaa kee bani fi koodii QR armaan gadii qori.';
 
   @override
-  String get totpQrHint => 'Scan this QR code with your authenticator app';
+  String get totpQrHint => 'Koodii QR kana appii mirkaneessaa keetiin qori';
 
   @override
-  String get totpManualEntry =>
-      'Or enter this key manually in your authenticator app:';
+  String get totpManualEntry => 'Ykn furtuun kana harkaan galchi:';
 
   @override
-  String get copySecret => 'Copy secret key';
+  String get copySecret => 'Furtuu dhokataa garagalfi';
 
   @override
-  String get secretCopied => 'Secret key copied to clipboard';
+  String get secretCopied => 'Furtuu dhokataa garagalfameera';
 
   @override
-  String get totpStep3Title => 'Enter Verification Code';
+  String get totpStep3Title => 'Koodii Mirkaneessaa Galchi';
 
   @override
   String get totpStep3Body =>
-      'Enter the 6-digit code shown in your authenticator app to confirm setup.';
+      'Qindeessuu mirkaneessuuf koodii lakkoofsa 6 appii mirkaneessaa kee irraa galchi.';
 
   @override
-  String get totpTokenLabel => '6-digit code';
+  String get totpTokenLabel => 'Koodii lakkoofsa 6';
 
   @override
-  String get activateTwoFactor => 'Activate Two-Factor Authentication';
+  String get activateTwoFactor => 'Mirkaneessa Sadarkaa Lama Dandeessisi';
 
   @override
-  String get totpActivated => 'Two-Factor Authentication Active';
+  String get totpActivated => 'Mirkaneessa Sadarkaa Lama Hojii Irra Jira';
 
   @override
   String get totpActivatedSubtitle =>
-      'Your admin account is now protected with two-factor authentication.';
+      'Herreggaan bulchiinsaa kee amma mirkaneessa sadarkaa lamaan eegameera.';
 
   @override
-  String get continueToAdmin => 'Continue to Admin Panel';
+  String get continueToAdmin => 'Paanaalii Bulchiinsaatti Itti Fufi';
 
   @override
-  String get benefitPackage => 'Benefit Package';
+  String get benefitPackage => 'Paakeejii Faaydaa';
 
   @override
-  String get coveredServices => 'Covered Services';
+  String get coveredServices => 'Tajaajila haguugame';
 
   @override
-  String get packageStatus => 'Status';
+  String get packageStatus => 'Haala';
 
   @override
   String get benefitPackageInfo =>
-      'These are the services covered by your CBHI membership. Co-payments and annual limits apply.';
+      'Kanneen miseensummaa CBHI keetiin haguugaman dha. Kaffalti qoodaa fi daangaa waggaa ni hojjata.';
 
   @override
-  String get noBenefitPackage => 'No benefit package found';
+  String get noBenefitPackage => 'Paakeejiin faaydaa hin argamne';
 
   @override
   String get noBenefitPackageSubtitle =>
-      'Contact your CBHI officer for benefit package information.';
+      'Odeeffannoo paakeejii waajjira CBHI kee irraa argadhu.';
 
   @override
-  String get grievances => 'Grievances';
+  String get grievances => 'Komii';
 
   @override
   String get myGrievances => 'Komii koo';
@@ -1563,17 +1563,17 @@ class AppLocalizationsOm extends AppLocalizations {
   String get submitNew => 'Haaraa ergi';
 
   @override
-  String get noGrievancesYet => 'No grievances submitted';
+  String get noGrievancesYet => 'Komiin hin galmoofne';
 
   @override
   String get noGrievancesSubtitle =>
       'Komii hin galmoofne. Rakkoo yoo qabaatte, gargaaruuf qophii dha.';
 
   @override
-  String get grievanceSubmitted => 'Grievance submitted successfully';
+  String get grievanceSubmitted => 'Komiin fudhatamuufi';
 
   @override
-  String get whatIsYourIssue => 'What is your issue?';
+  String get whatIsYourIssue => 'Rakkoon kee maalii?';
 
   @override
   String get grievanceSubject => 'Mata duree';
@@ -1589,7 +1589,7 @@ class AppLocalizationsOm extends AppLocalizations {
       'Rakkoo kee bal\'inaan ibsi. Guyyaa, maqaa, fi lakkoofsa wabii galchi.';
 
   @override
-  String get referenceIdOptional => 'Reference ID (optional)';
+  String get referenceIdOptional => 'Lakkoofsa wabii (dirqama miti)';
 
   @override
   String get referenceIdHint => 'Lakkoofsa klaayimii, koodii maatii, kkf';
@@ -1601,22 +1601,22 @@ class AppLocalizationsOm extends AppLocalizations {
   String get coverageHistory => 'Coverage History';
 
   @override
-  String get benefitUtilization => 'Benefit Utilization';
+  String get benefitUtilization => 'Fayyadama Faaydaa';
 
   @override
-  String get claimsByStatus => 'Claims by Status';
+  String get claimsByStatus => 'Klaayimii haala irratti hundaa\'e';
 
   @override
-  String get claimsUtilizationBar => 'Claim approval rate';
+  String get claimsUtilizationBar => 'Hamma raggaasisa klaayimii';
 
   @override
-  String get approvalRate => 'Approval Rate';
+  String get approvalRate => 'Hamma Raggaasisa';
 
   @override
-  String get totalClaimed => 'Total Claimed';
+  String get totalClaimed => 'Walitti qabama gaafatame';
 
   @override
-  String get totalApproved => 'Total Approved';
+  String get totalApproved => 'Walitti qabama raggaafame';
 
   @override
   String get grievancesTitle => 'Komii fi Iyyannoo';
@@ -1685,7 +1685,7 @@ class AppLocalizationsOm extends AppLocalizations {
       'Galmeeffamtee booda seenaan tajaajila kee ni mul\'ata.';
 
   @override
-  String get benefitUtilizationTitle => 'Benefit Utilization';
+  String get benefitUtilizationTitle => 'Fayyadama Faaydaa';
 
   @override
   String get used => 'fayyadamame';

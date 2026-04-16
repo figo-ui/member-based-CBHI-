@@ -25,7 +25,6 @@ class _TotpSetupScreenState extends State<TotpSetupScreen> {
   bool _loading = true;
   String? _error;
   String? _secret;
-  String? _qrUri;
   final _tokenCtrl = TextEditingController();
   bool _verifying = false;
   bool _verified = false;
@@ -48,7 +47,6 @@ class _TotpSetupScreenState extends State<TotpSetupScreen> {
       final result = await widget.repository.setupTotp();
       setState(() {
         _secret = result['secret']?.toString();
-        _qrUri = result['qrUri']?.toString();
         _loading = false;
       });
     } catch (e) {
@@ -261,11 +259,12 @@ class _TotpSetupScreenState extends State<TotpSetupScreen> {
                                 color: AdminTheme.primary),
                             tooltip: strings.t('copySecret'),
                             onPressed: () async {
+                              final messenger = ScaffoldMessenger.of(context);
                               await Clipboard.setData(
                                 ClipboardData(text: _secret ?? ''),
                               );
                               if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                messenger.showSnackBar(
                                   SnackBar(
                                     content: Text(strings.t('secretCopied')),
                                     backgroundColor: AdminTheme.success,
@@ -422,7 +421,7 @@ class _StepCard extends StatelessWidget {
                 height: 1.5,
               ),
             ),
-            if (child != null) child!,
+            ?child,
           ],
         ),
       ),

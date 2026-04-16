@@ -254,6 +254,7 @@ class _FacilitiesScreenState extends State<FacilitiesScreen> {
                       ),
                     ),
                   ),
+                ),
         ),
       ],
     );
