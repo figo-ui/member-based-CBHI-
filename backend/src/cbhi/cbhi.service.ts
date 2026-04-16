@@ -1622,7 +1622,6 @@ export class CbhiService {
       .map((part) => part.toString('base64url'))
       .join('.');
   }
-}
 
   // ── Coverage History ────────────────────────────────────────────────────────
 
@@ -1654,3 +1653,4 @@ export class CbhiService {
       syncedAt: new Date().toISOString(),
     };
   }
+}

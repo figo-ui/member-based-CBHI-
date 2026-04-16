@@ -18,7 +18,7 @@ import { TotpService } from './totp.service';
       useFactory: () => ({
         secret: process.env.AUTH_JWT_SECRET ?? 'maya-city-cbhi-secret',
         signOptions: {
-          expiresIn: `${process.env.AUTH_ACCESS_TOKEN_TTL_SECONDS ?? 86400}s`,
+          expiresIn: Number(process.env.AUTH_ACCESS_TOKEN_TTL_SECONDS ?? 86400),
         },
       }),
     }),

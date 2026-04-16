@@ -2,34 +2,57 @@
  * TypeORM DataSource for CLI migrations.
  *
  * Supports both local PostgreSQL and Supabase (via DATABASE_URL or individual vars).
+ * Handles URL-encoded passwords and Supabase pgBouncer pooler correctly.
  *
  * Usage:
- *   npx typeorm migration:generate src/database/migrations/MyMigration -d src/database/data-source.ts
  *   npx typeorm migration:run -d src/database/data-source.ts
  *   npx typeorm migration:revert -d src/database/data-source.ts
- *
- * For Supabase, set DATABASE_URL in your environment:
- *   DATABASE_URL=postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgres?sslmode=require
  */
 import 'dotenv/config';
 import { join } from 'path';
 import { DataSource, DataSourceOptions } from 'typeorm';
 
+function parseConnectionUrl(rawUrl: string): {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  database: string;
+  ssl: boolean;
+} {
+  const u = new URL(rawUrl);
+  return {
+    host: u.hostname,
+    port: u.port ? Number(u.port) : 5432,
+    // decodeURIComponent handles %23 → #, %40 → @, %2C → , etc.
+    username: decodeURIComponent(u.username),
+    password: decodeURIComponent(u.password),
+    database: u.pathname.replace(/^\//, ''),
+    ssl: u.searchParams.get('sslmode') === 'require' || u.searchParams.get('sslmode') === 'verify-ca',
+  };
+}
+
 function buildDataSourceOptions(): DataSourceOptions {
   const databaseUrl = process.env.DATABASE_URL;
 
   if (databaseUrl) {
-    // Supabase / any Postgres connection string
+    const conn = parseConnectionUrl(databaseUrl);
+    const isPooler = conn.port === 6543; // Supabase transaction pooler port
+
     return {
       type: 'postgres',
-      url: databaseUrl,
-      ssl: databaseUrl.includes('sslmode=require') || process.env.DB_SSL === 'true'
-        ? { rejectUnauthorized: false }
-        : false,
+      host: conn.host,
+      port: conn.port,
+      username: conn.username,
+      password: conn.password,
+      database: conn.database,
+      ssl: conn.ssl ? { rejectUnauthorized: false } : false,
       entities: [join(__dirname, '..', '**', '*.entity.{js,ts}')],
       migrations: [join(__dirname, 'migrations', '*.{js,ts}')],
       synchronize: false,
       logging: process.env.TYPEORM_LOGGING === 'true',
+      // pgBouncer transaction pooler requires this
+      ...(isPooler ? { extra: { options: '-c statement_timeout=30000' } } : {}),
     };
   }
 
@@ -44,7 +67,7 @@ function buildDataSourceOptions(): DataSourceOptions {
     ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
     entities: [join(__dirname, '..', '**', '*.entity.{js,ts}')],
     migrations: [join(__dirname, 'migrations', '*.{js,ts}')],
-    synchronize: false, // NEVER true in production
+    synchronize: false,
     logging: process.env.TYPEORM_LOGGING === 'true',
   };
 }

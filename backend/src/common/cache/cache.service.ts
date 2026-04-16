@@ -40,8 +40,9 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     try {
       // Dynamic import so the app still starts without ioredis installed
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { default: Redis } = await import('ioredis');
-      this.redisClient = new Redis({
+      const ioredis = await import('ioredis');
+      const Redis = ioredis.default ?? ioredis;
+      this.redisClient = new (Redis as any)({
         host,
         port: Number(process.env.REDIS_PORT ?? 6379),
         password: process.env.REDIS_PASSWORD ?? undefined,

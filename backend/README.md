@@ -1,38 +1,82 @@
-# Member-Based CBHI Backend
+# Maya City CBHI — Backend API
 
-Backend foundation for the Maya City member-based CBHI application.
+NestJS backend for the Maya City Community-Based Health Insurance platform.
+Connected to Supabase (PostgreSQL) with full REST API for all three Flutter apps.
 
-## What this service is for
+## Quick Start (Local Dev)
 
-- Household and beneficiary registration
-- National ID-based verification
-- Coverage renewal and premium payment tracking
-- Claims submission and approval workflows
-- Health facility directory and service management
-- Notifications, reporting, and audit-ready data storage
+```bash
+cp .env.example .env   # fill in your values
+npm install
+npm run start:dev      # http://localhost:3000
+```
 
-## Local setup
+## Quick Start (Supabase — current setup)
 
-1. Copy `.env.example` to `.env`.
-2. Set the PostgreSQL and integration values.
-3. Run `npm install` if dependencies are not already installed.
-4. Start the API with `npm run start:dev`.
+The backend is already configured to connect to Supabase. Just run:
+
+```bash
+npm run start:prod     # uses dist/ — build first with: npm run build
+```
+
+Or in dev watch mode:
+```bash
+npm run start:dev
+```
+
+## Credentials (Demo)
+
+| Role | Phone | Password |
+|------|-------|----------|
+| System Admin | +251900000001 | Admin@1234 |
+| Facility Staff | +251900000002 | Staff@1234 |
+
+## Key Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/health` | Health check (public) |
+| `GET /api/v1/demo/status` | Demo mode status (public) |
+| `POST /api/v1/auth/login` | Password login |
+| `POST /api/v1/auth/send-otp` | OTP login (member app) |
+| `GET /api/v1/cbhi/me` | Member snapshot |
+| `GET /api/v1/admin/claims` | Admin claims list |
+| `GET /api/v1/facility/eligibility` | Facility eligibility check |
+
+Full API: `GET /api/docs` (dev mode only)
 
 ## Scripts
 
-- `npm run start` runs the API once
-- `npm run start:dev` runs the API in watch mode
-- `npm run build` compiles TypeScript to `dist`
-- `npm run test` runs the unit tests
+```bash
+npm run build                    # compile TypeScript
+npm run start:prod               # run compiled dist/
+npm run start:dev                # watch mode
+npm run migration:run            # run pending TypeORM migrations
+node scripts/seed-admin.js       # seed admin + facility staff users
+node scripts/cleanup-old-types.js  # clean up leftover TypeORM enum types
+```
 
-## Notes
+## Deploy with Docker (Supabase)
 
-- The backend assumes PostgreSQL.
-- TypeORM synchronization is enabled by default outside production so the schema can evolve quickly during early development.
--  National ID, and notification integrations are scaffolded through environment variables and can be wired in next.
+```bash
+# Build and start (Supabase mode — no local postgres)
+docker compose --profile supabase up -d
 
-## Production deployment
+# Or local dev mode (with local postgres)
+docker compose --profile local up -d
+```
 
-- Use Supabase for PostgreSQL.
-- Keep `DB_SSL=true` in production.
-- Deploy the NestJS API to a Node runtime such as Render, Railway, Fly.io, or another container/VM host.
+## Environment Variables
+
+See `.env.example` for all variables. Key ones:
+
+| Variable | Description |
+|----------|-------------|
+| `DB_HOST` | Supabase pooler host |
+| `DB_PORT` | 6543 (pooler) or 5432 (direct) |
+| `DB_USERNAME` | `postgres.<project-ref>` |
+| `DB_PASSWORD` | Supabase DB password (quote if it contains # or @) |
+| `DB_SSL` | `true` for Supabase |
+| `AUTH_JWT_SECRET` | Strong random secret (min 32 chars) |
+| `DEMO_MODE` | `true` to use demo responses for all external services |
+| `NODE_ENV` | `production` to disable auto-sync and Swagger |

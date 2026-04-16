@@ -14,24 +14,19 @@ import { CbhiLogger } from './common/logger/cbhi-logger.service';
 
 function assertRequiredEnv(): void {
   const isProduction = process.env.NODE_ENV === 'production';
-  if (!isProduction) return; // Only enforce in production
+  if (!isProduction) return;
 
-  const required: string[] = [
-    'AUTH_JWT_SECRET',
-    'DIGITAL_CARD_SECRET',
-    'DB_HOST',
-    'DB_USERNAME',
-    'DB_PASSWORD',
-    'DB_NAME',
-  ];
+  // Accept either DATABASE_URL (connection string) or individual DB_* vars
+  const hasDbUrl = !!process.env.DATABASE_URL;
+  const dbVars = hasDbUrl ? [] : ['DB_HOST', 'DB_USERNAME', 'DB_PASSWORD', 'DB_NAME'];
 
+  const required: string[] = ['AUTH_JWT_SECRET', 'DIGITAL_CARD_SECRET', ...dbVars];
   const missing = required.filter((key) => !process.env[key]);
   if (missing.length > 0) {
     console.error(`[STARTUP] Missing required environment variables: ${missing.join(', ')}`);
     process.exit(1);
   }
 
-  // Warn about insecure defaults even in non-production
   if (process.env.AUTH_JWT_SECRET === 'maya-city-cbhi-secret') {
     console.error('[STARTUP] AUTH_JWT_SECRET is using the insecure default. Set a strong secret.');
     process.exit(1);

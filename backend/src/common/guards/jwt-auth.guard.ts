@@ -24,7 +24,12 @@ export class JwtAuthGuard implements CanActivate {
     ]);
     if (isPublic) return true;
 
+    // Always allow health check endpoint
     const request = context.switchToHttp().getRequest<Request>();
+    if (request.path === '/api/v1/health' || request.path === '/api/health') {
+      return true;
+    }
+
     const authorization = request.headers['authorization'];
 
     if (!authorization) {

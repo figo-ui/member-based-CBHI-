@@ -3,7 +3,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { BullModule } from '@nestjs/bull';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AdminModule } from './admin/admin.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -30,28 +30,113 @@ import { SmsModule } from './sms/sms.module';
 import { StorageModule } from './storage/storage.module';
 import { VisionModule } from './vision/vision.module';
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Parse a Postgres connection URL, properly decoding URL-encoded characters
+ * in the password (e.g. %23 → #, %40 → @, %2C → ,).
+ * TypeORM's built-in URL parser does NOT decode these, causing auth failures.
+ */
+function parseDbUrl(rawUrl: string) {
+  const u = new URL(rawUrl);
+  return {
+    host: u.hostname,
+    port: u.port ? Number(u.port) : 5432,
+    username: decodeURIComponent(u.username),
+    password: decodeURIComponent(u.password),
+    database: u.pathname.replace(/^\//, ''),
+    ssl:
+      u.searchParams.get('sslmode') === 'require' ||
+      u.searchParams.get('sslmode') === 'verify-ca',
+    isPooler: Number(u.port) === 6543, // Supabase transaction pooler
+  };
+}
+
+function buildTypeOrmConfig(): TypeOrmModuleOptions {
+  const databaseUrl = process.env.DATABASE_URL;
+
+  const base: Partial<TypeOrmModuleOptions> = {
+    type: 'postgres',
+    autoLoadEntities: true,
+    entities: [join(__dirname, '**', '*.entity.{js,ts}')],
+    // NEVER synchronize in production — use migrations
+    // Only auto-sync in development when explicitly enabled
+    synchronize:
+      process.env.TYPEORM_SYNCHRONIZE === 'true' &&
+      process.env.NODE_ENV !== 'production',
+    logging: process.env.TYPEORM_LOGGING === 'true',
+  };
+
+  if (databaseUrl) {
+    const conn = parseDbUrl(databaseUrl);
+    return {
+      ...base,
+      type: 'postgres',
+      host: conn.host,
+      port: conn.port,
+      username: conn.username,
+      password: conn.password,
+      database: conn.database,
+      ssl: conn.ssl ? { rejectUnauthorized: false } : false,
+      extra: {
+        max: Number(process.env.DB_POOL_MAX ?? conn.isPooler ? 10 : 20),
+        min: Number(process.env.DB_POOL_MIN ?? 2),
+        idleTimeoutMillis: 30_000,
+        connectionTimeoutMillis: 10_000,
+        // pgBouncer transaction mode: disable prepared statements
+        ...(conn.isPooler ? { statement_timeout: 30000 } : {}),
+      },
+    } as TypeOrmModuleOptions;
+  }
+
+  return {
+    ...base,
+    type: 'postgres',
+    host: process.env.DB_HOST ?? 'localhost',
+    port: Number(process.env.DB_PORT ?? 5432),
+    username: process.env.DB_USERNAME ?? 'postgres',
+    password: process.env.DB_PASSWORD ?? 'postgres',
+    database: process.env.DB_NAME ?? 'cbhi_db',
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+    extra: {
+      max: Number(process.env.DB_POOL_MAX ?? 20),
+      min: Number(process.env.DB_POOL_MIN ?? 2),
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 5_000,
+    },
+  } as TypeOrmModuleOptions;
+}
+
+// ── Module ────────────────────────────────────────────────────────────────────
+
+const redisHost = process.env.REDIS_HOST ?? 'localhost';
+const redisPort = Number(process.env.REDIS_PORT ?? 6379);
+const redisPassword = process.env.REDIS_PASSWORD || undefined;
+const redisEnabled = !!process.env.REDIS_HOST;
+
 @Module({
   imports: [
     // ── Rate limiting ──────────────────────────────────────────────────────
     ThrottlerModule.forRoot([
-      {
-        name: 'default',
-        ttl: 60_000,   // 1 minute window
-        limit: 60,     // 60 requests per minute (general)
-      },
-      {
-        name: 'otp',
-        ttl: 600_000,  // 10 minute window
-        limit: 5,      // 5 OTP requests per 10 minutes
-      },
+      { name: 'default', ttl: 60_000, limit: 120 },  // 120 req/min
+      { name: 'otp', ttl: 600_000, limit: 10 },       // 10 OTP/10min
     ]),
 
-    // FIX ME-7: Register Bull globally with Redis connection
+    // Bull queue — only connect to Redis if REDIS_HOST is set
+    // In dev without Redis, JobsModule gracefully degrades
     BullModule.forRoot({
       redis: {
-        host: process.env.REDIS_HOST ?? 'localhost',
-        port: Number(process.env.REDIS_PORT ?? 6379),
-        password: process.env.REDIS_PASSWORD ?? undefined,
+        host: redisHost,
+        port: redisPort,
+        password: redisPassword,
+        // Retry strategy: don't crash the app if Redis is unavailable
+        retryStrategy: (times: number) => {
+          if (!redisEnabled) return null; // stop retrying if no Redis configured
+          return Math.min(times * 500, 5000);
+        },
+        maxRetriesPerRequest: null,
+        enableReadyCheck: false,
+        lazyConnect: !redisEnabled,
       },
     }),
 
@@ -76,60 +161,14 @@ import { VisionModule } from './vision/vision.module';
     StorageModule,
     VisionModule,
 
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      ...(process.env.DATABASE_URL
-        ? {
-            url: process.env.DATABASE_URL,
-            ssl:
-              process.env.DATABASE_URL.includes('sslmode=require') ||
-              process.env.DB_SSL === 'true'
-                ? { rejectUnauthorized: false }
-                : false,
-          }
-        : {
-            host: process.env.DB_HOST ?? 'localhost',
-            port: Number(process.env.DB_PORT ?? 5432),
-            username: process.env.DB_USERNAME ?? 'postgres',
-            password: process.env.DB_PASSWORD ?? 'postgres',
-            database: process.env.DB_NAME ?? 'cbhi_db',
-            ssl:
-              process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
-          }),
-      autoLoadEntities: true,
-      entities: [join(__dirname, '**', '*.entity.{js,ts}')],
-      // NEVER use synchronize:true in production — use migrations
-      synchronize:
-        process.env.TYPEORM_SYNCHRONIZE === 'true' ||
-        process.env.NODE_ENV === 'development',
-      logging: process.env.TYPEORM_LOGGING === 'true',
-      // Connection pool — tune for your server capacity
-      extra: {
-        max: Number(process.env.DB_POOL_MAX ?? 20),
-        min: Number(process.env.DB_POOL_MIN ?? 2),
-        idleTimeoutMillis: 30_000,
-        connectionTimeoutMillis: 5_000,
-      },
-    }),
+    TypeOrmModule.forRoot(buildTypeOrmConfig()),
   ],
   controllers: [AppController],
   providers: [
     AppService,
-    // ── Global rate limiting ───────────────────────────────────────────────
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
-    // ── Global JWT authentication (use @Public() to opt out) ──────────────
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
-    // ── Global role-based access control ──────────────────────────────────
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
 export class AppModule implements NestModule {

@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { Public } from '../common/decorators/public.decorator';
 import { CacheService } from '../common/cache/cache.service';
 
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(

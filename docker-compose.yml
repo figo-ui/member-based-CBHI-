@@ -1,8 +1,22 @@
-  version: '3.9'
+version: '3.9'
+
+# ── Usage ──────────────────────────────────────────────────────────────────────
+#
+# Local development (local Postgres + Redis):
+#   docker compose up -d
+#
+# Production with Supabase (no local Postgres):
+#   docker compose --profile supabase up -d
+#
+# The backend reads DB connection from backend/.env.
+# When using Supabase, set DB_HOST/DB_PORT/DB_USERNAME/DB_PASSWORD/DB_NAME/DB_SSL
+# in backend/.env and use the --profile supabase flag to skip local postgres.
+# ──────────────────────────────────────────────────────────────────────────────
 
 services:
-  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  # ── PostgreSQL (local dev only — skip with --profile supabase) ──────────────
   postgres:
+    profiles: ["local"]
     image: postgres:16-alpine
     container_name: cbhi_postgres
     restart: unless-stopped
@@ -20,7 +34,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── Redis (cache + session store) ──────────────────────────────────────────
+  # ── Redis (cache + Bull job queue) ─────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: cbhi_redis
@@ -36,8 +50,39 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── Backend API ─────────────────────────────────────────────────────────────
+  # ── Backend API (Supabase mode — no local postgres dependency) ──────────────
   backend:
+    profiles: ["supabase"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: cbhi_backend
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-cbhi_redis_pass}
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    volumes:
+      - uploads_data:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── Backend API (local mode — depends on local postgres) ────────────────────
+  backend-local:
+    profiles: ["local"]
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -62,20 +107,17 @@ services:
     volumes:
       - uploads_data:/app/uploads
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/v1/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 40s
 
-  # ── FIX ME-6: nginx reverse proxy with TLS termination ─────────────────────
+  # ── nginx reverse proxy with TLS termination ────────────────────────────────
   nginx:
     image: nginx:1.25-alpine
     container_name: cbhi_nginx
     restart: unless-stopped
-    depends_on:
-      backend:
-        condition: service_healthy
     ports:
       - "80:80"
       - "443:443"
@@ -93,7 +135,6 @@ services:
     volumes:
       - certbot_www:/var/www/certbot
       - certbot_conf:/etc/letsencrypt
-    # Run once to obtain certificate; use a cron job or systemd timer to renew
     entrypoint: >
       /bin/sh -c "trap exit TERM;
       while :; do
@@ -101,8 +142,9 @@ services:
         sleep 12h & wait $${!};
       done"
 
-  # ── FIX MJ-9: Automated PostgreSQL backups ──────────────────────────────────
+  # ── Automated PostgreSQL backups (local mode only) ──────────────────────────
   pg-backup:
+    profiles: ["local"]
     image: prodrigestivill/postgres-backup-local:16
     container_name: cbhi_pg_backup
     restart: unless-stopped

@@ -1,6 +1,6 @@
 import { Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
-import { Job } from 'bull';
+import type { Job } from 'bull';
 import { JobsService } from './jobs.service';
 
 export const CBHI_JOBS_QUEUE = 'cbhi-jobs';

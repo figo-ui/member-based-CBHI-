@@ -39,7 +39,7 @@ class FacilityRepository {
   Future<bool> ping() async {
     try {
       final response = await _client
-          .get(Uri.parse('$kFacilityApiBase/../health'), headers: _headers)
+          .get(Uri.parse('$kFacilityApiBase/health'), headers: _headers)
           .timeout(const Duration(seconds: 5));
       return response.statusCode < 500;
     } catch (_) {

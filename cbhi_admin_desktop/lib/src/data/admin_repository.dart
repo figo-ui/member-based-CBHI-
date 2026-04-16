@@ -60,7 +60,7 @@ class AdminRepository {
   Future<bool> ping() async {
     try {
       final response = await _client
-          .get(Uri.parse('$kAdminApiBase/../health'), headers: _headers)
+          .get(Uri.parse('$kAdminApiBase/health'), headers: _headers)
           .timeout(const Duration(seconds: 5));
       return response.statusCode < 500;
     } catch (_) {
