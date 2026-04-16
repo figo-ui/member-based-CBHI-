@@ -18,9 +18,9 @@ import 'shared/secure_storage_service.dart';
 String get kDefaultApiBaseUrl {
   const envUrl = String.fromEnvironment('CBHI_API_BASE_URL');
   if (envUrl.isNotEmpty) return envUrl;
-  // Android emulator uses 10.0.2.2 to reach host machine — keep local for dev
-  if (_isAndroid) return 'http://10.0.2.2:3000/api/v1';
-  // Web, Windows, macOS, Linux → deployed backend
+  // Always use the deployed backend — works on all platforms including Android devices
+  // For local dev on Android emulator, pass:
+  //   --dart-define=CBHI_API_BASE_URL=http://10.0.2.2:3000/api/v1
   return 'https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app/api/v1';
 }
 
