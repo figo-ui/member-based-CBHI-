@@ -122,18 +122,20 @@ const redisEnabled = !!process.env.REDIS_HOST;
       { name: 'otp', ttl: 600_000, limit: 10 },       // 10 OTP/10min
     ]),
 
-    // Bull queue — only connect to Redis if REDIS_HOST is set
-    // In dev without Redis, JobsModule gracefully degrades
-    BullMQModule.forRoot({
-      connection: {
-        host: redisHost,
-        port: redisPort,
-        password: redisPassword,
-        lazyConnect: !redisEnabled,
-        enableOfflineQueue: false,
-        maxRetriesPerRequest: null,
-      },
-    }),
+    // BullMQ — only register when Redis is configured (not on Vercel serverless)
+    ...(redisEnabled
+      ? [
+          BullMQModule.forRoot({
+            connection: {
+              host: redisHost,
+              port: redisPort,
+              password: redisPassword,
+              enableOfflineQueue: false,
+              maxRetriesPerRequest: null,
+            },
+          }),
+        ]
+      : []),
 
     AdminModule,
     AuditModule,
@@ -148,7 +150,7 @@ const redisEnabled = !!process.env.REDIS_HOST;
     HealthModule,
     IndigentModule,
     IntegrationsModule,
-    JobsModule,
+    ...(redisEnabled ? [JobsModule] : []),
     LocationsModule,
     NotificationsModule,
     PaymentGatewayModule,

@@ -11,6 +11,7 @@
  * All core API functionality (auth, CBHI, claims, payments, admin) works fine.
  */
 import 'dotenv/config';
+import '../src/instrument';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
