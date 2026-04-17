@@ -1,4 +1,4 @@
-import { BullMQModule } from '@nestjs/bullmq';
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Beneficiary } from '../beneficiaries/beneficiary.entity';
@@ -17,7 +17,7 @@ import { JobsScheduler } from './jobs.scheduler';
   imports: [
     TypeOrmModule.forFeature([Coverage, Household, Notification, Beneficiary, Grievance, Claim]),
     SmsModule,
-    BullMQModule.registerQueue({
+    BullModule.registerQueue({
       name: CBHI_JOBS_QUEUE,
     }),
   ],

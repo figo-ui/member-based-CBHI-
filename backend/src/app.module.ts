@@ -1,7 +1,7 @@
 import { join } from 'path';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { BullMQModule } from '@nestjs/bullmq';
+import { BullModule } from '@nestjs/bullmq';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AdminModule } from './admin/admin.module';
@@ -125,7 +125,7 @@ const redisEnabled = !!process.env.REDIS_HOST;
     // BullMQ — only register when Redis is configured (not on Vercel serverless)
     ...(redisEnabled
       ? [
-          BullMQModule.forRoot({
+          BullModule.forRoot({
             connection: {
               host: redisHost,
               port: redisPort,
