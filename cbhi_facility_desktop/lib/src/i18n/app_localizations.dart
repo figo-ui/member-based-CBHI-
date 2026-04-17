@@ -107,6 +107,13 @@ class AppLocalizations {
       'supportingDocument': 'Supporting Document',
       // Connectivity
       'offline': 'Offline',
+      // Manual entry fallback
+      'enterManually': 'Enter manually',
+      'manualEntryHint': 'Enter membership ID or household code',
+      'cancel': 'Cancel',
+      'confirm': 'Confirm',
+      // Claim total
+      'totalClaimed': 'Total Claimed',
     },
     'am': {
       'appTitle': 'የማያ ከተማ CBHI ተቋም',
@@ -186,6 +193,13 @@ class AppLocalizations {
       'supportingDocument': 'ድጋፍ ሰጪ ሰነድ',
       // Connectivity
       'offline': 'ኦፍላይን',
+      // Manual entry fallback
+      'enterManually': 'በእጅ ያስገቡ',
+      'manualEntryHint': 'የአባልነት መለያ ወይም የቤተሰብ ኮድ ያስገቡ',
+      'cancel': 'ሰርዝ',
+      'confirm': 'አረጋግጥ',
+      // Claim total
+      'totalClaimed': 'ጠቅላላ የተጠየቀ',
     },
     'om': {
       'appTitle': 'Dhaabbata CBHI Magaalaa Maya',
@@ -266,6 +280,13 @@ class AppLocalizations {
       'supportingDocument': 'Galmee deeggarsa',
       // Connectivity
       'offline': 'Toora ala',
+      // Manual entry fallback
+      'enterManually': 'Harkaan galchi',
+      'manualEntryHint': 'ID miseensaa yookaan koodii maatii galchi',
+      'cancel': 'Dhiisi',
+      'confirm': 'Mirkaneessi',
+      // Claim total
+      'totalClaimed': 'Walitti qabama gaafatame',
     },
   };
 

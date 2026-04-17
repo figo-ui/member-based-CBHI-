@@ -575,6 +575,25 @@ export class CbhiService {
       dto.beneficiaryPhotoUpload,
     );
     await this.recountHouseholdMembers(household.id);
+
+    // B11: Recalculate premium when family size changes for paying members
+    if (household.membershipType === MembershipType.PAYING) {
+      try {
+        const updatedHousehold = await this.householdRepository.findOne({ where: { id: household.id } });
+        if (updatedHousehold) {
+          const coverage = await this.coverageRepository.findOne({
+            where: { household: { id: household.id } },
+            order: { createdAt: 'DESC' },
+          });
+          if (coverage) {
+            const newPremium = Math.max(updatedHousehold.memberCount, 1) * this.premiumPerMember;
+            coverage.premiumAmount = newPremium.toFixed(2);
+            await this.coverageRepository.save(coverage);
+          }
+        }
+      } catch (_) { /* non-blocking */ }
+    }
+
     return this.getFamily(userId);
   }
 

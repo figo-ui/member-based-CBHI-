@@ -2,10 +2,12 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Beneficiary } from '../beneficiaries/beneficiary.entity';
+import { BenefitPackage } from '../benefit-packages/benefit-package.entity';
 import { Coverage } from '../coverages/coverage.entity';
 import {
   CoverageStatus,
   IndigentEmploymentStatus,
+  MembershipTier,
   MembershipType,
   PaymentMethod,
   PaymentStatus,
@@ -30,6 +32,32 @@ export type EligibilityDecision = {
 export class CoverageService {
   private readonly premiumPerMember = Number(process.env.CBHI_PREMIUM_PER_MEMBER ?? 120);
 
+  // Research-based 4-tier sliding scale (PMC11936286, Jimma University 2022)
+  private get tierBasePremiums() {
+    return {
+      [MembershipTier.INDIGENT]: 0,
+      [MembershipTier.LOW_INCOME]: Number(process.env.CBHI_PREMIUM_LOW ?? 350),
+      [MembershipTier.MIDDLE_INCOME]: Number(process.env.CBHI_PREMIUM_MIDDLE ?? 500),
+      [MembershipTier.HIGH_INCOME]: Number(process.env.CBHI_PREMIUM_HIGH ?? 650),
+    };
+  }
+
+  private get additionalAdultPremium() {
+    return Number(process.env.CBHI_PREMIUM_ADDITIONAL_ADULT ?? 100);
+  }
+
+  /**
+   * Calculate tier-based premium.
+   * Base + (additionalAdults * additionalAdultRate)
+   * additionalAdults = max(0, householdSize - 1)  (first adult is base)
+   */
+  calculateTierPremium(tier: MembershipTier, householdSize: number): number {
+    if (tier === MembershipTier.INDIGENT) return 0;
+    const base = this.tierBasePremiums[tier];
+    const additionalAdults = Math.max(0, householdSize - 1);
+    return base + additionalAdults * this.additionalAdultPremium;
+  }
+
   constructor(
     @InjectRepository(Coverage)
     private readonly coverageRepository: Repository<Coverage>,
@@ -39,6 +67,8 @@ export class CoverageService {
     private readonly householdRepository: Repository<Household>,
     @InjectRepository(Beneficiary)
     private readonly beneficiaryRepository: Repository<Beneficiary>,
+    @InjectRepository(BenefitPackage)
+    private readonly benefitPackageRepository: Repository<BenefitPackage>,
   ) {}
 
   resolveRegistrationEligibility(dto: RegistrationStepTwoDto, householdSize: number): EligibilityDecision {
@@ -99,10 +129,16 @@ export class CoverageService {
     membershipType: MembershipType,
     requestedPremium: number | undefined,
     eligibility: EligibilityDecision,
+    membershipTier?: MembershipTier,
   ): number {
     if (membershipType === MembershipType.INDIGENT && eligibility.approved) return 0;
+    // If a tier is specified, use tier-based calculation
+    if (membershipTier && membershipTier !== MembershipTier.INDIGENT) {
+      return this.calculateTierPremium(membershipTier, householdSize);
+    }
     if (membershipType === MembershipType.PAYING && requestedPremium !== undefined && requestedPremium >= 0) return requestedPremium;
-    return Math.max(householdSize, 1) * this.premiumPerMember;
+    // Default: MIDDLE_INCOME tier (500 ETB base, aligns with research mode)
+    return this.calculateTierPremium(MembershipTier.MIDDLE_INCOME, householdSize);
   }
 
   async upsertCoverage(
@@ -110,6 +146,7 @@ export class CoverageService {
     membershipType: MembershipType,
     requestedPremium: number | undefined,
     eligibility: EligibilityDecision,
+    membershipTier?: MembershipTier,
   ) {
     const current = await this.coverageRepository.findOne({
       where: { household: { id: household.id } },
@@ -124,7 +161,7 @@ export class CoverageService {
 
     const startDate = new Date();
     const endDate = this.addMonths(startDate, 12);
-    const premiumAmount = this.resolvePremiumAmount(household.memberCount, membershipType, requestedPremium, eligibility);
+    const premiumAmount = this.resolvePremiumAmount(household.memberCount, membershipType, requestedPremium, eligibility, membershipTier);
 
     coverage.startDate = startDate;
     coverage.endDate = endDate;
@@ -132,6 +169,21 @@ export class CoverageService {
     coverage.status = this.resolveCoverageStatus(membershipType, eligibility);
     coverage.premiumAmount = premiumAmount.toFixed(2);
     coverage.paidAmount = coverage.paidAmount ?? '0.00';
+
+    // B1: Link active benefit package
+    try {
+      const activePkg = await this.benefitPackageRepository.findOne({ where: { isActive: true } });
+      if (activePkg) coverage.benefitPackage = activePkg;
+    } catch (_) { /* non-blocking */ }
+
+    // B6: Set claimsEligibleFrom — 30-day waiting period for PAYING, immediate for INDIGENT
+    if (membershipType === MembershipType.PAYING) {
+      const waitEnd = new Date(startDate);
+      waitEnd.setDate(waitEnd.getDate() + 30);
+      coverage.claimsEligibleFrom = waitEnd;
+    } else {
+      coverage.claimsEligibleFrom = startDate;
+    }
 
     return this.coverageRepository.save(coverage);
   }
@@ -212,6 +264,8 @@ export class CoverageService {
       nextRenewalDate: coverage.nextRenewalDate?.toISOString() ?? null,
       premiumAmount: Number(coverage.premiumAmount ?? 0),
       paidAmount: Number(coverage.paidAmount ?? 0),
+      annualCeiling: Number(coverage.benefitPackage?.annualCeiling ?? 0),
+      benefitPackageId: coverage.benefitPackage?.id ?? null,
     };
   }
 

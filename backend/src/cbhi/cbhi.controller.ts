@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../users/user.entity';
 import {
@@ -18,18 +19,24 @@ import {
 } from './cbhi.dto';
 import { CbhiService } from './cbhi.service';
 import { Public } from '../common/decorators/public.decorator';
+import { ClaimAppealService } from '../claims/claim-appeal.service';
 
 @Controller('cbhi')
 export class CbhiController {
-  constructor(private readonly cbhiService: CbhiService) {}
+  constructor(
+    private readonly cbhiService: CbhiService,
+    private readonly claimAppealService: ClaimAppealService,
+  ) {}
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('registration/step-1')
   registerStepOne(@Body() dto: RegistrationStepOneDto) {
     return this.cbhiService.registerStepOne(dto);
   }
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('registration/step-2')
   registerStepTwo(@Body() dto: RegistrationStepTwoDto) {
     return this.cbhiService.registerStepTwo(dto);
@@ -109,5 +116,21 @@ export class CbhiController {
   @Get('coverage/history')
   getCoverageHistory(@CurrentUser() user: User) {
     return this.cbhiService.getCoverageHistory(user.id);
+  }
+
+  // ── Claim Appeals ──────────────────────────────────────────────────────────
+
+  @Post('claims/:claimId/appeal')
+  submitClaimAppeal(
+    @CurrentUser() user: User,
+    @Param('claimId') claimId: string,
+    @Body() body: { reason: string },
+  ) {
+    return this.claimAppealService.submitAppeal(user.id, claimId, body.reason);
+  }
+
+  @Get('claims/appeals')
+  getMyAppeals(@CurrentUser() user: User) {
+    return this.claimAppealService.getMyAppeals(user.id);
   }
 }

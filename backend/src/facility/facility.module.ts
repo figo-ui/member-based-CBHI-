@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Beneficiary } from '../beneficiaries/beneficiary.entity';
+import { BenefitPackage } from '../benefit-packages/benefit-package.entity';
 import { ClaimItem } from '../claim-items/claim-item.entity';
 import { Claim } from '../claims/claim.entity';
 import { Coverage } from '../coverages/coverage.entity';
@@ -17,6 +18,7 @@ import { FacilityService } from './facility.service';
     TypeOrmModule.forFeature([
       FacilityUser,
       Beneficiary,
+      BenefitPackage,
       Coverage,
       Claim,
       ClaimItem,

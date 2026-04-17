@@ -348,7 +348,7 @@ class DashboardScreen extends StatelessWidget {
               BenefitUtilizationWidget(
                 totalClaimed: snapshot.claims
                     .fold(0.0, (sum, c) => sum + ((c['claimedAmount'] as num?)?.toDouble() ?? 0)),
-                annualCeiling: 0, // Will be populated from benefit package API
+                annualCeiling: (snapshot.coverage?['annualCeiling'] as num?)?.toDouble() ?? 0,
                 claimsCount: snapshot.claims.length,
               ).animate().fadeIn(duration: 400.ms, delay: 480.ms),
 

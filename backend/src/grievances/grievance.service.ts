@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Grievance, GrievanceStatus, GrievanceType } from './grievance.entity';
 import { User } from '../users/user.entity';
-import { UserRole } from '../common/enums/cbhi.enums';
+import { Notification } from '../notifications/notification.entity';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
+import { NotificationType, PreferredLanguage, UserRole } from '../common/enums/cbhi.enums';
 
 @Injectable()
 export class GrievanceService {
@@ -12,6 +14,9 @@ export class GrievanceService {
     private readonly grievanceRepo: Repository<Grievance>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Notification)
+    private readonly notificationRepo: Repository<Notification>,
+    @Optional() private readonly wsGateway?: NotificationsGateway,
   ) {}
 
   async submitGrievance(userId: string, dto: {
@@ -88,6 +93,32 @@ export class GrievanceService {
     }
 
     await this.grievanceRepo.save(grievance);
+
+    // B4: Notify member when grievance is resolved
+    if (dto.status === GrievanceStatus.RESOLVED && grievance.submittedBy) {
+      try {
+        await this.notificationRepo.save(
+          this.notificationRepo.create({
+            recipient: grievance.submittedBy,
+            type: NotificationType.SYSTEM_ALERT,
+            title: 'Grievance resolved',
+            message: `Your grievance '${grievance.subject}' has been resolved: ${dto.resolution ?? 'See resolution details.'}`,
+            payload: { grievanceId: grievance.id, subject: grievance.subject },
+            language: grievance.submittedBy.preferredLanguage ?? PreferredLanguage.ENGLISH,
+            isRead: false,
+          }),
+        );
+        this.wsGateway?.pushToUser(grievance.submittedBy.id, 'notification', {
+          type: NotificationType.SYSTEM_ALERT,
+          title: 'Grievance resolved',
+          message: `Your grievance '${grievance.subject}' has been resolved.`,
+        });
+      } catch (err) {
+        // Non-blocking — log but don't fail
+        console.error(`Failed to notify grievance resolution: ${(err as Error).message}`);
+      }
+    }
+
     return this.toSummary(grievance);
   }
 

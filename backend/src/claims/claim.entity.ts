@@ -32,6 +32,9 @@ export class Claim extends AuditableEntity {
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   approvedAmount!: string;
 
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: '0.00', nullable: true })
+  memberCoPayment?: string | null;
+
   @Column({ type: 'text', nullable: true })
   decisionNote?: string | null;
 

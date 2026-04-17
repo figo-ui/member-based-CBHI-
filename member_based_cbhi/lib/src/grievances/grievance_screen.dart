@@ -116,10 +116,10 @@ class _EmptyGrievances extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppTheme.success.withValues(alpha: 0.08),
+                color: AppTheme.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_circle_outline, size: 56, color: AppTheme.success),
+              child: const Icon(Icons.inbox_outlined, size: 56, color: AppTheme.primary),
             ),
             const SizedBox(height: 20),
             Text(strings.t('noGrievancesTitle'), style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
@@ -241,13 +241,13 @@ class _SubmitGrievanceFormState extends State<_SubmitGrievanceForm> {
   bool _submitting = false;
   String? _error;
 
-  final _types = [
-    ('CLAIM_REJECTION', Icons.receipt_long_outlined, 'Claim Rejection'),
-    ('FACILITY_DENIAL', Icons.local_hospital_outlined, 'Facility Denied Service'),
-    ('PAYMENT_ISSUE', Icons.payments_outlined, 'Payment Issue'),
-    ('INDIGENT_REJECTION', Icons.volunteer_activism_outlined, 'Indigent Application Rejected'),
-    ('ENROLLMENT_ISSUE', Icons.person_add_outlined, 'Enrollment Issue'),
-    ('OTHER', Icons.help_outline, 'Other'),
+  final _typeIcons = [
+    ('CLAIM_REJECTION', Icons.receipt_long_outlined),
+    ('FACILITY_DENIAL', Icons.local_hospital_outlined),
+    ('PAYMENT_ISSUE', Icons.payments_outlined),
+    ('INDIGENT_REJECTION', Icons.volunteer_activism_outlined),
+    ('ENROLLMENT_ISSUE', Icons.person_add_outlined),
+    ('OTHER', Icons.help_outline),
   ];
 
   @override
@@ -314,8 +314,16 @@ class _SubmitGrievanceFormState extends State<_SubmitGrievanceForm> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: _types.map((t) {
+            children: _typeIcons.map((t) {
               final isSelected = _type == t.$1;
+              final label = switch (t.$1) {
+                'CLAIM_REJECTION' => strings.t('grievanceTypeClaimRejection'),
+                'FACILITY_DENIAL' => strings.t('grievanceTypeFacilityDenial'),
+                'PAYMENT_ISSUE' => strings.t('grievanceTypePaymentIssue'),
+                'INDIGENT_REJECTION' => strings.t('grievanceTypeIndigentRejection'),
+                'ENROLLMENT_ISSUE' => strings.t('grievanceTypeEnrollmentIssue'),
+                _ => strings.t('grievanceTypeOther'),
+              };
               return GestureDetector(
                 onTap: () => setState(() => _type = t.$1),
                 child: AnimatedContainer(
@@ -332,7 +340,7 @@ class _SubmitGrievanceFormState extends State<_SubmitGrievanceForm> {
                     children: [
                       Icon(t.$2, size: 16, color: isSelected ? Colors.white : AppTheme.textSecondary),
                       const SizedBox(width: 6),
-                      Text(t.$3, style: TextStyle(color: isSelected ? Colors.white : AppTheme.textDark, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500, fontSize: 13)),
+                      Text(label, style: TextStyle(color: isSelected ? Colors.white : AppTheme.textDark, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500, fontSize: 13)),
                     ],
                   ),
                 ),

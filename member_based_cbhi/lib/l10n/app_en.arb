@@ -566,19 +566,9 @@
   "noBenefitPackage": "No benefit package found",
   "noBenefitPackageSubtitle": "Contact your CBHI officer for benefit package information.",
   "grievances": "Grievances",
-  "myGrievances": "My Grievances",
-  "submitNew": "Submit New",
   "noGrievancesYet": "No grievances submitted",
-  "noGrievancesSubtitle": "Submit a grievance if you have an issue with your coverage, claims, or facility service.",
-  "grievanceSubmitted": "Grievance submitted successfully",
   "whatIsYourIssue": "What is your issue?",
-  "grievanceSubject": "Subject",
-  "grievanceSubjectHint": "Brief description of your issue",
-  "grievanceDescription": "Description",
-  "grievanceDescriptionHint": "Describe your issue in detail. Include dates, facility names, and any reference numbers.",
   "referenceIdOptional": "Reference ID (optional)",
-  "referenceIdHint": "Claim number, household code, or other reference",
-  "submitGrievance": "Submit Grievance",
   "coverageHistory": "Coverage History",
   "benefitUtilization": "Benefit Utilization",
   "claimsByStatus": "Claims by Status",
@@ -639,5 +629,34 @@
   "@coverageExpiresSoon": {
     "placeholders": { "days": {"type": "String"} }
   },
-  "renewNow": "Renew Now"
+  "renewNow": "Renew Now",
+
+  "indigentApplicationTitle": "Indigent Membership Application",
+  "indigentApplicationBannerBody": "Qualifying households receive subsidized or free CBHI coverage. Upload supporting documents from your kebele. Documents are verified automatically by AI.",
+  "acceptedDocumentTypesTitle": "Accepted document types",
+  "statusValidating": "Validating...",
+  "statusExpired": "EXPIRED",
+  "statusAccepted": "Accepted",
+  "statusIssueDetected": "Issue detected",
+  "statusPending": "Pending",
+  "documentExpiredBilingual": "This document has expired. Please obtain a new certificate from your kebele.",
+  "validForMonths": "Valid for {months} months",
+  "@validForMonths": {
+    "placeholders": {
+      "months": {"type": "int"}
+    }
+  },
+  "ownsPropertySubtitle": "Land, house, or business",
+  "hasMemberWithDisabilitySubtitle": "A household member has a disability",
+
+  "grievanceTypeClaimRejection": "Claim Rejection",
+  "grievanceTypeFacilityDenial": "Facility Denied Service",
+  "grievanceTypePaymentIssue": "Payment Issue",
+  "grievanceTypeIndigentRejection": "Indigent Application Rejected",
+  "grievanceTypeEnrollmentIssue": "Enrollment Issue",
+  "grievanceTypeOther": "Other",
+
+  "showAtFacility": "Show at Facility",
+  "enterManually": "Enter manually",
+  "manualEntryHint": "Enter membership ID or household code"
 }

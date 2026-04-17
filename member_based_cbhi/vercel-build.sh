@@ -19,10 +19,9 @@ flutter config --enable-web
 flutter --version
 flutter pub get
 
-# CBHI_API_BASE_URL is set as a Vercel environment variable
-# pointing to the Railway backend, e.g.:
-#   https://cbhi-backend.up.railway.app/api/v1
-API_URL="${CBHI_API_BASE_URL:-https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app/api/v1}"
+# CBHI_API_BASE_URL is set as a Vercel environment variable.
+# Set it in: Vercel Dashboard → Project Settings → Environment Variables
+API_URL="${CBHI_API_BASE_URL:-https://member-based-cbhi.vercel.app/api/v1}"
 echo "Building with API: $API_URL"
 
 flutter build web --release \

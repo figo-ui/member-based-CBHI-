@@ -22,9 +22,11 @@ class _RegistrationFlowState extends State<RegistrationFlow> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      context.read<RegistrationCubit>().startRegistration();
+      // Restores any in-progress draft from SharedPreferences so the user
+      // doesn't lose their registration progress after the app is killed.
+      await context.read<RegistrationCubit>().startRegistration();
     });
   }
 

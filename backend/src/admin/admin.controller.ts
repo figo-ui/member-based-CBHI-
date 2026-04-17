@@ -15,11 +15,16 @@ import {
   UpdateSystemSettingDto,
 } from './admin.dto';
 import { AdminService } from './admin.service';
+import { ClaimAppealService } from '../claims/claim-appeal.service';
+import { AppealStatus } from '../claims/claim-appeal.entity';
 
 @Controller('admin')
 @Roles(UserRole.CBHI_OFFICER, UserRole.SYSTEM_ADMIN)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly claimAppealService: ClaimAppealService,
+  ) {}
 
   @Get('indigent/pending')
   getPendingIndigent(
@@ -192,5 +197,21 @@ export class AdminController {
   @Get('reports/facility-performance')
   getFacilityPerformance(@CurrentUser() user: User, @Query() query: ReportsQueryDto) {
     return this.adminService.getFacilityPerformance(user.id, query);
+  }
+
+  // ── Claim Appeals ──────────────────────────────────────────────────────────
+
+  @Get('claims/appeals')
+  getAllAppeals(@CurrentUser() user: User) {
+    return this.claimAppealService.getAllAppeals(user.id);
+  }
+
+  @Patch('claims/appeals/:appealId/review')
+  reviewAppeal(
+    @CurrentUser() user: User,
+    @Param('appealId') appealId: string,
+    @Body() body: { status: AppealStatus; reviewNote?: string },
+  ) {
+    return this.claimAppealService.reviewAppeal(user.id, appealId, body);
   }
 }

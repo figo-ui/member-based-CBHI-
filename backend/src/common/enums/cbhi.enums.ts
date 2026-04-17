@@ -48,9 +48,11 @@ export enum RelationshipToHouseholdHead {
 export enum CoverageStatus {
   ACTIVE = 'ACTIVE',
   PENDING_RENEWAL = 'PENDING_RENEWAL',
+  WAITING_PERIOD = 'WAITING_PERIOD',
   EXPIRED = 'EXPIRED',
   SUSPENDED = 'SUSPENDED',
   REJECTED = 'REJECTED',
+  INACTIVE = 'INACTIVE',
 }
 
 export enum PaymentMethod {
@@ -74,6 +76,7 @@ export enum ClaimStatus {
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
   PAID = 'PAID',
+  ESCALATED = 'ESCALATED',
 }
 
 export enum DocumentType {
@@ -92,6 +95,7 @@ export enum NotificationType {
   CLAIM_UPDATE = 'CLAIM_UPDATE',
   HEALTH_PROMOTION = 'HEALTH_PROMOTION',
   SYSTEM_ALERT = 'SYSTEM_ALERT',
+  PAYMENT_CONFIRMATION = 'PAYMENT_CONFIRMATION',
 }
 
 export enum FacilityUserRole {
@@ -116,4 +120,11 @@ export enum IndigentApplicationStatus {
   PENDING = 'PENDING',
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
+}
+
+export enum MembershipTier {
+  INDIGENT = 'INDIGENT',
+  LOW_INCOME = 'LOW_INCOME',
+  MIDDLE_INCOME = 'MIDDLE_INCOME',
+  HIGH_INCOME = 'HIGH_INCOME',
 }

@@ -23,6 +23,32 @@ class _ReportsScreenState extends State<ReportsScreen> {
   DateTime? _from;
   DateTime? _to;
 
+  // F16: Record counts
+  int? _householdCount;
+  int? _claimsCount;
+  int? _paymentsCount;
+  int? _indigentCount;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCounts();
+  }
+
+  Future<void> _loadCounts() async {
+    try {
+      final summary = await widget.repository.getSummaryReport();
+      if (mounted) {
+        setState(() {
+          _householdCount = summary['households'] as int?;
+          _claimsCount = (summary['claims'] as Map?)?['submitted'] as int?;
+          _paymentsCount = (summary['payments'] as Map?)?['totalTransactions'] as int?;
+          _indigentCount = summary['pendingIndigentApplications'] as int?;
+        });
+      }
+    } catch (_) { /* non-blocking */ }
+  }
+
   Future<void> _pickDateRange() async {
     final now = DateTime.now();
     final range = await showDateRangePicker(
@@ -170,24 +196,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 icon: Icons.home_outlined,
                 title: strings.t('households'),
                 description: strings.t('householdsExportDescription'),
+                recordCount: _householdCount,
                 onExport: _exporting ? null : () => _export('households'),
               ),
               _ExportCard(
                 icon: Icons.receipt_long_outlined,
                 title: strings.t('claims'),
                 description: strings.t('claimsExportDescription'),
+                recordCount: _claimsCount,
                 onExport: _exporting ? null : () => _export('claims'),
               ),
               _ExportCard(
                 icon: Icons.payments_outlined,
                 title: strings.t('payments'),
                 description: strings.t('paymentsExportDescription'),
+                recordCount: _paymentsCount,
                 onExport: _exporting ? null : () => _export('payments'),
               ),
               _ExportCard(
                 icon: Icons.volunteer_activism_outlined,
                 title: strings.t('indigentApplications'),
                 description: strings.t('indigentExportDescription'),
+                recordCount: _indigentCount,
                 onExport: _exporting ? null : () => _export('indigent'),
               ),
             ],
@@ -204,11 +234,13 @@ class _ExportCard extends StatelessWidget {
     required this.title,
     required this.description,
     required this.onExport,
+    this.recordCount,
   });
   final IconData icon;
   final String title;
   final String description;
   final VoidCallback? onExport;
+  final int? recordCount;
 
   @override
   Widget build(BuildContext context) {
@@ -221,13 +253,34 @@ class _ExportCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AdminTheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: AdminTheme.primary, size: 24),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AdminTheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: AdminTheme.primary, size: 24),
+                  ),
+                  const Spacer(),
+                  if (recordCount != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AdminTheme.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '$recordCount records',
+                        style: const TextStyle(
+                          color: AdminTheme.primary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 12),
               Text(title,

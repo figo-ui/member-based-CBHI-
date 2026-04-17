@@ -605,5 +605,34 @@
   "acceptedPaymentMethods": "የሚቀበሉ የክፍያ ዘዴዎች",
   "relationshipToHouseholdHead": "ከቤተሰብ ራስ ጋር ያለ ዝምድና",
   "beneficiary": "ተጠቃሚ",
-  "facility": "ጤና ተቋም"
+  "facility": "ጤና ተቋም",
+
+  "indigentApplicationTitle": "የድሃ አባልነት ማመልከቻ",
+  "indigentApplicationBannerBody": "ብቁ ቤተሰቦች ድጎማ ወይም ነፃ ሲቢኤችአይ ሽፋን ያገኛሉ። ከቀበሌዎ ሰነዶችን ስቀና። ሰነዶች በAI ይረጋገጣሉ።",
+  "acceptedDocumentTypesTitle": "የሚቀበሉ ሰነድ ዓይነቶች",
+  "statusValidating": "በማረጋገጥ ላይ...",
+  "statusExpired": "ጊዜ አልፎበታል",
+  "statusAccepted": "ተቀብሏል",
+  "statusIssueDetected": "ችግር ተገኝቷል",
+  "statusPending": "በጥበቃ ላይ",
+  "documentExpiredBilingual": "ይህ ሰነድ ጊዜ አልፎበታል። ከቀበሌዎ አዲስ ምስክር ወረቀት ያምጡ።",
+  "validForMonths": "{months} ወር ይፀናል",
+  "@validForMonths": {
+    "placeholders": {
+      "months": {"type": "int"}
+    }
+  },
+  "ownsPropertySubtitle": "ቤት፣ መሬት ወይም ንግድ",
+  "hasMemberWithDisabilitySubtitle": "የቤተሰብ አባል አካል ጉዳት አለው",
+
+  "grievanceTypeClaimRejection": "ጥያቄ ውድቅ",
+  "grievanceTypeFacilityDenial": "ተቋም አገልግሎት ከለከለ",
+  "grievanceTypePaymentIssue": "የክፍያ ችግር",
+  "grievanceTypeIndigentRejection": "የድሃ ማመልከቻ ውድቅ",
+  "grievanceTypeEnrollmentIssue": "የምዝገባ ችግር",
+  "grievanceTypeOther": "ሌላ",
+
+  "showAtFacility": "ለጤና ተቋም አሳይ",
+  "enterManually": "በእጅ አስገባ",
+  "manualEntryHint": "የአባልነት መለያ ወይም የቤተሰብ ኮድ ያስገቡ"
 }

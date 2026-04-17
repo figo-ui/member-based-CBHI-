@@ -10,21 +10,26 @@ import { Repository } from 'typeorm';
 import { Claim } from '../claims/claim.entity';
 import {
   ClaimStatus,
+  CoverageStatus,
   FacilityUserRole,
   IndigentApplicationStatus,
+  MembershipType,
   NotificationType,
   PreferredLanguage,
   UserRole,
 } from '../common/enums/cbhi.enums';
 import { CBHIOfficer } from '../cbhi-officers/cbhi-officer.entity';
+import { CoverageService } from '../cbhi/coverage.service';
 import { FacilityUser } from '../facility-users/facility-user.entity';
 import { HealthFacility } from '../health-facilities/health-facility.entity';
 import { Household } from '../households/household.entity';
+import { Beneficiary } from '../beneficiaries/beneficiary.entity';
 import { IndigentService } from '../indigent/indigent.service';
 import { IndigentApplication } from '../indigent/indigent.entity';
 import { Notification } from '../notifications/notification.entity';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { Payment } from '../payments/payment.entity';
+import { SmsService } from '../sms/sms.service';
 import { SystemSetting } from '../system-settings/system-setting.entity';
 import { User } from '../users/user.entity';
 import { AuditLog } from '../audit/audit-log.entity';
@@ -63,7 +68,11 @@ export class AdminService {
     private readonly settingRepository: Repository<SystemSetting>,
     @InjectRepository(AuditLog)
     private readonly auditLogRepository: Repository<AuditLog>,
+    @InjectRepository(Beneficiary)
+    private readonly beneficiaryRepository: Repository<Beneficiary>,
     private readonly indigentService: IndigentService,
+    private readonly coverageService: CoverageService,
+    @Optional() private readonly smsService?: SmsService,
     @Optional() private readonly wsGateway?: NotificationsGateway,
   ) {}
 
@@ -112,6 +121,64 @@ export class AdminService {
     const user = application.userId
       ? await this.userRepository.findOne({ where: { id: application.userId } })
       : null;
+
+    if (user && application.status === IndigentApplicationStatus.APPROVED) {
+      // B1: Auto-activate household coverage for approved indigent applications
+      const household = await this.householdRepository.findOne({
+        where: { headUser: { id: user.id } },
+        relations: ['headUser'],
+      });
+
+      if (household) {
+        try {
+          const eligibility = { score: 100, approved: true, reason: 'Indigent application approved by officer.' };
+          const coverage = await this.coverageService.upsertCoverage(
+            household,
+            MembershipType.INDIGENT,
+            0,
+            eligibility,
+          );
+          coverage.status = CoverageStatus.ACTIVE;
+          // coverageService.upsertCoverage already saves; update status directly
+          await this.coverageService['coverageRepository']?.save(coverage);
+
+          household.coverageStatus = CoverageStatus.ACTIVE;
+          household.membershipType = MembershipType.INDIGENT;
+          await this.householdRepository.save(household);
+
+          // Set all beneficiaries isEligible=true
+          await this.beneficiaryRepository
+            .createQueryBuilder()
+            .update()
+            .set({ isEligible: true })
+            .where('householdId = :id', { id: household.id })
+            .execute();
+
+          // Push WebSocket coverage_sync event
+          this.wsGateway?.pushCoverageSync(user.id, {
+            coverageNumber: coverage.coverageNumber,
+            status: coverage.status,
+            endDate: coverage.endDate?.toISOString(),
+            membershipType: MembershipType.INDIGENT,
+          });
+        } catch (err) {
+          // Log but don't block the response
+          console.error(`Failed to auto-activate coverage for indigent approval: ${(err as Error).message}`);
+        }
+
+        // Send SMS notification (fire-and-forget)
+        if (user.phoneNumber) {
+          try {
+            await this.smsService?.sendRenewalReminder(
+              user.phoneNumber,
+              household.householdCode,
+              'active',
+            );
+          } catch (_) { /* SMS failure must not block */ }
+        }
+      }
+    }
+
     if (user) {
       await this.createNotification(
         user,

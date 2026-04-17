@@ -11,6 +11,7 @@ import { mkdir, writeFile } from 'fs/promises';
 import { basename, extname, join, resolve } from 'path';
 import { Repository } from 'typeorm';
 import { Beneficiary } from '../beneficiaries/beneficiary.entity';
+import { BenefitItem, BenefitPackage } from '../benefit-packages/benefit-package.entity';
 import { InlineAttachmentDto } from '../cbhi/cbhi.dto';
 import { ClaimItem } from '../claim-items/claim-item.entity';
 import { Claim } from '../claims/claim.entity';
@@ -117,6 +118,14 @@ export class FacilityService {
       );
     }
 
+    // B6: Waiting period enforcement
+    if (coverage.claimsEligibleFrom && new Date() < new Date(coverage.claimsEligibleFrom)) {
+      const eligibleDate = new Date(coverage.claimsEligibleFrom).toISOString().split('T')[0];
+      throw new BadRequestException(
+        `Coverage is in the 30-day waiting period. Claims eligible from: ${eligibleDate}`,
+      );
+    }
+
     const items = dto.items.map((item) => {
       const totalPrice = Number(item.quantity) * Number(item.unitPrice);
       return this.claimItemRepository.create({
@@ -127,10 +136,70 @@ export class FacilityService {
         notes: item.notes?.trim() || null,
       });
     });
-    const claimedAmount = items.reduce(
+    let claimedAmount = items.reduce(
       (sum, item) => sum + Number(item.totalPrice),
       0,
     );
+
+    // B2: Benefit package validation + co-payment calculation
+    let memberCoPayment = 0;
+    if (coverage.benefitPackage) {
+      const pkg = coverage.benefitPackage;
+      for (const item of dto.items) {
+        const matched = pkg.items?.find(
+          (bi: BenefitItem) =>
+            bi.serviceName.toLowerCase() === item.serviceName.trim().toLowerCase(),
+        );
+        if (!matched) {
+          throw new BadRequestException(
+            `Service "${item.serviceName}" is not covered by this household's benefit package.`,
+          );
+        }
+        // Apply maxClaimAmount cap per item
+        const itemTotal = Number(item.quantity) * Number(item.unitPrice);
+        const maxPerItem = Number(matched.maxClaimAmount ?? 0);
+        if (maxPerItem > 0 && itemTotal > maxPerItem) {
+          throw new BadRequestException(
+            `Service "${item.serviceName}" exceeds the maximum claim amount of ETB ${maxPerItem}.`,
+          );
+        }
+        // Accumulate co-payment
+        const coPayRate = matched.coPaymentPercent ?? 0;
+        memberCoPayment += itemTotal * (coPayRate / 100);
+      }
+    }
+    const schemeAmount = claimedAmount - memberCoPayment;
+
+    // B7: Duplicate claim detection (same beneficiary + facility + serviceDate, non-rejected, within 24h)
+    const existingClaim = await this.claimRepository
+      .createQueryBuilder('claim')
+      .where('claim.beneficiaryId = :beneficiaryId', { beneficiaryId: beneficiary.id })
+      .andWhere('claim.facilityId = :facilityId', { facilityId: context.facility.id })
+      .andWhere('claim.serviceDate = :serviceDate', { serviceDate: new Date(dto.serviceDate) })
+      .andWhere('claim.status != :rejected', { rejected: ClaimStatus.REJECTED })
+      .getOne();
+
+    if (existingClaim) {
+      throw new BadRequestException(
+        `Duplicate claim detected: ${existingClaim.claimNumber} was already submitted for this beneficiary at this facility on this date.`,
+      );
+    }
+
+    // B8: Annual ceiling enforcement
+    const ceiling = Number(process.env.CBHI_ANNUAL_CEILING_ETB ?? 10000);
+    const usedResult = await this.claimRepository
+      .createQueryBuilder('claim')
+      .select('SUM(CAST(claim.approvedAmount AS DECIMAL))', 'total')
+      .where('claim.coverageId = :coverageId', { coverageId: coverage.id })
+      .andWhere('claim.status != :rejected', { rejected: ClaimStatus.REJECTED })
+      .getRawOne<{ total: string | null }>();
+    const used = Number(usedResult?.total ?? 0);
+    const remaining = ceiling - used;
+    if (used + claimedAmount > ceiling) {
+      throw new BadRequestException(
+        `Annual claim ceiling of ETB ${ceiling} would be exceeded. Used: ETB ${used.toFixed(2)}, Requested: ETB ${claimedAmount.toFixed(2)}, Remaining: ETB ${remaining.toFixed(2)}.`,
+      );
+    }
 
     const claim = await this.claimRepository.save(
       this.claimRepository.create({
@@ -138,8 +207,9 @@ export class FacilityService {
         status: ClaimStatus.SUBMITTED,
         serviceDate: new Date(dto.serviceDate),
         submittedAt: new Date(),
-        claimedAmount: claimedAmount.toFixed(2),
+        claimedAmount: schemeAmount.toFixed(2),
         approvedAmount: '0.00',
+        memberCoPayment: memberCoPayment.toFixed(2),
         household: beneficiary.household,
         coverage,
         facility: context.facility,
@@ -253,7 +323,7 @@ export class FacilityService {
   private async loadCoverage(householdId: string) {
     return this.coverageRepository.findOne({
       where: { household: { id: householdId } },
-      relations: ['household'],
+      relations: ['household', 'benefitPackage', 'benefitPackage.items'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -365,6 +435,7 @@ export class FacilityService {
       reviewedAt: claim.reviewedAt?.toISOString() ?? null,
       claimedAmount: Number(claim.claimedAmount),
       approvedAmount: Number(claim.approvedAmount),
+      memberCoPayment: Number(claim.memberCoPayment ?? 0),
       facilityName: claim.facility?.name ?? null,
       householdCode: claim.household?.householdCode ?? null,
       beneficiaryId: claim.beneficiary?.id ?? null,

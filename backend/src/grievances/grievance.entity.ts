@@ -16,6 +16,7 @@ export enum GrievanceStatus {
   UNDER_REVIEW = 'UNDER_REVIEW',
   RESOLVED = 'RESOLVED',
   CLOSED = 'CLOSED',
+  ESCALATED = 'ESCALATED',
 }
 
 @Entity('grievances')

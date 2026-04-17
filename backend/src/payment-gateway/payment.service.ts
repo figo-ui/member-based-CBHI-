@@ -4,10 +4,12 @@ import { randomBytes } from 'crypto';
 import { Repository } from 'typeorm';
 import { Beneficiary } from '../beneficiaries/beneficiary.entity';
 import { Coverage } from '../coverages/coverage.entity';
-import { CoverageStatus, PaymentMethod, PaymentStatus } from '../common/enums/cbhi.enums';
+import { CoverageStatus, NotificationType, PaymentMethod, PaymentStatus, PreferredLanguage } from '../common/enums/cbhi.enums';
 import { Household } from '../households/household.entity';
+import { Notification } from '../notifications/notification.entity';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { Payment } from '../payments/payment.entity';
+import { SmsService } from '../sms/sms.service';
 import { User } from '../users/user.entity';
 import { ChapaService } from './chapa.service';
 
@@ -28,6 +30,9 @@ export class PaymentService {
     private readonly householdRepository: Repository<Household>,
     @InjectRepository(Beneficiary)
     private readonly beneficiaryRepository: Repository<Beneficiary>,
+    @InjectRepository(Notification)
+    private readonly notificationRepository: Repository<Notification>,
+    @Optional() private readonly smsService?: SmsService,
     @Optional() private readonly wsGateway?: NotificationsGateway,
   ) {}
 
@@ -186,6 +191,30 @@ export class PaymentService {
           endDate: coverage.endDate.toISOString(),
           paidAmount: payment.amount,
         });
+
+        // B3: Persistent notification
+        try {
+          const headUser = coverage.household.headUser!;
+          await this.notificationRepository.save(
+            this.notificationRepository.create({
+              recipient: headUser,
+              type: NotificationType.PAYMENT_CONFIRMATION,
+              title: 'Payment confirmed',
+              message: `Your CBHI premium was received. Coverage active until ${coverage.endDate.toISOString().split('T')[0]}. Ref: ${txRef}`,
+              payload: { txRef, coverageNumber: coverage.coverageNumber, endDate: coverage.endDate.toISOString() },
+              language: headUser.preferredLanguage ?? PreferredLanguage.ENGLISH,
+              isRead: false,
+            }),
+          );
+        } catch (_) { /* non-blocking */ }
+
+        // B3: SMS confirmation (fire-and-forget)
+        const headPhone = coverage.household.headUser?.phoneNumber;
+        if (headPhone) {
+          try {
+            await this.smsService?.sendClaimUpdate(headPhone, txRef, 'PAYMENT_CONFIRMED');
+          } catch (_) { /* non-blocking */ }
+        }
       }
     }
   }

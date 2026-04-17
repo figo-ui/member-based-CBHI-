@@ -1,7 +1,10 @@
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Beneficiary } from '../beneficiaries/beneficiary.entity';
+import { Claim } from '../claims/claim.entity';
 import { Coverage } from '../coverages/coverage.entity';
+import { Grievance } from '../grievances/grievance.entity';
 import { Household } from '../households/household.entity';
 import { Notification } from '../notifications/notification.entity';
 import { FcmService } from '../notifications/fcm.service';
@@ -12,9 +15,8 @@ import { JobsScheduler } from './jobs.scheduler';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Coverage, Household, Notification]),
+    TypeOrmModule.forFeature([Coverage, Household, Notification, Beneficiary, Grievance, Claim]),
     SmsModule,
-    // FIX ME-7: Register Bull queue for multi-instance-safe job scheduling
     BullModule.registerQueue({
       name: CBHI_JOBS_QUEUE,
     }),

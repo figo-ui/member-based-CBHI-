@@ -17,6 +17,7 @@ import {
   Gender,
   IdentityDocumentType,
   IndigentEmploymentStatus,
+  MembershipTier,
   MembershipType,
   PaymentMethod,
   PreferredLanguage,
@@ -152,6 +153,10 @@ export class RegistrationStepTwoDto {
   @ValidateNested({ each: true })
   @Type(() => InlineAttachmentDto)
   indigentProofUploads?: InlineAttachmentDto[];
+
+  @IsOptional()
+  @IsEnum(MembershipTier)
+  membershipTier?: MembershipTier;
 }
 
 export class CreateFamilyMemberDto {
@@ -317,4 +322,8 @@ export class RenewCoverageDto {
   @IsOptional()
   @IsString()
   receiptNumber?: string;
+
+  @IsOptional()
+  @IsEnum(MembershipTier)
+  membershipTier?: MembershipTier;
 }

@@ -1,9 +1,14 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cbhi_data.dart';
 import 'shared/background_sync_service.dart';
+
+// SharedPreferences keys for persisted UI preferences
+const _kLocaleKey = 'cbhi_locale';
+const _kDarkModeKey = 'cbhi_dark_mode';
 
 class AppState extends Equatable {
   const AppState({
@@ -93,8 +98,19 @@ class AppCubit extends Cubit<AppState> {
   Future<void> load() async {
     emit(state.copyWith(isLoading: true, error: null));
     try {
+      // Restore persisted locale and dark mode preference
+      final prefs = await SharedPreferences.getInstance();
+      final savedLocale = prefs.getString(_kLocaleKey);
+      final savedDark = prefs.getBool(_kDarkModeKey) ?? false;
+      final locale = savedLocale != null ? Locale(savedLocale) : const Locale('en');
+
       final snapshot = await repository.loadCachedSnapshot();
-      emit(state.copyWith(snapshot: snapshot, isLoading: false));
+      emit(state.copyWith(
+        snapshot: snapshot,
+        isLoading: false,
+        locale: locale,
+        isDarkMode: savedDark,
+      ));
     } catch (error) {
       emit(state.copyWith(isLoading: false, error: error.toString()));
     }
@@ -145,9 +161,21 @@ class AppCubit extends Cubit<AppState> {
     }
   }
 
-  void setLocale(Locale locale) => emit(state.copyWith(locale: locale));
+  void setLocale(Locale locale) {
+    emit(state.copyWith(locale: locale));
+    // Persist locale so it survives app restarts
+    SharedPreferences.getInstance().then(
+      (prefs) => prefs.setString(_kLocaleKey, locale.languageCode),
+    );
+  }
 
-  void toggleDarkMode() => emit(state.copyWith(isDarkMode: !state.isDarkMode));
+  void toggleDarkMode() {
+    final newDark = !state.isDarkMode;
+    emit(state.copyWith(isDarkMode: newDark));
+    SharedPreferences.getInstance().then(
+      (prefs) => prefs.setBool(_kDarkModeKey, newDark),
+    );
+  }
 
   Future<void> refreshFromCache() async {
     final snapshot = await repository.loadCachedSnapshot();

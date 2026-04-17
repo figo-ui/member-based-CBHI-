@@ -1,0 +1,19 @@
+# Dart/Flutter build artifacts
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Test files
+test/
+
+# macOS / Windows / Linux desktop targets (web-only deploy)
+macos/
+windows/
+linux/
+android/
+ios/
+
+# Local dev files
+*.log
+pubspec.lock

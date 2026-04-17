@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../cbhi_data.dart';
 import 'models/personal_info_model.dart';
 import 'models/identity_model.dart';
@@ -6,40 +10,66 @@ import 'models/membership_type.dart';
 
 part 'registration_state.dart';
 
+/// Key used to persist in-progress registration across app restarts.
+const _kDraftKey = 'cbhi_registration_draft';
+
 class RegistrationCubit extends Cubit<RegistrationState> {
   RegistrationCubit(this.repository) : super(const RegistrationState());
 
   final CbhiRepository repository;
 
-  void startRegistration() =>
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
+
+  /// Called once on app start (from RegistrationFlow.initState).
+  /// Restores any in-progress registration draft so the user doesn't lose work
+  /// after the app is killed or backgrounded.
+  Future<void> startRegistration() async {
+    final draft = await _loadDraft();
+    if (draft != null && draft.currentStep != RegistrationStep.start) {
+      emit(draft);
+    } else {
       emit(state.copyWith(currentStep: RegistrationStep.personalInfo, clearError: true));
+    }
+  }
+
+  // ── Step navigation ────────────────────────────────────────────────────────
 
   void submitPersonalInfo(PersonalInfoModel info) {
-    emit(
-      state.copyWith(
-        personalInfo: info,
-        currentStep: RegistrationStep.confirmation,
-        clearError: true,
-      ),
+    final next = state.copyWith(
+      personalInfo: info,
+      currentStep: RegistrationStep.confirmation,
+      clearError: true,
     );
+    emit(next);
+    _saveDraft(next);
   }
 
   void goBackToPersonalInfo() {
-    emit(state.copyWith(currentStep: RegistrationStep.personalInfo, clearError: true));
+    final next = state.copyWith(
+      currentStep: RegistrationStep.personalInfo,
+      clearError: true,
+    );
+    emit(next);
+    _saveDraft(next);
   }
 
   void confirmPersonalInfo() {
-    emit(state.copyWith(currentStep: RegistrationStep.identity, clearError: true));
+    final next = state.copyWith(
+      currentStep: RegistrationStep.identity,
+      clearError: true,
+    );
+    emit(next);
+    _saveDraft(next);
   }
 
   void submitIdentity(IdentityModel identityData) {
-    emit(
-      state.copyWith(
-        identity: identityData,
-        currentStep: RegistrationStep.membership,
-        clearError: true,
-      ),
+    final next = state.copyWith(
+      identity: identityData,
+      currentStep: RegistrationStep.membership,
+      clearError: true,
     );
+    emit(next);
+    _saveDraft(next);
   }
 
   Future<void> submitPayingMembership(MembershipSelection membership) async {
@@ -47,23 +77,23 @@ class RegistrationCubit extends Cubit<RegistrationState> {
   }
 
   void beginIndigentProof(MembershipSelection membership) {
-    emit(
-      state.copyWith(
-        membership: membership,
-        currentStep: RegistrationStep.indigentProof,
-        clearError: true,
-      ),
+    final next = state.copyWith(
+      membership: membership,
+      currentStep: RegistrationStep.indigentProof,
+      clearError: true,
     );
+    emit(next);
+    _saveDraft(next);
   }
 
   void cancelIndigentProof() {
-    emit(
-      state.copyWith(
-        currentStep: RegistrationStep.membership,
-        clearMembership: true,
-        clearError: true,
-      ),
+    final next = state.copyWith(
+      currentStep: RegistrationStep.membership,
+      clearMembership: true,
+      clearError: true,
     );
+    emit(next);
+    _saveDraft(next);
   }
 
   Future<void> submitIndigentProofs(List<String> proofPaths) async {
@@ -81,6 +111,8 @@ class RegistrationCubit extends Cubit<RegistrationState> {
     await _runRegistration(membership, proofPaths);
   }
 
+  // ── Registration submission ────────────────────────────────────────────────
+
   Future<void> _runRegistration(
     MembershipSelection membership,
     List<String> indigentProofPaths,
@@ -95,8 +127,6 @@ class RegistrationCubit extends Cubit<RegistrationState> {
         indigentProofPaths: indigentProofPaths,
       );
 
-      // After registration, send a setup OTP to the registered phone so the
-      // user can activate their account and set a password.
       final phone = state.personalInfo?.phone;
       OtpChallenge? challenge;
       if (phone != null && phone.isNotEmpty) {
@@ -107,22 +137,101 @@ class RegistrationCubit extends Cubit<RegistrationState> {
         }
       }
 
-      emit(
-        state.copyWith(
-          membership: membership,
-          currentStep: challenge != null
-              ? RegistrationStep.setupAccount
-              : RegistrationStep.completed,
-          registeredPhone: phone,
-          setupChallenge: challenge,
-          isLoading: false,
-          clearError: true,
-        ),
+      final next = state.copyWith(
+        membership: membership,
+        currentStep: challenge != null
+            ? RegistrationStep.setupAccount
+            : RegistrationStep.completed,
+        registeredPhone: phone,
+        setupChallenge: challenge,
+        isLoading: false,
+        clearError: true,
       );
+      emit(next);
+      // Clear draft on successful registration
+      await _clearDraft();
     } catch (e) {
       emit(state.copyWith(errorMessage: e.toString(), isLoading: false));
     }
   }
 
-  void reset() => emit(const RegistrationState());
+  void reset() {
+    emit(const RegistrationState());
+    _clearDraft();
+  }
+
+  // ── Draft persistence ──────────────────────────────────────────────────────
+
+  Future<void> _saveDraft(RegistrationState s) async {
+    try {
+      // Only persist steps that have meaningful data to restore
+      if (s.currentStep == RegistrationStep.start ||
+          s.currentStep == RegistrationStep.completed ||
+          s.currentStep == RegistrationStep.setupAccount) {
+        return;
+      }
+      final prefs = await SharedPreferences.getInstance();
+      final payload = <String, dynamic>{
+        'step': s.currentStep.name,
+        if (s.personalInfo != null) 'personalInfo': s.personalInfo!.toJson(),
+        if (s.identity != null) 'identity': s.identity!.toJson(),
+        if (s.membership != null) 'membership': s.membership!.toJson(),
+      };
+      await prefs.setString(_kDraftKey, jsonEncode(payload));
+    } catch (_) {
+      // Draft save is best-effort — never crash the app
+    }
+  }
+
+  Future<RegistrationState?> _loadDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_kDraftKey);
+      if (raw == null || raw.isEmpty) return null;
+      final json = (jsonDecode(raw) as Map).cast<String, dynamic>();
+
+      final stepName = json['step']?.toString() ?? '';
+      final step = RegistrationStep.values.firstWhere(
+        (e) => e.name == stepName,
+        orElse: () => RegistrationStep.personalInfo,
+      );
+
+      PersonalInfoModel? personalInfo;
+      if (json['personalInfo'] != null) {
+        personalInfo = PersonalInfoModel.fromJson(
+          (json['personalInfo'] as Map).cast<String, dynamic>(),
+        );
+      }
+
+      IdentityModel? identity;
+      if (json['identity'] != null) {
+        identity = IdentityModel.fromJson(
+          (json['identity'] as Map).cast<String, dynamic>(),
+        );
+      }
+
+      MembershipSelection? membership;
+      if (json['membership'] != null) {
+        membership = MembershipSelection.fromJson(
+          (json['membership'] as Map).cast<String, dynamic>(),
+        );
+      }
+
+      return RegistrationState(
+        currentStep: step,
+        personalInfo: personalInfo,
+        identity: identity,
+        membership: membership,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _clearDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_kDraftKey);
+    } catch (_) {}
+  }
 }

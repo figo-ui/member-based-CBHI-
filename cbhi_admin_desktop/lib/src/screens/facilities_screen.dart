@@ -204,7 +204,20 @@ class _FacilitiesScreenState extends State<FacilitiesScreen> {
               ? Center(child: Text(_error!, style: const TextStyle(color: AdminTheme.error)))
               : _facilities.isEmpty
               ? Center(child: Text(strings.t('noFacilitiesFound')))
-              : SingleChildScrollView(
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    if (constraints.maxWidth < 1100) {
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _facilities.length,
+                        itemBuilder: (_, i) => _FacilityCard(
+                          facility: _facilities[i],
+                          strings: strings,
+                          onAddStaff: () => _showAddStaffDialog(_facilities[i]['id'].toString()),
+                        ),
+                      );
+                    }
+                    return SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
                   child: Card(
                     child: SingleChildScrollView(
@@ -254,9 +267,78 @@ class _FacilitiesScreenState extends State<FacilitiesScreen> {
                       ),
                     ),
                   ),
+                  );
+                  },
                 ),
         ),
       ],
+    );
+  }
+}
+
+class _FacilityCard extends StatelessWidget {
+  const _FacilityCard({
+    required this.facility,
+    required this.strings,
+    required this.onAddStaff,
+  });
+  final Map<String, dynamic> facility;
+  final AppLocalizations strings;
+  final VoidCallback onAddStaff;
+
+  @override
+  Widget build(BuildContext context) {
+    final isAccredited = facility['isAccredited'] == true;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    facility['name']?.toString() ?? '',
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: (isAccredited ? AdminTheme.success : AdminTheme.error)
+                        .withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    isAccredited ? strings.t('accredited') : strings.t('no'),
+                    style: TextStyle(
+                      color: isAccredited ? AdminTheme.success : AdminTheme.error,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text('${strings.t('facilityCode')}: ${facility['facilityCode'] ?? '—'}',
+                style: const TextStyle(color: AdminTheme.textSecondary, fontSize: 13)),
+            Text('${strings.t('serviceLevel')}: ${facility['serviceLevel'] ?? '—'}',
+                style: const TextStyle(color: AdminTheme.textSecondary, fontSize: 13)),
+            Text('${strings.t('staffCount')}: ${facility['staffCount'] ?? 0}',
+                style: const TextStyle(color: AdminTheme.textSecondary, fontSize: 13)),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: onAddStaff,
+              icon: const Icon(Icons.person_add_outlined, size: 16),
+              label: Text(strings.t('addStaff')),
+              style: TextButton.styleFrom(foregroundColor: AdminTheme.primary),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

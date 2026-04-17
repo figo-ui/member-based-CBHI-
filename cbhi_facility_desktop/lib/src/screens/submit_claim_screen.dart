@@ -35,6 +35,9 @@ class _SubmitClaimScreenState extends State<SubmitClaimScreen> {
   String? _message;
   bool _isSuccess = false;
 
+  double get _totalAmount =>
+      _items.fold(0, (sum, item) => sum + item.quantity * item.unitPrice);
+
   Future<void> _scanQr() async {
     final result = await Navigator.of(context).push<QrScanResult>(
       MaterialPageRoute(builder: (_) => const QrScannerScreen()),
@@ -63,6 +66,76 @@ class _SubmitClaimScreenState extends State<SubmitClaimScreen> {
           ? 'application/pdf'
           : 'image/${file.extension ?? 'jpeg'}';
     });
+  }
+
+  Future<void> _confirmAndSubmit() async {
+    final strings = AppLocalizations.of(context);
+    final items = _items
+        .where((item) =>
+            item.name.isNotEmpty && item.quantity > 0 && item.unitPrice > 0)
+        .toList();
+    if (items.isEmpty) {
+      setState(() {
+        _message = strings.t('addValidServiceItem');
+        _isSuccess = false;
+      });
+      return;
+    }
+
+    // F12: Show preview dialog before submitting
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(strings.t('submitClaim')),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_membershipIdCtrl.text.trim().isNotEmpty)
+                Text('${strings.t('membershipId')}: ${_membershipIdCtrl.text.trim()}'),
+              if (_fullNameCtrl.text.trim().isNotEmpty)
+                Text('${strings.t('fullName')}: ${_fullNameCtrl.text.trim()}'),
+              Text('${strings.t('serviceDate')}: ${DateFormat('dd MMM yyyy').format(_serviceDate)}'),
+              const Divider(),
+              ...items.map((item) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(child: Text(item.name, style: const TextStyle(fontSize: 13))),
+                        Text('${item.quantity} × ETB ${item.unitPrice.toStringAsFixed(2)}',
+                            style: const TextStyle(fontSize: 13)),
+                      ],
+                    ),
+                  )),
+              const Divider(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(strings.t('totalClaimed'),
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text('ETB ${_totalAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(fontWeight: FontWeight.w700, color: kPrimary)),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(strings.t('cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Confirm & Submit'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) await _submit();
   }
 
   Future<void> _submit() async {
@@ -357,6 +430,40 @@ class _SubmitClaimScreenState extends State<SubmitClaimScreen> {
 
                 const SizedBox(height: 16),
 
+                // Real-time total
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: kPrimary.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: kPrimary.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        strings.t('totalClaimed'),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: kTextDark,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        'ETB ${_totalAmount.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          color: kPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
                 if (_message != null)
                   Container(
                     width: double.infinity,
@@ -393,7 +500,7 @@ class _SubmitClaimScreenState extends State<SubmitClaimScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: _submitting ? null : _submit,
+                    onPressed: _submitting ? null : _confirmAndSubmit,
                     icon: _submitting
                         ? const SizedBox(
                             width: 18,

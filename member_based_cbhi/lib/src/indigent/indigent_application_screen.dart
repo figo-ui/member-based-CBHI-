@@ -320,7 +320,7 @@ class _IndigentApplicationScreenState
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(strings.t('ownsProperty')),
-              subtitle: const Text('ቤት፣ መሬት ወይም ንግድ ያለዎት ከሆነ'),
+              subtitle: Text(strings.t('ownsPropertySubtitle')),
               value: _hasProperty,
               onChanged: (v) => setState(() => _hasProperty = v),
               activeThumbColor: AppTheme.primary,
@@ -329,7 +329,7 @@ class _IndigentApplicationScreenState
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(strings.t('hasMemberWithDisability')),
-              subtitle: const Text('የቤተሰብ አባል አካል ጉዳት ካለው'),
+              subtitle: Text(strings.t('hasMemberWithDisabilitySubtitle')),
               value: _hasDisability,
               onChanged: (v) => setState(() => _hasDisability = v),
               activeThumbColor: AppTheme.primary,
@@ -447,23 +447,24 @@ class _IndigentApplicationScreenState
 class _InfoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: AppTheme.heroGradient,
         borderRadius: BorderRadius.circular(AppTheme.radiusL),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.volunteer_activism, color: Colors.white, size: 28),
-              SizedBox(width: 12),
+              const Icon(Icons.volunteer_activism, color: Colors.white, size: 28),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Indigent Membership Application',
-                  style: TextStyle(
+                  strings.t('indigentApplicationTitle'),
+                  style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
                       fontSize: 16),
@@ -471,12 +472,10 @@ class _InfoBanner extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Text(
-            'Qualifying households receive subsidized or free CBHI coverage. '
-            'Upload supporting documents from your kebele. '
-            'Documents are verified automatically by AI.',
-            style: TextStyle(
+            strings.t('indigentApplicationBannerBody'),
+            style: const TextStyle(
                 color: Colors.white70, fontSize: 13, height: 1.5),
           ),
         ],
@@ -488,11 +487,12 @@ class _InfoBanner extends StatelessWidget {
 class _AcceptedTypesExpansion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
     return ExpansionTile(
       tilePadding: EdgeInsets.zero,
-      title: const Text(
-        'Accepted document types',
-        style: TextStyle(
+      title: Text(
+        strings.t('acceptedDocumentTypesTitle'),
+        style: const TextStyle(
             fontSize: 13,
             color: AppTheme.primary,
             fontWeight: FontWeight.w600),
@@ -510,7 +510,7 @@ class _AcceptedTypesExpansion extends StatelessWidget {
               title: Text(type.label,
                   style: const TextStyle(fontSize: 13)),
               subtitle: Text(
-                '${type.amharic} • Valid for ${type.validityMonths} months',
+                '${type.amharic} • ${strings.f('validForMonths', {'months': type.validityMonths})}',
                 style: const TextStyle(fontSize: 11),
               ),
             ),
@@ -580,16 +580,18 @@ class _DocumentCard extends StatelessWidget {
     return Icons.description_outlined;
   }
 
-  String get _statusLabel {
-    if (doc.isValidating) return 'Validating...';
-    if (doc.isExpired) return 'EXPIRED';
-    if (doc.isAccepted) return 'Accepted';
-    if (doc.validationError != null) return 'Issue detected';
-    return 'Pending';
+  String _statusLabel(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
+    if (doc.isValidating) return strings.t('statusValidating');
+    if (doc.isExpired) return strings.t('statusExpired');
+    if (doc.isAccepted) return strings.t('statusAccepted');
+    if (doc.validationError != null) return strings.t('statusIssueDetected');
+    return strings.t('statusPending');
   }
 
   @override
   Widget build(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -643,7 +645,7 @@ class _DocumentCard extends StatelessWidget {
                     ),
                     if (doc.detectedDate != null)
                       Text(
-                        'Issued: ${doc.detectedDate}',
+                        strings.f('issued', {'date': doc.detectedDate!}),
                         style: const TextStyle(
                             fontSize: 12,
                             color: AppTheme.textSecondary),
@@ -654,7 +656,7 @@ class _DocumentCard extends StatelessWidget {
                             color: _statusColor, size: 14),
                         const SizedBox(width: 4),
                         Text(
-                          _statusLabel,
+                          _statusLabel(context),
                           style: TextStyle(
                               color: _statusColor,
                               fontSize: 12,
@@ -663,7 +665,7 @@ class _DocumentCard extends StatelessWidget {
                         if (doc.confidence > 0) ...[
                           const SizedBox(width: 8),
                           Text(
-                            '${(doc.confidence * 100).toStringAsFixed(0)}% confidence',
+                            strings.f('confidence', {'percent': (doc.confidence * 100).toStringAsFixed(0)}),
                             style: const TextStyle(
                                 fontSize: 11,
                                 color: AppTheme.textSecondary),
@@ -736,8 +738,7 @@ class _DocumentCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           doc.isExpired
-                              ? 'This document has expired. Please obtain a new certificate from your kebele.\n'
-                                'ሰነዱ ጊዜው አልፎበታል። ከቀበሌዎ አዲስ ማረጋገጫ ያግኙ።'
+                              ? strings.t('documentExpiredBilingual')
                               : doc.validationError ?? '',
                           style: const TextStyle(
                               color: AppTheme.error, fontSize: 12, height: 1.4),
@@ -750,8 +751,8 @@ class _DocumentCard extends StatelessWidget {
                     TextButton.icon(
                       onPressed: onRetry,
                       icon: const Icon(Icons.refresh, size: 14),
-                      label: const Text('Retry validation',
-                          style: TextStyle(fontSize: 12)),
+                      label: Text(strings.t('retryValidation'),
+                          style: const TextStyle(fontSize: 12)),
                       style: TextButton.styleFrom(
                         foregroundColor: AppTheme.primary,
                         padding: const EdgeInsets.symmetric(
