@@ -33,8 +33,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _verifying = false;
   bool _waitingForCallback = false;
   Map<String, dynamic>? _verifyResult;
-  // FIX QW-5: Only show demo banner when backend confirms test mode
-  bool _isTestMode = false;
   // F7: Step indicator
   int _currentStep = 0;
 
@@ -82,8 +80,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
         _paymentInitiated = true;
         _isLoading = false;
         _currentStep = 1;
-        // FIX QW-5: Read isTestMode from API response
-        _isTestMode = result['isTestMode'] == true;
       });
     } catch (e) {
       setState(() {
@@ -150,36 +146,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
             // F7: Step indicator
             _PaymentStepIndicator(currentStep: _currentStep),
             const SizedBox(height: 16),
-
-            // Demo mode banner — only shown when backend confirms test/sandbox mode
-            if (_isTestMode)
-              Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF3CD),
-                borderRadius: BorderRadius.circular(AppTheme.radiusS),
-                border: Border.all(
-                  color: const Color(0xFFF9A825).withValues(alpha: 0.5),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Text('🧪', style: TextStyle(fontSize: 16)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      strings.t('demoSandboxAutoSuccess'),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF856404),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(duration: 300.ms),
 
             const SizedBox(height: 16),
 

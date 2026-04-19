@@ -60,7 +60,7 @@ class WelcomeScreen extends StatelessWidget {
 
                 // Title
                 Text(
-                      'Maya City\nCBHI',
+                      strings.t('appTitle'),
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,

@@ -174,7 +174,7 @@ class _BootstrapScreenState extends State<_BootstrapScreen> {
                         ),
                     const SizedBox(height: 24),
                     Text(
-                      'Maya City CBHI',
+                      strings.t('appTitle'),
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),

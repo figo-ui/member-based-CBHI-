@@ -216,7 +216,7 @@ class _CardFront extends StatelessWidget {
                 const Icon(Icons.health_and_safety, color: Colors.white, size: 28),
                 const SizedBox(width: 10),
                 Text(
-                  'Maya City CBHI',
+                  strings.t('appTitle'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: Colors.white.withValues(alpha: 0.85),
                         fontWeight: FontWeight.w500,
@@ -474,7 +474,7 @@ class _ShowAtFacilityScreenState extends State<_ShowAtFacilityScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Maya City CBHI',
+                strings.t('appTitle'),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: Colors.white70,
                     ),

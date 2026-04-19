@@ -1118,11 +1118,6 @@ class CbhiRepository {
     return _getJson('/payments/verify/$txRef', authorized: true);
   }
 
-  /// Get demo sandbox status
-  Future<Map<String, dynamic>> getDemoStatus() async {
-    return _getJson('/demo/status');
-  }
-
   /// Search accredited health facilities
   Future<List<Map<String, dynamic>>> searchFacilities({String? query}) async {
     final q = query?.trim() ?? '';
