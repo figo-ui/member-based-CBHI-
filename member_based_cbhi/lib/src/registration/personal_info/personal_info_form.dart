@@ -357,7 +357,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      initialValue: _gender,
+                      value: _gender,
                       decoration: InputDecoration(labelText: strings.t('gender')),
                       items: [
                         DropdownMenuItem(value: 'FEMALE', child: Text(strings.t('female'))),
