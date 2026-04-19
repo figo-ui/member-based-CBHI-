@@ -39,7 +39,7 @@ All three apps share the same toolchain:
 
 - **Containerization**: Docker + docker-compose (profiles: `local`, `supabase`)
 - **Reverse proxy**: nginx with Let's Encrypt TLS
-- **Backend deploy**: Railway or Docker
+- **Backend deploy**: Vercel (serverless, `backend/vercel.json`)
 - **Frontend deploy**: Vercel (each Flutter app is a separate Vercel project)
 - **CI**: GitHub Actions (`.github/workflows/ci.yml`)
 

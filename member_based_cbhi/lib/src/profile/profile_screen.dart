@@ -380,7 +380,7 @@ class ProfileScreen extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const HelpScreen()),
           ),
           icon: const Icon(Icons.help_outline),
-          label: const Text('Help & FAQ'),
+          label: Text(strings.t('helpAndFaq')),
         ).animate().fadeIn(duration: 400.ms, delay: 420.ms),
 
         const SizedBox(height: 12),

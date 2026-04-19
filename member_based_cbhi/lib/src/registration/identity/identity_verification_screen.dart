@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../cbhi_localizations.dart';
 import '../registration_cubit.dart';
 import 'identity_cubit.dart';
 import '../models/identity_model.dart';
@@ -15,25 +16,27 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
   final _formKey = GlobalKey<FormState>();
   final _idNumberController = TextEditingController();
 
-  /// Values match backend [IndigentEmploymentStatus] (snake_case).
-  final List<Map<String, String>> employmentOptions = [
-    {'value': 'farmer', 'label': 'Farmer (ገበሬ)'},
-    {'value': 'merchant', 'label': 'Merchant / Trader (ነጋዴ)'},
-    {'value': 'daily_laborer', 'label': 'Daily Laborer (የቀን ሰራተኛ)'},
-    {'value': 'employed', 'label': 'Employed / Salaried (መደበኛ ሰራተኛ)'},
-    {'value': 'homemaker', 'label': 'Homemaker (የቤት እመቤት)'},
-    {'value': 'student', 'label': 'Student (ተማሪ)'},
-    {'value': 'unemployed', 'label': 'Unemployed (ሥራ የለውም)'},
-    {'value': 'pensioner', 'label': 'Pensioner (ጡረተኛ)'},
-  ];
-
   String? selectedIdentityType;
   String? selectedEmploymentStatus;
 
   @override
   Widget build(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
+
+    /// Values match backend [IndigentEmploymentStatus] (snake_case).
+    final List<Map<String, String>> employmentOptions = [
+      {'value': 'farmer', 'label': strings.t('farmer')},
+      {'value': 'merchant', 'label': strings.t('merchant')},
+      {'value': 'daily_laborer', 'label': strings.t('dailyLaborer')},
+      {'value': 'employed', 'label': strings.t('employed')},
+      {'value': 'homemaker', 'label': strings.t('homemaker')},
+      {'value': 'student', 'label': strings.t('student')},
+      {'value': 'unemployed', 'label': strings.t('unemployed')},
+      {'value': 'pensioner', 'label': strings.t('pensioner')},
+    ];
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Identity & Employment')),
+      appBar: AppBar(title: Text(strings.t('identityAndEmployment'))),
       body: MultiBlocProvider(
         providers: [
           BlocProvider(create: (_) => IdentityCubit()),
@@ -50,25 +53,25 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Identity Verification',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    Text(
+                      strings.t('identityVerification'),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 20),
 
                     // Identity Type Picker
                     DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Identity Type'),
-                      initialValue: selectedIdentityType,
-                      items: const [
-                        DropdownMenuItem(value: 'NATIONAL_ID', child: Text('National ID')),
-                        DropdownMenuItem(value: 'PASSPORT', child: Text('Passport')),
-                        DropdownMenuItem(value: 'LOCAL_ID', child: Text('Local / Kebele ID')),
+                      decoration: InputDecoration(labelText: strings.t('identityType')),
+                      value: selectedIdentityType,
+                      items: [
+                        DropdownMenuItem(value: 'NATIONAL_ID', child: Text(strings.t('nationalId'))),
+                        DropdownMenuItem(value: 'PASSPORT', child: Text(strings.t('passport'))),
+                        DropdownMenuItem(value: 'LOCAL_ID', child: Text(strings.t('localId'))),
                       ],
                       onChanged: (value) {
                         setState(() => selectedIdentityType = value);
                       },
-                      validator: (v) => v == null ? 'Please select identity type' : null,
+                      validator: (v) => v == null ? strings.t('required') : null,
                     ),
 
                     const SizedBox(height: 16),
@@ -76,22 +79,22 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
                     // Identity Number
                     TextFormField(
                       controller: _idNumberController,
-                      decoration: const InputDecoration(labelText: 'Identity Number'),
-                      validator: (v) => v!.isEmpty ? 'Required' : null,
+                      decoration: InputDecoration(labelText: strings.t('identityNumber')),
+                      validator: (v) => (v == null || v.isEmpty) ? strings.t('required') : null,
                       onChanged: (v) => identityCubit.updateIdentityNumber(v),
                     ),
 
                     const SizedBox(height: 24),
 
                     // Employment Status (Key Feature)
-                    const Text(
-                      'Employment / Occupation Status',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    Text(
+                      strings.t('employmentOccupationStatus'),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Main Occupation'),
-                      initialValue: selectedEmploymentStatus,
+                      decoration: InputDecoration(labelText: strings.t('mainOccupation')),
+                      value: selectedEmploymentStatus,
                       items: employmentOptions
                           .map((option) => DropdownMenuItem(
                                 value: option['value'],
@@ -102,31 +105,42 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
                         setState(() => selectedEmploymentStatus = value);
                         identityCubit.updateEmploymentStatus(value ?? '');
                       },
-                      validator: (v) => v == null ? 'Please select your occupation' : null,
+                      validator: (v) => v == null ? strings.t('required') : null,
                     ),
 
                     const SizedBox(height: 32),
 
-                    ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate() &&
-                            selectedIdentityType != null &&
-                            selectedEmploymentStatus != null) {
-                          
-                          final identityModel = IdentityModel(
-                            identityType: selectedIdentityType!,
-                            identityNumber: _idNumberController.text.trim(),
-                            employmentStatus: selectedEmploymentStatus!,
-                          );
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState!.validate() &&
+                              selectedIdentityType != null &&
+                              selectedEmploymentStatus != null) {
+                            
+                            final identityModel = IdentityModel(
+                              identityType: selectedIdentityType!,
+                              identityNumber: _idNumberController.text.trim(),
+                              employmentStatus: selectedEmploymentStatus!,
+                            );
 
-                          regCubit.submitIdentity(identityModel);
-                        }
-                      },
-                      child: const Text('Continue to Membership'),
+                            regCubit.submitIdentity(identityModel);
+                          }
+                        },
+                        child: Text(strings.t('continueToMembership')),
+                      ),
                     ),
                   ],
                 ),
               ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+            ),
             );
           },
         ),

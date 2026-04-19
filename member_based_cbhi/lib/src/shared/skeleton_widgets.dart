@@ -125,18 +125,18 @@ class DashboardSkeleton extends StatelessWidget {
 
         // Metric cards
         Row(
-          children: const [
-            Expanded(child: SkeletonMetricCard()),
-            SizedBox(width: 12),
-            Expanded(child: SkeletonMetricCard()),
+          children: [
+            Expanded(child: const SkeletonMetricCard()),
+            const SizedBox(width: 12),
+            Expanded(child: const SkeletonMetricCard()),
           ],
         ),
         const SizedBox(height: 12),
         Row(
-          children: const [
-            Expanded(child: SkeletonMetricCard()),
-            SizedBox(width: 12),
-            Expanded(child: SkeletonMetricCard()),
+          children: [
+            Expanded(child: const SkeletonMetricCard()),
+            const SizedBox(width: 12),
+            Expanded(child: const SkeletonMetricCard()),
           ],
         ),
 

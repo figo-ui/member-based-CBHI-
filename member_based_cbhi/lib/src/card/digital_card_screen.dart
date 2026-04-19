@@ -266,26 +266,26 @@ class _CardFront extends StatelessWidget {
             Row(
               children: [
                 _CardInfoChip(
-                  label: 'Household',
+                  label: strings.t('household'),
                   value: snapshot.householdCode.isEmpty ? '—' : snapshot.householdCode,
                 ),
                 const SizedBox(width: 16),
                 if ((card['membershipId']?.toString() ?? '').isNotEmpty)
                   _CardInfoChip(
-                    label: 'Member ID',
+                    label: strings.t('idLabel'),
                     value: card['membershipId'].toString(),
                   ),
               ],
             ),
             if (snapshot.coverageNumber.isNotEmpty) ...[
               const SizedBox(height: 6),
-              _CardInfoChip(label: 'Coverage', value: snapshot.coverageNumber),
+              _CardInfoChip(label: strings.t('coverage'), value: snapshot.coverageNumber),
             ],
             // F4: Expiry date
             if (endDate != null) ...[
               const SizedBox(height: 6),
               Text(
-                'Valid until: ${_formatDate(endDate)}',
+                '${strings.t('validUntil')}: ${_formatDate(endDate)}',
                 style: TextStyle(
                   color: expiryColor,
                   fontWeight: FontWeight.w600,
@@ -303,7 +303,7 @@ class _CardFront extends StatelessWidget {
                       strings.t('appTitle'),
                       '${strings.t('fullName')}: ${card['memberName'] ?? snapshot.viewerName}',
                       '${strings.t('household')}: ${snapshot.householdCode}',
-                      'Member ID: ${card['membershipId'] ?? snapshot.viewerMembershipId}',
+                      '${strings.t('idLabel')}: ${card['membershipId'] ?? snapshot.viewerMembershipId}',
                       '${strings.t('coverage')}: $coverageStatus',
                       'Coverage #: ${snapshot.coverageNumber}',
                     ].join('\n');
@@ -464,6 +464,7 @@ class _ShowAtFacilityScreenState extends State<_ShowAtFacilityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
     return GestureDetector(
       onTap: () => Navigator.of(context).pop(),
       child: Scaffold(
@@ -497,7 +498,7 @@ class _ShowAtFacilityScreenState extends State<_ShowAtFacilityScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Tap anywhere to dismiss',
+                strings.t('tapToDismiss'),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Colors.white38,
                     ),

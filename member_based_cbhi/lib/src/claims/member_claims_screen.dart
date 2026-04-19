@@ -104,6 +104,7 @@ class _ClaimCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
     final status = claim['status']?.toString() ?? 'UNKNOWN';
     final claimNumber = claim['claimNumber']?.toString() ?? 'N/A';
     final facilityName = claim['facilityName']?.toString();
@@ -156,13 +157,13 @@ class _ClaimCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _DetailItem(
-                  label: 'Service Date',
+                  label: strings.t('serviceDate'),
                   value: serviceDate?.split('T').first ?? 'N/A',
                 ),
               ),
               Expanded(
                 child: _DetailItem(
-                  label: 'Claimed',
+                  label: strings.t('claimed'),
                   value: claimedAmount != null
                       ? '$claimedAmount ETB'
                       : 'N/A',
@@ -173,7 +174,7 @@ class _ClaimCard extends StatelessWidget {
                   double.parse(approvedAmount.toString()) > 0)
                 Expanded(
                   child: _DetailItem(
-                    label: 'Approved',
+                    label: strings.t('approved'),
                     value: '$approvedAmount ETB',
                     valueColor: AppTheme.success,
                   ),

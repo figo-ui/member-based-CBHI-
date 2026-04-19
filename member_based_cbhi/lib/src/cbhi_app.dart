@@ -148,6 +148,7 @@ class _BootstrapScreenState extends State<_BootstrapScreen> {
       ],
       child: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
+          final strings = CbhiLocalizations.of(context);
           if (authState.status == AuthStatus.checking) {
             return Scaffold(
               body: Center(
@@ -178,7 +179,7 @@ class _BootstrapScreenState extends State<_BootstrapScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Loading your health coverage...',
+                      strings.t('loadingHealthCoverage'),
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],

@@ -408,7 +408,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                         items: _regions
                             .map((r) => DropdownMenuItem(
                                   value: r,
-                                  child: Text(r.displayName('en')),
+                                  child: Text(r.displayName(Localizations.localeOf(context).languageCode)),
                                 ))
                             .toList(),
                         onChanged: _onRegionChanged,
@@ -423,7 +423,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                         items: _zones
                             .map((z) => DropdownMenuItem(
                                   value: z,
-                                  child: Text(z.displayName('en')),
+                                  child: Text(z.displayName(Localizations.localeOf(context).languageCode)),
                                 ))
                             .toList(),
                         onChanged: _selectedRegion == null ? null : _onZoneChanged,
@@ -443,7 +443,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                         items: _woredas
                             .map((w) => DropdownMenuItem(
                                   value: w,
-                                  child: Text(w.displayName('en')),
+                                  child: Text(w.displayName(Localizations.localeOf(context).languageCode)),
                                 ))
                             .toList(),
                         onChanged: _selectedZone == null ? null : _onWoredaChanged,
@@ -458,7 +458,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                         items: _kebeles
                             .map((k) => DropdownMenuItem(
                                   value: k,
-                                  child: Text(k.displayName('en')),
+                                  child: Text(k.displayName(Localizations.localeOf(context).languageCode)),
                                 ))
                             .toList(),
                         onChanged: _selectedWoreda == null

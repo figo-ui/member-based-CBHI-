@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../cbhi_localizations.dart';
 import '../registration_cubit.dart';
 
 class PersonalInfoConfirmation extends StatelessWidget {
@@ -7,47 +8,40 @@ class PersonalInfoConfirmation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
     final regCubit = context.read<RegistrationCubit>();
     final personalInfo = regCubit.state.personalInfo!;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Review Your Information')),
+      appBar: AppBar(title: Text(strings.t('reviewYourInformation'))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Please review your details before continuing',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              strings.t('reviewYourInformation'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
 
-            _buildInfoCard('Personal Details', [
-              'Full Name: ${personalInfo.firstName} ${personalInfo.middleName} ${personalInfo.lastName}',
-              'Age: ${personalInfo.age}',
-              'Phone: ${personalInfo.phone}',
-              if (personalInfo.email != null) 'Email: ${personalInfo.email}',
-              'Gender: ${personalInfo.gender}',
-              'Date of Birth: ${personalInfo.dateOfBirth.toString().split(' ')[0]}',
-              if (personalInfo.birthCertificatePath != null &&
-                  personalInfo.birthCertificatePath!.isNotEmpty)
-                'Birth certificate: attached',
-              if (personalInfo.idDocumentPath != null &&
-                  personalInfo.idDocumentPath!.isNotEmpty)
-                'ID document: attached',
-              if (personalInfo.birthCertificateRef != null)
-                'Birth Certificate: ${personalInfo.birthCertificateRef}',
+            _buildInfoCard(strings.t('personalDetails'), [
+              '${strings.t('fullName')}: ${personalInfo.firstName} ${personalInfo.middleName} ${personalInfo.lastName}',
+              '${strings.t('age')}: ${personalInfo.age}',
+              '${strings.t('phoneNumber')}: ${personalInfo.phone}',
+              if (personalInfo.email != null) '${strings.t('email')}: ${personalInfo.email}',
+              '${strings.t('genderLabel')}: ${personalInfo.gender}',
+              '${strings.t('dobLabel')}: ${personalInfo.dateOfBirth.toString().split(' ')[0]}',
             ]),
 
             const SizedBox(height: 16),
 
-            _buildInfoCard('Address & Household', [
-              'Region: ${personalInfo.region}',
-              'Zone: ${personalInfo.zone}',
-              if (personalInfo.woreda != null) 'Woreda: ${personalInfo.woreda}',
-              if (personalInfo.kebele != null) 'Kebele: ${personalInfo.kebele}',
-              'Household Size: ${personalInfo.householdSize}',
+            _buildInfoCard(strings.t('addressAndHousehold'), [
+              '${strings.t('region')}: ${personalInfo.region}',
+              '${strings.t('zone')}: ${personalInfo.zone}',
+              if (personalInfo.woreda != null) '${strings.t('woreda')}: ${personalInfo.woreda}',
+              if (personalInfo.kebele != null) '${strings.t('kebele')}: ${personalInfo.kebele}',
+              '${strings.t('householdSize')}: ${personalInfo.householdSize}',
             ]),
 
             const SizedBox(height: 32),
@@ -57,14 +51,14 @@ class PersonalInfoConfirmation extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => regCubit.goBackToPersonalInfo(),
-                    child: const Text('Edit Information'),
+                    child: Text(strings.t('editInformation')),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () => regCubit.confirmPersonalInfo(),
-                    child: const Text('Confirm & Continue'),
+                    child: Text(strings.t('confirmAndContinue')),
                   ),
                 ),
               ],
@@ -93,4 +87,4 @@ class PersonalInfoConfirmation extends StatelessWidget {
       ),
     );
   }
-}
+}

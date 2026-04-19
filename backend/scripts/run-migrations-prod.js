@@ -1,15 +1,15 @@
 /**
  * Production migration runner — uses compiled dist/ (no ts-node required).
- * Called by railway.toml startCommand and Dockerfile CMD before starting the server.
+ * Called by Vercel build and Dockerfile CMD before starting the server.
  *
  * Works with both:
- *   - Railway (env vars injected directly — no .env file)
+ *   - Vercel (env vars injected via Vercel dashboard)
  *   - Docker / local (reads from .env file via dotenv)
  *
  * Usage: node scripts/run-migrations-prod.js
  */
 
-// Only load .env file if not already set by the platform (Railway injects vars directly)
+// Only load .env file if not already set by the platform (Vercel injects vars directly)
 if (!process.env.DB_HOST && !process.env.DATABASE_URL) {
   try {
     require('dotenv').config({ path: '.env' });

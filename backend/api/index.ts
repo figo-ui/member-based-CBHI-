@@ -36,7 +36,7 @@ async function createApp(): Promise<NestExpressApplication> {
 
   const allowedOrigins = (
     process.env.CORS_ALLOWED_ORIGINS ??
-    'https://member-based-cbhi.vercel.app'
+    'https://member-based-cbhi.vercel.app,https://cbhi-admin.vercel.app,https://cbhi-facility.vercel.app'
   )
     .split(',')
     .map((o) => o.trim())
@@ -45,12 +45,12 @@ async function createApp(): Promise<NestExpressApplication> {
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      // Allow exact matches
+      // Exact match or wildcard '*'
       if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
         return callback(null, true);
       }
-      // Allow all Vercel preview deployments for this project
-      if (origin.match(/^https:\/\/member-based-cbhi.*\.vercel\.app$/)) {
+      // Allow all *.vercel.app preview deployments
+      if (/^https:\/\/[^.]+\.vercel\.app$/.test(origin)) {
         return callback(null, true);
       }
       return callback(new Error(`CORS: origin ${origin} not allowed`), false);

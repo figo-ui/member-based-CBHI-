@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../cbhi_localizations.dart';
 import '../shared/local_attachment_store.dart';
 import 'registration_cubit.dart';
 
@@ -23,9 +24,10 @@ class _IndigentProofScreenState extends State<IndigentProofScreen> {
   final _picker = ImagePicker();
 
   Future<void> _addDocument() async {
+    final strings = CbhiLocalizations.of(context);
     if (_paths.length >= 3) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You can upload up to 3 documents.')),
+        SnackBar(content: Text(strings.t('uploadLimitReached'))),
       );
       return;
     }
@@ -41,17 +43,17 @@ class _IndigentProofScreenState extends State<IndigentProofScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.camera_alt_outlined),
-              title: const Text('Take photo'),
+              title: Text(strings.t('takePhoto')),
               onTap: () => Navigator.pop(ctx, 'camera'),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Choose image'),
+              title: Text(strings.t('chooseImage')),
               onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
             ListTile(
               leading: const Icon(Icons.picture_as_pdf_outlined),
-              title: const Text('Choose PDF or image'),
+              title: Text(strings.t('choosePdfOrImage')),
               onTap: () => Navigator.pop(ctx, 'file'),
             ),
           ],
@@ -97,12 +99,13 @@ class _IndigentProofScreenState extends State<IndigentProofScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
     final regCubit = context.watch<RegistrationCubit>();
     final state = regCubit.state;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Indigent proof documents'),
+        title: Text(strings.t('indigentProofDocuments')),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => regCubit.cancelIndigentProof(),
@@ -114,14 +117,12 @@ class _IndigentProofScreenState extends State<IndigentProofScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Supporting documents',
+              strings.t('supportingDocuments'),
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
             Text(
-              'Upload at least one document from your kebele or employer — for '
-              'example a poverty certificate, income statement, or disability '
-              'support letter. This is the only extra step for indigent membership.',
+              strings.t('indigentProofDescription'),
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 20),
@@ -143,7 +144,7 @@ class _IndigentProofScreenState extends State<IndigentProofScreen> {
             OutlinedButton.icon(
               onPressed: state.isLoading ? null : _addDocument,
               icon: const Icon(Icons.upload_file_outlined),
-              label: const Text('Add document'),
+              label: Text(strings.t('addDocument')),
             ),
             const SizedBox(height: 28),
             if (state.errorMessage != null)
@@ -157,7 +158,7 @@ class _IndigentProofScreenState extends State<IndigentProofScreen> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: state.isLoading
+                onPressed: (state.isLoading || _paths.isEmpty)
                     ? null
                     : () => regCubit.submitIndigentProofs(List.from(_paths)),
                 child: state.isLoading
@@ -166,7 +167,7 @@ class _IndigentProofScreenState extends State<IndigentProofScreen> {
                         width: 22,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Submit registration'),
+                    : Text(strings.t('submitRegistration')),
               ),
             ),
           ],
