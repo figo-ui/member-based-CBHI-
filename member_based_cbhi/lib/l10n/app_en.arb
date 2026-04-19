@@ -658,5 +658,16 @@
 
   "showAtFacility": "Show at Facility",
   "enterManually": "Enter manually",
-  "manualEntryHint": "Enter membership ID or household code"
+  "manualEntryHint": "Enter membership ID or household code",
+
+  "familyLoginOtpDescription": "Enter your phone number and membership ID to receive a one-time code.",
+  "familyLoginPasswordDescription": "Enter your phone number and password to sign in.",
+  "phonePlusPassword": "Phone + Password",
+  "verifyFamilyMemberAccess": "Verify Family Member Access",
+  "beneficiaryPhoneNumber": "Beneficiary phone number",
+  "useIfMembershipIdUnavailable": "Use if membership ID unavailable",
+  "beneficiaryFullName": "Beneficiary full name",
+  "beneficiaryPhoneRequired": "Phone number is required",
+  "membershipOrHouseholdRequired": "Enter membership ID or household code + full name",
+  "passwordRequired": "Password is required"
 }

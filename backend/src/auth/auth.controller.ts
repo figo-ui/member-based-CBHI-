@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { IsString, IsNotEmpty } from 'class-validator';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../users/user.entity';
@@ -15,11 +16,21 @@ import {
   VerifyOtpDto,
 } from './auth.dto';
 import { AuthService } from './auth.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+class RegisterFcmTokenDto {
+  @IsString()
+  @IsNotEmpty()
+  fcmToken!: string;
+}
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   @Public()
@@ -101,5 +112,28 @@ export class AuthController {
   @Post('delete-account')
   async deleteAccount(@CurrentUser() user: User) {
     return this.authService.anonymiseAccount(user.id);
+  }
+
+  /** Register or update the FCM push token for the current user */
+  @Post('fcm-token')
+  async registerFcmToken(
+    @CurrentUser() user: User,
+    @Body() dto: RegisterFcmTokenDto,
+  ) {
+    await this.userRepository.update(user.id, {
+      fcmToken: dto.fcmToken,
+      fcmTokenUpdatedAt: new Date(),
+    });
+    return { message: 'FCM token registered.' };
+  }
+
+  /** Remove FCM token on logout (stop receiving push notifications) */
+  @Post('fcm-token/remove')
+  async removeFcmToken(@CurrentUser() user: User) {
+    await this.userRepository.update(user.id, {
+      fcmToken: null,
+      fcmTokenUpdatedAt: new Date(),
+    });
+    return { message: 'FCM token removed.' };
   }
 }

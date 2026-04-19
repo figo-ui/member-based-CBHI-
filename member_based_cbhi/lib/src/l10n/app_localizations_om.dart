@@ -1783,4 +1783,38 @@ class AppLocalizationsOm extends AppLocalizations {
   @override
   String get manualEntryHint =>
       'Lakkoofsa miseensummaa yookaan koodii maatii galchi';
+
+  @override
+  String get familyLoginOtpDescription =>
+      'Koodii yeroo tokkoo argachuuf lakkoofsa bilbilaa fi lakkoofsa miseensummaa galchi.';
+
+  @override
+  String get familyLoginPasswordDescription =>
+      'Seenuuf lakkoofsa bilbilaa fi jecha darbii galchi.';
+
+  @override
+  String get phonePlusPassword => 'Bilbila + Jecha darbii';
+
+  @override
+  String get verifyFamilyMemberAccess => 'Seensa Miseensa Maatii Mirkaneessi';
+
+  @override
+  String get beneficiaryPhoneNumber => 'Lakkoofsa bilbilaa fayyadamaa';
+
+  @override
+  String get useIfMembershipIdUnavailable =>
+      'Lakkoofsi miseensummaa yoo hin jiraanne fayyadami';
+
+  @override
+  String get beneficiaryFullName => 'Maqaa guutuu fayyadamaa';
+
+  @override
+  String get beneficiaryPhoneRequired => 'Lakkoofsa bilbilaa barbaachisaa dha';
+
+  @override
+  String get membershipOrHouseholdRequired =>
+      'Lakkoofsa miseensummaa yookaan koodii maatii + maqaa guutuu galchi';
+
+  @override
+  String get passwordRequired => 'Jecha darbii barbaachisaa dha';
 }

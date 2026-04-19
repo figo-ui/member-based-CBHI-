@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'auth/onboarding_screen.dart';
 import 'auth/privacy_consent_screen.dart';
@@ -52,12 +51,7 @@ class CbhiApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             locale: frameworkLocale,
             supportedLocales: CbhiLocalizations.frameworkSupportedLocales,
-            localizationsDelegates: [
-              CbhiLocalizations.delegateFor(appLocale),
-              GlobalWidgetsLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
+            localizationsDelegates: CbhiLocalizations.delegates,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: state.isDarkMode ? ThemeMode.dark : ThemeMode.light,

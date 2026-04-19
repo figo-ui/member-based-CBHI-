@@ -3423,6 +3423,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter membership ID or household code'**
   String get manualEntryHint;
+
+  /// No description provided for @familyLoginOtpDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your phone number and membership ID to receive a one-time code.'**
+  String get familyLoginOtpDescription;
+
+  /// No description provided for @familyLoginPasswordDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your phone number and password to sign in.'**
+  String get familyLoginPasswordDescription;
+
+  /// No description provided for @phonePlusPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone + Password'**
+  String get phonePlusPassword;
+
+  /// No description provided for @verifyFamilyMemberAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Family Member Access'**
+  String get verifyFamilyMemberAccess;
+
+  /// No description provided for @beneficiaryPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Beneficiary phone number'**
+  String get beneficiaryPhoneNumber;
+
+  /// No description provided for @useIfMembershipIdUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Use if membership ID unavailable'**
+  String get useIfMembershipIdUnavailable;
+
+  /// No description provided for @beneficiaryFullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Beneficiary full name'**
+  String get beneficiaryFullName;
+
+  /// No description provided for @beneficiaryPhoneRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number is required'**
+  String get beneficiaryPhoneRequired;
+
+  /// No description provided for @membershipOrHouseholdRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter membership ID or household code + full name'**
+  String get membershipOrHouseholdRequired;
+
+  /// No description provided for @passwordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Password is required'**
+  String get passwordRequired;
 }
 
 class _AppLocalizationsDelegate

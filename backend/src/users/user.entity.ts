@@ -98,6 +98,13 @@ export class User extends AuditableEntity {
   @Column({ default: false })
   totpEnabled!: boolean;
 
+  // ── FCM Push Notifications ─────────────────────────────────────────────────
+  @Column({ type: 'varchar', length: 512, nullable: true })
+  fcmToken?: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  fcmTokenUpdatedAt?: Date | null;
+
   @OneToOne(() => Household, (household) => household.headUser)
   household?: Household | null;
 

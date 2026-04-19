@@ -277,6 +277,18 @@ class AdminRepository {
     return _get('/admin/reports/financial$qs');
   }
 
+  // ── TOTP 2FA ──────────────────────────────────────────────────────────────
+
+  /// Initiates TOTP setup — returns { secret, qrUri }
+  Future<Map<String, dynamic>> setupTotp() async {
+    return _post('/auth/totp/setup', {});
+  }
+
+  /// Activates TOTP after the user verifies the first token
+  Future<void> activateTotp(String token) async {
+    await _post('/auth/totp/activate', {'token': token});
+  }
+
   // ── Facility Performance ──────────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> getFacilityPerformance({String? from, String? to}) async {

@@ -278,9 +278,9 @@ class _LanguageSelector extends StatelessWidget {
                   value: lang.$1,
                   child: Text(
                     '${lang.$2} ${strings.t(switch (lang.$1) {
-                      'am' => 'langAmharic',
-                      'om' => 'langOromo',
-                      _ => 'langEnglish',
+                      'am' => 'amharic',
+                      'om' => 'afaanOromo',
+                      _ => 'english',
                     })}',
                   ),
                 ),

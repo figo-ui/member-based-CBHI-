@@ -91,10 +91,28 @@ async function main() {
   `);
   console.log('✓ Facility staff linked to Maya Referral Hospital');
 
+  // Upsert test member for OTP SMS testing
+  await client.query(`
+    INSERT INTO users (
+      "firstName", "lastName", "phoneNumber",
+      role, "preferredLanguage", "isActive",
+      "identityVerificationStatus"
+    ) VALUES (
+      'Test', 'Member', '+251935092404',
+      'HOUSEHOLD_HEAD', 'am', TRUE, 'VERIFIED'
+    )
+    ON CONFLICT ("phoneNumber") DO UPDATE SET
+      "isActive" = TRUE,
+      "firstName" = 'Test',
+      "lastName" = 'Member'
+  `);
+  console.log('✓ Test member seeded (+251935092404) — use OTP login via SMS');
+
   await client.end();
   console.log('\nDone! You can now log in with:');
   console.log('  Admin:  +251900000001 / Admin@1234');
   console.log('  Staff:  +251900000002 / Staff@1234');
+  console.log('  Test:   +251935092404 / OTP via SMS');
 }
 
 main().catch(e => { console.error('Error:', e.message); process.exit(1); });

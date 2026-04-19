@@ -1791,4 +1791,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get manualEntryHint => 'Enter membership ID or household code';
+
+  @override
+  String get familyLoginOtpDescription =>
+      'Enter your phone number and membership ID to receive a one-time code.';
+
+  @override
+  String get familyLoginPasswordDescription =>
+      'Enter your phone number and password to sign in.';
+
+  @override
+  String get phonePlusPassword => 'Phone + Password';
+
+  @override
+  String get verifyFamilyMemberAccess => 'Verify Family Member Access';
+
+  @override
+  String get beneficiaryPhoneNumber => 'Beneficiary phone number';
+
+  @override
+  String get useIfMembershipIdUnavailable => 'Use if membership ID unavailable';
+
+  @override
+  String get beneficiaryFullName => 'Beneficiary full name';
+
+  @override
+  String get beneficiaryPhoneRequired => 'Phone number is required';
+
+  @override
+  String get membershipOrHouseholdRequired =>
+      'Enter membership ID or household code + full name';
+
+  @override
+  String get passwordRequired => 'Password is required';
 }

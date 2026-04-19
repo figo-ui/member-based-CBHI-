@@ -1691,6 +1691,20 @@ class CbhiRepository {
     bool authorized = false,
   }) => _getJson(path, authorized: authorized);
 
+  /// Register or update the FCM push notification token for this user
+  Future<void> registerFcmToken(String fcmToken) async {
+    await _postJson('/auth/fcm-token', {'fcmToken': fcmToken}, authorized: true);
+  }
+
+  /// Remove FCM token on logout
+  Future<void> removeFcmToken() async {
+    try {
+      await _postJson('/auth/fcm-token/remove', {}, authorized: true);
+    } catch (_) {
+      // Best-effort — don't block logout
+    }
+  }
+
   /// Resolves a stored media path to a displayable URL.
   /// - If the path is already an http/https URL, returns it as-is.
   /// - If the path is a relative server path (e.g. /uploads/...), prepends the API base.

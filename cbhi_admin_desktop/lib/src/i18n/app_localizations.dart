@@ -277,6 +277,15 @@ class AppLocalizations {
       'pleaseEnterAll6Digits': 'Please enter all 6 digits',
       // New screens
       'resetPwd': 'Reset Pwd',
+      // Missing keys used in screens
+      'phoneNumber': 'Phone Number',
+      'firstName': 'First Name',
+      'lastName': 'Last Name',
+      'addItem': 'Add Item',
+      'perMemberPerYear': 'per member / year',
+      'totalClaims': 'Total Claims',
+      'clear': 'Clear',
+      'role': 'Role',
     },
     'am': {
       'appTitle': 'የማያ ከተማ CBHI አስተዳደር',
@@ -511,6 +520,15 @@ class AppLocalizations {
       'resolutionNoteHint': 'ቅሬታው እንዴት እንደተፈታ ይግለጹ...',
       'resolve': 'ፍታ',
       'grievanceUpdated': 'ቅሬታ ተዘምኗል።',
+      // Missing keys used in screens
+      'phoneNumber': 'ስልክ ቁጥር',
+      'firstName': 'ስም',
+      'lastName': 'የአባት ስም',
+      'addItem': 'ዕቃ ጨምር',
+      'perMemberPerYear': 'በአባል / በዓመት',
+      'totalClaims': 'ጠቅላላ ክሌሞች',
+      'clear': 'አጽዳ',
+      'role': 'ሚና',
     },
     'om': {
       'appTitle': 'Bulchiinsa CBHI Magaalaa Maya',
@@ -751,6 +769,15 @@ class AppLocalizations {
       'resolutionNoteHint': 'Komiin akkamitti akka furameera ibsi...',
       'resolve': 'Furi',
       'grievanceUpdated': 'Komiin haaromfameera.',
+      // Missing keys used in screens
+      'phoneNumber': 'Lakkoofsa Bilbilaa',
+      'firstName': 'Maqaa Duraa',
+      'lastName': 'Maqaa Maatii',
+      'addItem': 'Meeshaa Dabali',
+      'perMemberPerYear': 'miseensa / waggaa',
+      'totalClaims': 'Klaayimii Waliigalaa',
+      'clear': 'Haqi',
+      'role': 'Gahee',
     },
   };
 

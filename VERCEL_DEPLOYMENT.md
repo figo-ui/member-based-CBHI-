@@ -1,147 +1,88 @@
-# Vercel Deployment — Full Stack CBHI
+# Vercel Deployment Guide — Maya City CBHI
 
-## Architecture
+## Projects
 
-```
-Vercel (backend)          Vercel (member app)
-member-based-cbhi-        member-based-cbhi-
-dwpejr0y4-figo-uis-  ←── dwpejr0y4-figo-uis-
-projects.vercel.app       projects.vercel.app
-        ↑
-        │  (same project — backend IS the deployed URL)
-        │
-Supabase PostgreSQL
-(aws-0-eu-west-1.pooler.supabase.com:6543)
-```
+| App | Vercel Project Name | Root Directory |
+|-----|---------------------|----------------|
+| Admin | `cbhi-admin` | `cbhi_admin_desktop` |
+| Facility | `cbhi-facility` | `cbhi_facility_desktop` |
+| Backend | `member-based-cbhi` | `backend` |
 
-**Backend URL:** `https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app`
-**API base:** `https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app/api/v1`
+## One-Time Setup (do this once per project)
 
----
+### Step 1 — Create Vercel projects linked to GitHub
 
-## Backend — Already Deployed
+1. Go to [vercel.com/new](https://vercel.com/new)
+2. Import your GitHub repo
+3. For the **Admin** project:
+   - Project Name: `cbhi-admin`
+   - Root Directory: `cbhi_admin_desktop`
+   - Framework Preset: Other
+   - Build Command: `bash ./vercel-build.sh`
+   - Output Directory: `build/web`
+4. Add environment variable:
+   - `CBHI_API_BASE_URL` = `https://member-based-cbhi.vercel.app/api/v1`
+5. Click Deploy
 
-The NestJS backend is live at the URL above via `backend/api/index.ts` (serverless handler).
+6. Repeat for **Facility** project:
+   - Project Name: `cbhi-facility`
+   - Root Directory: `cbhi_facility_desktop`
+   - Same build settings
+   - Same env var
 
-### Required Vercel Environment Variables (backend project)
+### Step 2 — Get GitHub Actions secrets
 
-Go to: Vercel Dashboard → backend project → **Settings** → **Environment Variables**
+You need 4 secrets in GitHub → Settings → Secrets → Actions:
 
-Add each of these (no quotes around values):
+| Secret | Where to get it |
+|--------|----------------|
+| `VERCEL_TOKEN` | vercel.com → Settings → Tokens → Create |
+| `VERCEL_ORG_ID` | vercel.com → Settings → General → Team ID (or your personal account ID) |
+| `VERCEL_ADMIN_PROJECT_ID` | Vercel `cbhi-admin` project → Settings → General → Project ID |
+| `VERCEL_FACILITY_PROJECT_ID` | Vercel `cbhi-facility` project → Settings → General → Project ID |
 
-```
-NODE_ENV=production
-DB_HOST=aws-0-eu-west-1.pooler.supabase.com
-DB_PORT=6543
-DB_USERNAME=postgres.nauyjsrhykayyzqomiyx
-DB_PASSWORD=v!GAPf#g,Maa@5r
-DB_NAME=postgres
-DB_SSL=true
-TYPEORM_SYNCHRONIZE=false
-TYPEORM_LOGGING=false
-DB_POOL_MAX=10
-DB_POOL_MIN=2
-AUTH_JWT_SECRET=b5b35c8d9e8318f3021fc2bf320c3029d6659013a2b0b5863c9c26f92073c9bfabf7ea8320fbd49f7f1f83c6dee4af21
-AUTH_ACCESS_TOKEN_TTL_SECONDS=86400
-DIGITAL_CARD_SECRET=c2c27af2ce4cb269b3870c89a10d66f862f3d269de620231eaf7d529df44d235
-DEMO_MODE=true
-AT_USERNAME=sandbox
-CBHI_PREMIUM_PER_MEMBER=120
-DEFAULT_LANGUAGE=en
-SUPPORTED_LANGUAGES=am,om,en
-INDIGENT_INCOME_THRESHOLD=1000
-INDIGENT_FAMILY_SIZE_THRESHOLD=5
-INDIGENT_APPROVAL_THRESHOLD=70
-APP_BASE_URL=https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app
-CORS_ALLOWED_ORIGINS=https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app,http://localhost:3000,http://10.0.2.2:3000
-CHAPA_CALLBACK_URL=https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app/api/v1/payments/webhook/chapa
-CHAPA_RETURN_URL=https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app/api/v1/payments/verify
+### Step 3 — Add secrets to GitHub
+
+Go to your repo → Settings → Secrets and variables → Actions → New repository secret
+
+Add each of the 4 secrets above.
+
+### Step 4 — Push to main
+
+```bash
+git add .
+git commit -m "feat: wire all apps, FCM, deploy config"
+git push origin main
 ```
 
-After adding → **Redeploy** the backend project.
+GitHub Actions will:
+1. Run tests for all 3 apps + backend
+2. Deploy `cbhi-admin` to Vercel → `https://cbhi-admin.vercel.app`
+3. Deploy `cbhi-facility` to Vercel → `https://cbhi-facility.vercel.app`
 
-### Verify Backend
+## After First Deploy — Update CORS
 
-```
-https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app/api/v1/health
-→ {"status":"ok",...}
-
-https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app/api/v1/demo/status
-→ {"demoMode":true,...}
-```
-
----
-
-## Member App — Redeploy with API URL
-
-The member app was deployed from the same repo. It needs to be redeployed with the API URL set.
-
-1. Vercel Dashboard → find the member app project
-2. **Settings** → **Environment Variables** → Add:
-   - `CBHI_API_BASE_URL` = `https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app/api/v1`
-3. **Deployments** → latest → **⋯** → **Redeploy**
-
-> The `vercel-build.sh` already falls back to the backend URL if `CBHI_API_BASE_URL` is not set, so this step is optional but recommended.
-
----
-
-## Admin App — New Vercel Project
-
-1. [vercel.com/new](https://vercel.com/new) → **Import Git Repository** → select your repo
-2. **Root Directory** → type `cbhi_admin_desktop` → click **Continue**
-3. Framework Preset: **Other**
-4. **Environment Variables** → Add:
-   - `CBHI_API_BASE_URL` = `https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app/api/v1`
-5. Click **Deploy** (takes ~3-4 min — Flutter SDK downloads during build)
-
----
-
-## Facility App — New Vercel Project
-
-Same as Admin App but Root Directory = `cbhi_facility_desktop`.
-
-1. [vercel.com/new](https://vercel.com/new) → Import repo
-2. **Root Directory** → `cbhi_facility_desktop`
-3. Add env var: `CBHI_API_BASE_URL` = `https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app/api/v1`
-4. Deploy
-
----
-
-## After Admin + Facility Are Deployed
-
-Update `CORS_ALLOWED_ORIGINS` in the **backend** Vercel project to add the new URLs:
+Once both apps are deployed, update `backend/.env` on Vercel:
 
 ```
-CORS_ALLOWED_ORIGINS=https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app,https://YOUR_ADMIN_URL.vercel.app,https://YOUR_FACILITY_URL.vercel.app,http://localhost:3000,http://10.0.2.2:3000
+CORS_ALLOWED_ORIGINS=*.vercel.app,https://cbhi-admin.vercel.app,https://cbhi-facility.vercel.app,https://member-based-cbhi.vercel.app,http://localhost:3000
 ```
 
----
+This is already set in `backend/vercel.json` — just redeploy the backend.
+
+## URLs After Deployment
+
+| App | URL |
+|-----|-----|
+| Backend API | https://member-based-cbhi.vercel.app/api/v1 |
+| Admin Portal | https://cbhi-admin.vercel.app |
+| Facility Portal | https://cbhi-facility.vercel.app |
+| Member App | Android APK (sideload) or Play Store |
 
 ## Login Credentials
 
-| Role | Phone | Password |
-|------|-------|----------|
-| System Admin | +251900000001 | Admin@1234 |
+| Role | Phone/Email | Password |
+|------|-------------|----------|
+| Admin | +251900000001 | Admin@1234 |
 | Facility Staff | +251900000002 | Staff@1234 |
-
----
-
-## Troubleshooting
-
-**API returns 500 on first request (cold start)**
-→ Normal — Vercel serverless has ~1-2s cold start. Retry once.
-
-**"password authentication failed"**
-→ `DB_PASSWORD` must be entered without quotes in Vercel Variables UI.
-→ Value: `v!GAPf#g,Maa@5r` (raw, no quotes)
-
-**Flutter app shows blank screen**
-→ Open browser DevTools → Console tab → check for errors
-→ Usually means `CBHI_API_BASE_URL` is wrong or missing
-
-**CORS error in browser**
-→ Add the Flutter app's Vercel URL to `CORS_ALLOWED_ORIGINS` in backend env vars
-→ Redeploy the backend after updating
-
-**Build fails: "flutter: command not found"**
-→ The `vercel-build.sh` downloads Flutter automatically — check build logs for network errors
+| Test Member | +251935092404 | OTP via SMS |

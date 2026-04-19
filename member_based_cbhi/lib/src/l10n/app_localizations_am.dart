@@ -1730,4 +1730,37 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get manualEntryHint => 'የአባልነት መለያ ወይም የቤተሰብ ኮድ ያስገቡ';
+
+  @override
+  String get familyLoginOtpDescription =>
+      'አንድ ጊዜ የሚጠቅም ኮድ ለማግኘት ስልክ ቁጥርዎን እና የአባልነት መለያዎን ያስገቡ።';
+
+  @override
+  String get familyLoginPasswordDescription =>
+      'ለመግባት ስልክ ቁጥርዎን እና የይለፍ ቃልዎን ያስገቡ።';
+
+  @override
+  String get phonePlusPassword => 'ስልክ + የይለፍ ቃል';
+
+  @override
+  String get verifyFamilyMemberAccess => 'የቤተሰብ አባል ግቤት ያረጋግጡ';
+
+  @override
+  String get beneficiaryPhoneNumber => 'የተጠቃሚ ስልክ ቁጥር';
+
+  @override
+  String get useIfMembershipIdUnavailable => 'የአባልነት መለያ ከሌለ ይጠቀሙ';
+
+  @override
+  String get beneficiaryFullName => 'የተጠቃሚ ሙሉ ስም';
+
+  @override
+  String get beneficiaryPhoneRequired => 'ስልክ ቁጥር ያስፈልጋል';
+
+  @override
+  String get membershipOrHouseholdRequired =>
+      'የአባልነት መለያ ወይም የቤተሰብ ኮድ + ሙሉ ስም ያስገቡ';
+
+  @override
+  String get passwordRequired => 'የይለፍ ቃል ያስፈልጋል';
 }

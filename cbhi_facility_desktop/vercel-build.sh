@@ -19,7 +19,7 @@ flutter config --enable-web
 flutter --version
 flutter pub get
 
-API_URL="${CBHI_API_BASE_URL:-https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app/api/v1}"
+API_URL="${CBHI_API_BASE_URL:-https://member-based-cbhi.vercel.app/api/v1}"
 echo "Building with API: $API_URL"
 
 flutter build web --release \

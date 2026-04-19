@@ -6,8 +6,17 @@ FLUTTER_ROOT="$HOME/flutter"
 
 if [ ! -x "$FLUTTER_ROOT/bin/flutter" ]; then
   echo "Installing Flutter SDK..."
-  RELEASES_JSON="$(curl -fsSL "$RELEASES_URL")"
-  ARCHIVE_PATH="$(node -e 'const data = JSON.parse(process.argv[1]); const hash = data.current_release.stable; const release = data.releases.find((item) => item.hash === hash); if (!release) process.exit(1); process.stdout.write(release.archive);' "$RELEASES_JSON")"
+  ARCHIVE_PATH="$(curl -fsSL "$RELEASES_URL" | node -e '
+    let raw = "";
+    process.stdin.on("data", chunk => raw += chunk);
+    process.stdin.on("end", () => {
+      const data = JSON.parse(raw);
+      const hash = data.current_release.stable;
+      const release = data.releases.find(r => r.hash === hash);
+      if (!release) process.exit(1);
+      process.stdout.write(release.archive);
+    });
+  ')"
   curl -fsSL "https://storage.googleapis.com/flutter_infra_release/releases/${ARCHIVE_PATH}" -o /tmp/flutter.tar.xz
   rm -rf "$FLUTTER_ROOT"
   tar -xf /tmp/flutter.tar.xz -C "$HOME"
@@ -19,7 +28,7 @@ flutter config --enable-web
 flutter --version
 flutter pub get
 
-API_URL="${CBHI_API_BASE_URL:-https://member-based-cbhi-dwpejr0y4-figo-uis-projects.vercel.app/api/v1}"
+API_URL="${CBHI_API_BASE_URL:-https://member-based-cbhi.vercel.app/api/v1}"
 echo "Building with API: $API_URL"
 
 flutter build web --release \

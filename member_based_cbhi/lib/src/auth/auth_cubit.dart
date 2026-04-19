@@ -1,12 +1,33 @@
+import 'dart:async' show unawaited;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../cbhi_data.dart';
+import '../shared/fcm_service.dart';
 import 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   AuthCubit(this.repository) : super(AuthState.initial());
 
   final CbhiRepository repository;
+
+  /// Register FCM token with the backend after successful authentication
+  Future<void> _registerFcmToken() async {
+    try {
+      final token = await FcmService.instance.init();
+      if (token != null && token.isNotEmpty) {
+        await repository.registerFcmToken(token);
+        // Re-register on token refresh
+        FcmService.instance.onTokenRefresh((newToken) async {
+          try {
+            await repository.registerFcmToken(newToken);
+          } catch (_) {}
+        });
+      }
+    } catch (e) {
+      debugPrint('[FCM] Token registration failed: $e');
+    }
+  }
 
   /// After registration, the API may persist a session — pick it up without OTP.
   Future<void> adoptRegisteredSession() async {
@@ -27,15 +48,15 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(status: AuthStatus.checking, clearError: true));
     try {
       final session = await repository.restoreSession();
+      final isAuth = session != null;
       emit(
         state.copyWith(
-          status: session == null
-              ? AuthStatus.unauthenticated
-              : AuthStatus.authenticated,
+          status: isAuth ? AuthStatus.authenticated : AuthStatus.unauthenticated,
           session: session,
           clearError: true,
         ),
       );
+      if (isAuth) unawaited(_registerFcmToken());
     } catch (error) {
       emit(
         state.copyWith(

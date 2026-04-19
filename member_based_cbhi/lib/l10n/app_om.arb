@@ -684,5 +684,16 @@
 
   "showAtFacility": "Dhaabbata Fayyaatti Agarsiisi",
   "enterManually": "Harkaan galchi",
-  "manualEntryHint": "Lakkoofsa miseensummaa yookaan koodii maatii galchi"
+  "manualEntryHint": "Lakkoofsa miseensummaa yookaan koodii maatii galchi",
+
+  "familyLoginOtpDescription": "Koodii yeroo tokkoo argachuuf lakkoofsa bilbilaa fi lakkoofsa miseensummaa galchi.",
+  "familyLoginPasswordDescription": "Seenuuf lakkoofsa bilbilaa fi jecha darbii galchi.",
+  "phonePlusPassword": "Bilbila + Jecha darbii",
+  "verifyFamilyMemberAccess": "Seensa Miseensa Maatii Mirkaneessi",
+  "beneficiaryPhoneNumber": "Lakkoofsa bilbilaa fayyadamaa",
+  "useIfMembershipIdUnavailable": "Lakkoofsi miseensummaa yoo hin jiraanne fayyadami",
+  "beneficiaryFullName": "Maqaa guutuu fayyadamaa",
+  "beneficiaryPhoneRequired": "Lakkoofsa bilbilaa barbaachisaa dha",
+  "membershipOrHouseholdRequired": "Lakkoofsa miseensummaa yookaan koodii maatii + maqaa guutuu galchi",
+  "passwordRequired": "Jecha darbii barbaachisaa dha"
 }

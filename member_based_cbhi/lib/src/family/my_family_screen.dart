@@ -354,7 +354,7 @@ class _MemberCard extends StatelessWidget {
                               context: context,
                               builder: (_) => AlertDialog(
                                 title: Text(strings.t('removeBeneficiary')),
-                                content: Text(strings.f('removeBeneficiaryMessage', {'name': member.fullName})),
+                                content: Text(strings.f('removeConfirmMessage', {'name': member.fullName})),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(context, false),
