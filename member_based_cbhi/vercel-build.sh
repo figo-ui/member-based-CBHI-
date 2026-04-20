@@ -47,7 +47,6 @@ echo "Building with API: $API_URL"
 
 echo "Starting web build..."
 flutter build web --release --verbose --no-source-maps \
-  --web-renderer auto \
   --dart-define=CBHI_API_BASE_URL="$API_URL" \
   --dart-define=APP_ENV="production"
 
