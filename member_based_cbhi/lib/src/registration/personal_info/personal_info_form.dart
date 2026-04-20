@@ -1,9 +1,11 @@
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../../shared/web_stubs.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+
 
 import '../models/personal_info_model.dart';
 import '../../cbhi_data.dart';
@@ -357,7 +359,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _gender,
+                      initialValue: _gender,
                       decoration: InputDecoration(labelText: strings.t('gender')),
                       items: [
                         DropdownMenuItem(value: 'FEMALE', child: Text(strings.t('female'))),
@@ -403,7 +405,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<LocationItem>(
-                        value: _selectedRegion,
+                        initialValue: _selectedRegion,
                         decoration: InputDecoration(labelText: strings.t('region')),
                         items: _regions
                             .map((r) => DropdownMenuItem(
@@ -418,7 +420,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<LocationItem>(
-                        value: _selectedZone,
+                        initialValue: _selectedZone,
                         decoration: InputDecoration(labelText: strings.t('zone')),
                         items: _zones
                             .map((z) => DropdownMenuItem(
@@ -438,7 +440,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<LocationItem>(
-                        value: _selectedWoreda,
+                        initialValue: _selectedWoreda,
                         decoration: InputDecoration(labelText: strings.t('woreda')),
                         items: _woredas
                             .map((w) => DropdownMenuItem(
@@ -453,7 +455,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<LocationItem>(
-                        value: _selectedKebele,
+                        initialValue: _selectedKebele,
                         decoration: InputDecoration(labelText: strings.t('kebele')),
                         items: _kebeles
                             .map((k) => DropdownMenuItem(
@@ -647,24 +649,27 @@ class _DocumentPickerCard extends StatelessWidget {
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: isImage
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          File(path!),
-                          height: 180,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : Row(
-                        children: [
-                          const Icon(Icons.description_outlined),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(path!.split(Platform.pathSeparator).last),
+                child: kIsWeb
+                    ? const Icon(Icons.description_outlined, size: 48) // Web fallback
+                    : isImage
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              File(path!),
+                              height: 180,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Row(
+                            children: [
+                              const Icon(Icons.description_outlined),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(path!.split(Platform.pathSeparator).last),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+
               ),
             const SizedBox(height: 12),
             OutlinedButton.icon(

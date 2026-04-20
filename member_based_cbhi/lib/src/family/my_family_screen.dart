@@ -1,4 +1,6 @@
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../shared/web_stubs.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -396,9 +398,11 @@ class _MemberAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolved = repository.resolveMediaUrl(member.photoPath);
     final hasLocalFile =
+        !kIsWeb &&
         member.photoPath != null &&
         member.photoPath!.isNotEmpty &&
         File(member.photoPath!).existsSync();
+
 
     if (hasLocalFile) {
       return CircleAvatar(

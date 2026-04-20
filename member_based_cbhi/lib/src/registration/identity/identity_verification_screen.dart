@@ -62,7 +62,7 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
                     // Identity Type Picker
                     DropdownButtonFormField<String>(
                       decoration: InputDecoration(labelText: strings.t('identityType')),
-                      value: selectedIdentityType,
+                      initialValue: selectedIdentityType,
                       items: [
                         DropdownMenuItem(value: 'NATIONAL_ID', child: Text(strings.t('nationalId'))),
                         DropdownMenuItem(value: 'PASSPORT', child: Text(strings.t('passport'))),
@@ -94,7 +94,7 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       decoration: InputDecoration(labelText: strings.t('mainOccupation')),
-                      value: selectedEmploymentStatus,
+                      initialValue: selectedEmploymentStatus,
                       items: employmentOptions
                           .map((option) => DropdownMenuItem(
                                 value: option['value'],
@@ -139,12 +139,4 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
       ),
     );
   }
-}
-            ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
+}

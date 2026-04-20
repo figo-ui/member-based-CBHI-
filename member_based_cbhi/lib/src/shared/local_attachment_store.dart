@@ -1,17 +1,16 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
-
-// dart:io is imported conditionally – on web these classes are stubs.
-// We guard all usage with kIsWeb at runtime.
-import 'dart:io';
-
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
+
+// Import dart:io only for non-web platforms.
+// We use a conditional import trick or just guard it carefully.
+import 'dart:io' if (dart.library.html) 'web_stubs.dart'; 
 
 class LocalAttachmentStore {
   LocalAttachmentStore._();
 
   /// Copies [sourcePath] to a persistent app-local folder and returns the new
-  /// path.  On web (where [dart:io] file operations are not available) the
+  /// path. On web (where filesystem operations are not available) the
   /// original path is returned as-is.
   static Future<String> persist(
     String sourcePath, {
@@ -23,6 +22,7 @@ class LocalAttachmentStore {
     }
 
     try {
+      // These classes will only be used on non-web platforms.
       final sourceFile = File(sourcePath);
       if (!await sourceFile.exists()) {
         return sourcePath;
@@ -47,3 +47,7 @@ class LocalAttachmentStore {
     }
   }
 }
+
+// Minimal stubs for Web compilation if needed, though kIsWeb usually prunes it if handled correctly.
+// But to be 100% safe from compiler errors, we define them or use 'dart:io' carefully.
+

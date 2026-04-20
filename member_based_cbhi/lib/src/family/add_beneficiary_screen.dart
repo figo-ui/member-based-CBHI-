@@ -1,4 +1,6 @@
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../shared/web_stubs.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -490,9 +492,11 @@ class _PhotoPreview extends StatelessWidget {
     final strings = CbhiLocalizations.of(context);
     final resolvedUrl = repository.resolveMediaUrl(photoPath);
     final hasLocalFile =
+        !kIsWeb &&
         photoPath != null &&
         photoPath!.isNotEmpty &&
         File(photoPath!).existsSync();
+
 
     Widget avatar;
     if (hasLocalFile) {

@@ -1,8 +1,10 @@
-import 'dart:io';
+import 'dart:io' if (dart.library.html) 'web_stubs.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'dart:convert' show base64Encode;
+
 
 /// Compresses an image file to max 500KB before upload.
 /// Returns the path to the compressed file.
@@ -81,17 +83,4 @@ Future<String?> fileToBase64(String filePath) async {
   }
 }
 
-String base64Encode(List<int> bytes) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  final result = StringBuffer();
-  for (var i = 0; i < bytes.length; i += 3) {
-    final b0 = bytes[i];
-    final b1 = i + 1 < bytes.length ? bytes[i + 1] : 0;
-    final b2 = i + 2 < bytes.length ? bytes[i + 2] : 0;
-    result.write(chars[(b0 >> 2) & 0x3F]);
-    result.write(chars[((b0 << 4) | (b1 >> 4)) & 0x3F]);
-    result.write(i + 1 < bytes.length ? chars[((b1 << 2) | (b2 >> 6)) & 0x3F] : '=');
-    result.write(i + 2 < bytes.length ? chars[b2 & 0x3F] : '=');
-  }
-  return result.toString();
-}
+

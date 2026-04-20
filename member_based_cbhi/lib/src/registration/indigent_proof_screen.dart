@@ -1,4 +1,6 @@
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../shared/web_stubs.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../cbhi_localizations.dart';
+import '../cbhi_localizations.dart';
 import '../shared/local_attachment_store.dart';
 import 'registration_cubit.dart';
 
@@ -128,7 +130,7 @@ class _IndigentProofScreenState extends State<IndigentProofScreen> {
             const SizedBox(height: 20),
             ..._paths.asMap().entries.map((e) {
               final path = e.value;
-              final name = path.split(Platform.pathSeparator).last;
+              final name = path.split(kIsWeb ? '/' : Platform.pathSeparator).last;
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
