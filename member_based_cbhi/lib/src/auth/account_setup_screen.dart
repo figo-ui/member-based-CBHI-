@@ -6,14 +6,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../cbhi_data.dart';
 import '../cbhi_localizations.dart';
 import '../theme/app_theme.dart';
+import '../shared/language_selector.dart';
 import 'auth_cubit.dart';
 
 /// Shown immediately after successful registration.
-///
-/// Flow:
-///   1. Backend sends a 6-digit setup code to the registered phone via SMS.
-///   2. User enters the code + chooses a password.
-///   3. On success the account is activated and the user is signed in.
 class AccountSetupScreen extends StatefulWidget {
   const AccountSetupScreen({
     super.key,
@@ -101,16 +97,12 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
 
     setState(() => _isActivating = true);
     try {
-      // Step 1: verify OTP → get session
       final ok = await widget.authCubit.verifyOtp(
         phoneNumber: widget.phoneNumber,
         code: _code,
       );
       if (!ok || !mounted) return;
 
-      // Step 2: set password using reset-password endpoint
-      // (OTP was already consumed above; backend issued a session)
-      // We use the authenticated session to call a dedicated set-password endpoint.
       await widget.repository.setInitialPassword(
         password: _passwordController.text,
       );
@@ -122,7 +114,6 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
             backgroundColor: AppTheme.success,
           ),
         );
-        // Pop all the way back — AuthCubit is now authenticated
         Navigator.of(context).popUntil((r) => r.isFirst);
       }
     } catch (e) {
@@ -174,296 +165,250 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
   @override
   Widget build(BuildContext context) {
     final strings = CbhiLocalizations.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(strings.t('setupAccountTitle')),
-        automaticallyImplyLeading: false, // can't go back mid-setup
+        automaticallyImplyLeading: false, 
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: LanguageSelector(isLight: true),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Header banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: AppTheme.heroGradient,
-                borderRadius: BorderRadius.circular(AppTheme.radiusL),
-              ),
-              child: Column(
-                children: [
-                  const Icon(Icons.verified_user_outlined,
-                      color: Colors.white, size: 40),
-                  const SizedBox(height: 12),
-                  Text(
-                    strings.t('setupAccountTitle'),
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                        ),
-                    textAlign: TextAlign.center,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Header banner
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.heroGradient,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusL),
+                    boxShadow: AppTheme.cardShadow,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    strings.t('setupAccountSubtitle'),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.85),
-                        ),
-                    textAlign: TextAlign.center,
+                  child: Column(
+                    children: [
+                      const Icon(Icons.verified_user_outlined,
+                          color: Colors.white, size: 48),
+                      const SizedBox(height: 16),
+                      Text(
+                        strings.t('setupAccountTitle'),
+                        style: textTheme.titleLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        strings.t('setupAccountSubtitle'),
+                        style: textTheme.bodyMedium?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ).animate().fadeIn(duration: 400.ms),
+                ).animate().fadeIn(duration: 400.ms),
 
-            const SizedBox(height: 28),
+                const SizedBox(height: 32),
 
-            // Target display
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(AppTheme.radiusS),
-              ),
-              child: Text(
-                widget.challenge.target,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppTheme.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-            ).animate().fadeIn(duration: 400.ms, delay: 100.ms),
+                // Target display
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusS),
+                    border: Border.all(color: AppTheme.primary.withValues(alpha: 0.1)),
+                  ),
+                  child: Text(
+                    widget.challenge.target,
+                    style: textTheme.titleMedium?.copyWith(
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ).animate().fadeIn(duration: 400.ms, delay: 100.ms),
 
-            const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
-            // Dev code card
-            if (widget.challenge.debugCode != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.warning.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusM),
-                  border: Border.all(
-                      color: AppTheme.warning.withValues(alpha: 0.3)),
+                // 6-digit PIN boxes
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(6, (i) {
+                    return Container(
+                      width: 44,
+                      height: 56,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      child: TextFormField(
+                        controller: _digitControllers[i],
+                        focusNode: _focusNodes[i],
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        maxLength: 1,
+                        obscureText: true,
+                        style: textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primary,
+                            ),
+                        decoration: InputDecoration(
+                          counterText: '',
+                          contentPadding: EdgeInsets.zero,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppTheme.radiusS),
+                          ),
+                          filled: true,
+                          fillColor: _digitControllers[i].text.isNotEmpty
+                              ? AppTheme.primary.withValues(alpha: 0.05)
+                              : Colors.white,
+                        ),
+                        onChanged: (v) {
+                          setState(() {});
+                          if (v.isNotEmpty && i < 5) {
+                            _focusNodes[i + 1].requestFocus();
+                          } else if (v.isEmpty && i > 0) {
+                            _focusNodes[i - 1].requestFocus();
+                          }
+                        },
+                      ),
+                    );
+                  }),
+                ).animate().fadeIn(duration: 400.ms, delay: 200.ms),
+
+                const SizedBox(height: 16),
+
+                // Countdown
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: _canResend
+                      ? const SizedBox.shrink()
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.timer_outlined,
+                                size: 16, color: AppTheme.textSecondary),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${strings.t('otpExpiry')} $_countdownText',
+                              style: textTheme.bodySmall?.copyWith(
+                                        color: _secondsRemaining < 60
+                                            ? AppTheme.error
+                                            : AppTheme.textSecondary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                            ),
+                          ],
+                        ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.developer_mode_outlined,
-                        color: AppTheme.warning, size: 20),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+
+                const SizedBox(height: 32),
+
+                // Password Card
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          decoration: InputDecoration(
+                            labelText: strings.t('newPassword'),
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(_obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined),
+                              onPressed: () =>
+                                  setState(() => _obscurePassword = !_obscurePassword),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _confirmController,
+                          obscureText: _obscureConfirm,
+                          decoration: InputDecoration(
+                            labelText: strings.t('confirmPassword'),
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(_obscureConfirm
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined),
+                              onPressed: () =>
+                                  setState(() => _obscureConfirm = !_obscureConfirm),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ).animate().fadeIn(duration: 400.ms, delay: 300.ms),
+
+                const SizedBox(height: 24),
+
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.error.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusS),
+                        border: Border.all(color: AppTheme.error.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
                         children: [
-                          Text(strings.t('developmentOtp'),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(color: AppTheme.warning)),
-                          Text(
-                            widget.challenge.debugCode!,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(
-                                  color: AppTheme.warning,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 8,
-                                ),
+                          const Icon(Icons.error_outline, color: AppTheme.error, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(_error!,
+                                style: const TextStyle(color: AppTheme.error, fontWeight: FontWeight.w500)),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ).animate().fadeIn(duration: 300.ms, delay: 150.ms),
-              const SizedBox(height: 20),
-            ],
+                  ).animate().shake(),
 
-            // 6-digit PIN boxes
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(6, (i) {
-                return Container(
-                  width: 48,
-                  height: 56,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  child: TextFormField(
-                    controller: _digitControllers[i],
-                    focusNode: _focusNodes[i],
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    maxLength: 1,
-                    obscureText: true,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.primary,
-                        ),
-                    decoration: InputDecoration(
-                      counterText: '',
-                      contentPadding: EdgeInsets.zero,
-                      border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppTheme.radiusS),
-                        borderSide: BorderSide(
-                          color: _digitControllers[i].text.isNotEmpty
-                              ? AppTheme.primary
-                              : Colors.grey.shade300,
-                          width:
-                              _digitControllers[i].text.isNotEmpty ? 2 : 1,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppTheme.radiusS),
-                        borderSide: const BorderSide(
-                            color: AppTheme.primary, width: 2),
-                      ),
-                      filled: true,
-                      fillColor: _digitControllers[i].text.isNotEmpty
-                          ? AppTheme.primary.withValues(alpha: 0.05)
-                          : Colors.white,
-                    ),
-                    onChanged: (v) {
-                      setState(() {});
-                      if (v.isNotEmpty && i < 5) {
-                        _focusNodes[i + 1].requestFocus();
-                      } else if (v.isEmpty && i > 0) {
-                        _focusNodes[i - 1].requestFocus();
-                      }
-                    },
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _isActivating ? null : _activate,
+                    style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                    child: _isActivating
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : Text(strings.t('activateAccount')),
                   ),
-                );
-              }),
-            ).animate().fadeIn(duration: 400.ms, delay: 200.ms),
+                ).animate().fadeIn(duration: 400.ms, delay: 400.ms),
 
-            const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
-            // Countdown
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: _canResend
-                  ? const SizedBox.shrink()
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.timer_outlined,
-                            size: 16, color: AppTheme.textSecondary),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${strings.t('otpExpiry')} $_countdownText',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: _secondsRemaining < 60
-                                        ? AppTheme.error
-                                        : AppTheme.textSecondary,
-                                  ),
-                        ),
-                      ],
-                    ),
+                TextButton.icon(
+                  onPressed: (_canResend && !_isResending) ? _resend : null,
+                  icon: _isResending
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.refresh, size: 20),
+                  label: Text(strings.t('resendSetupCode')),
+                ),
+
+                const SizedBox(height: 48),
+              ],
             ),
-
-            const SizedBox(height: 24),
-
-            // Password field
-            TextField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: strings.t('newPassword'),
-                prefixIcon: const Icon(Icons.lock_outline),
-                suffixIcon: IconButton(
-                  icon: Icon(_obscurePassword
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined),
-                  onPressed: () =>
-                      setState(() => _obscurePassword = !_obscurePassword),
-                ),
-              ),
-            ).animate().fadeIn(duration: 400.ms, delay: 280.ms),
-
-            const SizedBox(height: 14),
-
-            // Confirm password
-            TextField(
-              controller: _confirmController,
-              obscureText: _obscureConfirm,
-              decoration: InputDecoration(
-                labelText: strings.t('confirmPassword'),
-                prefixIcon: const Icon(Icons.lock_outline),
-                suffixIcon: IconButton(
-                  icon: Icon(_obscureConfirm
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined),
-                  onPressed: () =>
-                      setState(() => _obscureConfirm = !_obscureConfirm),
-                ),
-              ),
-            ).animate().fadeIn(duration: 400.ms, delay: 340.ms),
-
-            const SizedBox(height: 20),
-
-            // Error
-            if (_error != null)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.error.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusS),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.error_outline,
-                        color: AppTheme.error, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(_error!,
-                          style:
-                              const TextStyle(color: AppTheme.error)),
-                    ),
-                  ],
-                ),
-              ).animate().fadeIn(duration: 300.ms),
-
-            const SizedBox(height: 16),
-
-            // Activate button
-            FilledButton.icon(
-              onPressed: _isActivating ? null : _activate,
-              icon: _isActivating
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.verified_outlined),
-              label: Text(strings.t('activateAccount')),
-            ).animate().fadeIn(duration: 400.ms, delay: 400.ms),
-
-            const SizedBox(height: 12),
-
-            // Resend
-            AnimatedOpacity(
-              opacity: _canResend ? 1.0 : 0.4,
-              duration: const Duration(milliseconds: 300),
-              child: TextButton.icon(
-                onPressed: (_canResend && !_isResending) ? _resend : null,
-                icon: _isResending
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.refresh, size: 18),
-                label: Text(strings.t('resendSetupCode')),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-          ],
+          ),
         ),
       ),
     );

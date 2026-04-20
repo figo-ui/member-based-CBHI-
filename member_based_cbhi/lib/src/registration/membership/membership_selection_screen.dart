@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../cbhi_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../shared/language_selector.dart';
 import '../registration_cubit.dart';
 import '../models/membership_type.dart';
 
@@ -17,110 +18,156 @@ class MembershipSelectionScreen extends StatelessWidget {
     final state = regCubit.state;
 
     return Scaffold(
-      appBar: AppBar(title: Text(strings.t('membershipSelection'))),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppTheme.spacingM),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: AppTheme.heroGradient,
-                borderRadius: BorderRadius.circular(AppTheme.radiusL),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.health_and_safety, color: Colors.white, size: 32),
-                  const SizedBox(height: 12),
-                  Text(
-                    strings.t('membershipSelection'),
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white, fontWeight: FontWeight.w700),
+      appBar: AppBar(
+        title: Text(strings.t('membershipSelection')),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: LanguageSelector(isLight: true),
+          ),
+        ],
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.heroGradient,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusL),
+                    boxShadow: AppTheme.cardShadow,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    strings.t('chooseMembershipPathway'),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.85)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.health_and_safety, color: Colors.white, size: 36),
+                      const SizedBox(height: 16),
+                      Text(
+                        strings.t('membershipSelection'),
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        strings.t('chooseMembershipPathway'),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.9)),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ).animate().fadeIn(duration: 400.ms),
+                ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0),
 
-            const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
-            // Indigent card
-            _MembershipCard(
-              icon: Icons.volunteer_activism_outlined,
-              title: strings.t('indigentMembership'),
-              subtitle: strings.t('indigentMembershipSubtitle'),
-              features: [
-                strings.t('indigentFeature1'),
-                strings.t('indigentFeature2'),
-                strings.t('indigentFeature3'),
-              ],
-              color: AppTheme.success,
-              isRecommended: true,
-              onSelect: () => regCubit.beginIndigentProof(
-                const MembershipSelection(type: MembershipType.indigent),
-              ),
-            ).animate().fadeIn(duration: 400.ms, delay: 100.ms)
-              .slideY(begin: 0.06, end: 0, duration: 400.ms, delay: 100.ms),
-
-            const SizedBox(height: 16),
-
-            // Paying card
-            _MembershipCard(
-              icon: Icons.payments_outlined,
-              title: strings.t('payingMembership'),
-              subtitle: strings.t('payingMembershipSubtitle'),
-              features: [
-                strings.t('payingFeature1'),
-                strings.t('payingFeature2'),
-                strings.t('payingFeature3'),
-              ],
-              color: AppTheme.primary,
-              isRecommended: false,
-              onSelect: () => regCubit.submitPayingMembership(
-                const MembershipSelection(
-                  type: MembershipType.paying,
-                  premiumAmount: 500,
+                // Selection options row/column based on screen width
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final useRow = constraints.maxWidth > 600;
+                    if (useRow) {
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: _buildIndigentCard(regCubit, strings)),
+                          const SizedBox(width: 24),
+                          Expanded(child: _buildPayingCard(regCubit, strings)),
+                        ],
+                      );
+                    } else {
+                      return Column(
+                        children: [
+                          _buildIndigentCard(regCubit, strings),
+                          const SizedBox(height: 20),
+                          _buildPayingCard(regCubit, strings),
+                        ],
+                      );
+                    }
+                  }
                 ),
-              ),
-            ).animate().fadeIn(duration: 400.ms, delay: 200.ms)
-              .slideY(begin: 0.06, end: 0, duration: 400.ms, delay: 200.ms),
 
-            const SizedBox(height: 24),
+                if (state.isLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
 
-            if (state.isLoading)
-              const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
-
-            if (state.errorMessage != null)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.error.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusS),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.error_outline, color: AppTheme.error, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(state.errorMessage!,
-                          style: const TextStyle(color: AppTheme.error)),
+                if (state.errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 24),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.error.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                        border: Border.all(color: AppTheme.error.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline, color: AppTheme.error),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              state.errorMessage!,
+                              style: const TextStyle(color: AppTheme.error, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
-          ],
+                  ),
+
+                const SizedBox(height: 48),
+              ],
+            ),
+          ),
         ),
       ),
     );
+  }
+
+  Widget _buildIndigentCard(RegistrationCubit cubit, dynamic strings) {
+    return _MembershipCard(
+      icon: Icons.volunteer_activism_outlined,
+      title: strings.t('indigentMembership'),
+      subtitle: strings.t('indigentMembershipSubtitle'),
+      features: [
+        strings.t('indigentFeature1'),
+        strings.t('indigentFeature2'),
+        strings.t('indigentFeature3'),
+      ],
+      color: AppTheme.success,
+      isRecommended: true,
+      onSelect: () => cubit.beginIndigentProof(
+        const MembershipSelection(type: MembershipType.indigent),
+      ),
+    ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideX(begin: -0.05, end: 0);
+  }
+
+  Widget _buildPayingCard(RegistrationCubit cubit, dynamic strings) {
+    return _MembershipCard(
+      icon: Icons.payments_outlined,
+      title: strings.t('payingMembership'),
+      subtitle: strings.t('payingMembershipSubtitle'),
+      features: [
+        strings.t('payingFeature1'),
+        strings.t('payingFeature2'),
+        strings.t('payingFeature3'),
+      ],
+      color: AppTheme.primary,
+      isRecommended: false,
+      onSelect: () => cubit.submitPayingMembership(
+        const MembershipSelection(
+          type: MembershipType.paying,
+          premiumAmount: 500,
+        ),
+      ),
+    ).animate().fadeIn(duration: 400.ms, delay: 200.ms).slideX(begin: 0.05, end: 0);
   }
 }
 

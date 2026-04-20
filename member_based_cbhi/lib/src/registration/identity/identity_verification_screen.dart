@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../cbhi_localizations.dart';
+import '../../theme/app_theme.dart';
+import '../../shared/language_selector.dart';
 import '../registration_cubit.dart';
 import 'identity_cubit.dart';
 import '../models/identity_model.dart';
@@ -20,8 +22,15 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
   String? selectedEmploymentStatus;
 
   @override
+  void dispose() {
+    _idNumberController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final strings = CbhiLocalizations.of(context);
+    final textTheme = Theme.of(context).textTheme;
 
     /// Values match backend [IndigentEmploymentStatus] (snake_case).
     final List<Map<String, String>> employmentOptions = [
@@ -36,7 +45,15 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
     ];
 
     return Scaffold(
-      appBar: AppBar(title: Text(strings.t('identityAndEmployment'))),
+      appBar: AppBar(
+        title: Text(strings.t('identityAndEmployment')),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: LanguageSelector(isLight: true),
+          ),
+        ],
+      ),
       body: MultiBlocProvider(
         providers: [
           BlocProvider(create: (_) => IdentityCubit()),
@@ -46,91 +63,166 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
             final identityCubit = context.read<IdentityCubit>();
             final regCubit = context.read<RegistrationCubit>();
 
-            return Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      strings.t('identityVerification'),
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 20),
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.cardGradient,
+                            borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                strings.t('identityVerification'),
+                                style: textTheme.headlineSmall?.copyWith(color: Colors.white),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                strings.t('collectIdForScreening'),
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
 
-                    // Identity Type Picker
-                    DropdownButtonFormField<String>(
-                      decoration: InputDecoration(labelText: strings.t('identityType')),
-                      initialValue: selectedIdentityType,
-                      items: [
-                        DropdownMenuItem(value: 'NATIONAL_ID', child: Text(strings.t('nationalId'))),
-                        DropdownMenuItem(value: 'PASSPORT', child: Text(strings.t('passport'))),
-                        DropdownMenuItem(value: 'LOCAL_ID', child: Text(strings.t('localId'))),
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Identity Section
+                                Row(
+                                  children: [
+                                    const Icon(Icons.badge_outlined, color: AppTheme.primary, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      strings.t('identityDetails'),
+                                      style: textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(height: 32),
+
+                                // Identity Type Picker
+                                DropdownButtonFormField<String>(
+                                  decoration: InputDecoration(
+                                    labelText: strings.t('identityType'),
+                                    prefixIcon: const Icon(Icons.category_outlined),
+                                  ),
+                                  value: selectedIdentityType,
+                                  items: [
+                                    DropdownMenuItem(value: 'NATIONAL_ID', child: Text(strings.t('nationalId'))),
+                                    DropdownMenuItem(value: 'PASSPORT', child: Text(strings.t('passport'))),
+                                    DropdownMenuItem(value: 'LOCAL_ID', child: Text(strings.t('localId'))),
+                                  ],
+                                  onChanged: (value) {
+                                    setState(() => selectedIdentityType = value);
+                                  },
+                                  validator: (v) => v == null ? strings.t('required') : null,
+                                ),
+
+                                const SizedBox(height: 20),
+
+                                // Identity Number
+                                TextFormField(
+                                  controller: _idNumberController,
+                                  decoration: InputDecoration(
+                                    labelText: strings.t('identityNumber'),
+                                    prefixIcon: const Icon(Icons.numbers_outlined),
+                                  ),
+                                  validator: (v) => (v == null || v.isEmpty) ? strings.t('required') : null,
+                                  onChanged: (v) => identityCubit.updateIdentityNumber(v),
+                                ),
+
+                                const SizedBox(height: 40),
+
+                                // Employment Section
+                                Row(
+                                  children: [
+                                    const Icon(Icons.work_outline, color: AppTheme.primary, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      strings.t('employmentOccupationStatus'),
+                                      style: textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(height: 32),
+
+                                DropdownButtonFormField<String>(
+                                  decoration: InputDecoration(
+                                    labelText: strings.t('mainOccupation'),
+                                    prefixIcon: const Icon(Icons.work_history_outlined),
+                                  ),
+                                  value: selectedEmploymentStatus,
+                                  items: employmentOptions
+                                      .map((option) => DropdownMenuItem(
+                                            value: option['value'],
+                                            child: Text(option['label']!),
+                                          ))
+                                      .toList(),
+                                  onChanged: (value) {
+                                    setState(() => selectedEmploymentStatus = value);
+                                    identityCubit.updateEmploymentStatus(value ?? '');
+                                  },
+                                  validator: (v) => v == null ? strings.t('required') : null,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 32),
+
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: () {
+                              if (_formKey.currentState!.validate() &&
+                                  selectedIdentityType != null &&
+                                  selectedEmploymentStatus != null) {
+                                
+                                final identityModel = IdentityModel(
+                                  identityType: selectedIdentityType!,
+                                  identityNumber: _idNumberController.text.trim(),
+                                  employmentStatus: selectedEmploymentStatus!,
+                                );
+
+                                regCubit.submitIdentity(identityModel);
+                              }
+                            },
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: Text(strings.t('continueToMembership')),
+                          ),
+                        ),
+                        const SizedBox(height: 40),
                       ],
-                      onChanged: (value) {
-                        setState(() => selectedIdentityType = value);
-                      },
-                      validator: (v) => v == null ? strings.t('required') : null,
                     ),
-
-                    const SizedBox(height: 16),
-
-                    // Identity Number
-                    TextFormField(
-                      controller: _idNumberController,
-                      decoration: InputDecoration(labelText: strings.t('identityNumber')),
-                      validator: (v) => (v == null || v.isEmpty) ? strings.t('required') : null,
-                      onChanged: (v) => identityCubit.updateIdentityNumber(v),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Employment Status (Key Feature)
-                    Text(
-                      strings.t('employmentOccupationStatus'),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      decoration: InputDecoration(labelText: strings.t('mainOccupation')),
-                      initialValue: selectedEmploymentStatus,
-                      items: employmentOptions
-                          .map((option) => DropdownMenuItem(
-                                value: option['value'],
-                                child: Text(option['label']!),
-                              ))
-                          .toList(),
-                      onChanged: (value) {
-                        setState(() => selectedEmploymentStatus = value);
-                        identityCubit.updateEmploymentStatus(value ?? '');
-                      },
-                      validator: (v) => v == null ? strings.t('required') : null,
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate() &&
-                              selectedIdentityType != null &&
-                              selectedEmploymentStatus != null) {
-                            
-                            final identityModel = IdentityModel(
-                              identityType: selectedIdentityType!,
-                              identityNumber: _idNumberController.text.trim(),
-                              employmentStatus: selectedEmploymentStatus!,
-                            );
-
-                            regCubit.submitIdentity(identityModel);
-                          }
-                        },
-                        child: Text(strings.t('continueToMembership')),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             );

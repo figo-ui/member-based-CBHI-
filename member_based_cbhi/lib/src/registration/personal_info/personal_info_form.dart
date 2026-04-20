@@ -9,6 +9,8 @@ import 'package:permission_handler/permission_handler.dart';
 import '../models/personal_info_model.dart';
 import '../../cbhi_data.dart';
 import '../../cbhi_localizations.dart';
+import '../../shared/language_selector.dart';
+import '../../theme/app_theme.dart';
 import '../../shared/file_image_widget.dart';
 import '../../shared/local_attachment_store.dart';
 import '../../shared/location_service.dart';
@@ -43,6 +45,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
   late final TextEditingController _phone;
   late final TextEditingController _email;
   late final TextEditingController _dateOfBirth;
+  late final TextEditingController _age;
   late final TextEditingController _householdSize;
   String _gender = 'FEMALE';
   String? _birthCertificatePath;
@@ -58,6 +61,12 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
   LocationItem? _selectedKebele;
   bool _loadingLocations = false;
   String? _locationError;
+
+  // Trackers for fallback controllers to avoid recreating in build
+  final _regionCtrl = TextEditingController();
+  final _zoneCtrl = TextEditingController();
+  final _woredaCtrl = TextEditingController();
+  final _kebeleCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -78,6 +87,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
               '${initial.dateOfBirth.month.toString().padLeft(2, '0')}-'
               '${initial.dateOfBirth.day.toString().padLeft(2, '0')}',
     );
+    _age = TextEditingController(text: initial?.age.toString() ?? '');
     _householdSize = TextEditingController(
       text: (initial?.householdSize ?? 1).toString(),
     );
@@ -97,8 +107,35 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
         _regions = regions;
         _loadingLocations = false;
       });
-      // Restore previously selected location if editing
-      if (restoreFrom != null && restoreFrom.region.isNotEmpty) {
+
+      // Maya City Restriction Logic
+      if (restoreFrom == null) {
+        final harari = regions.cast<LocationItem?>().firstWhere(
+          (r) => r?.name.toLowerCase().contains('harari') ?? false,
+          orElse: () => null,
+        );
+        if (harari != null) {
+          await _onRegionChanged(harari);
+          
+          // Auto-select Harar zone if exists
+          final zone = _zones.cast<LocationItem?>().firstWhere(
+            (z) => z?.name.toLowerCase().contains('harar') ?? false,
+            orElse: () => null,
+          );
+          if (zone != null) {
+            await _onZoneChanged(zone);
+            
+            // Auto-select Maya City woreda if exists
+            final mayaCity = _woredas.cast<LocationItem?>().firstWhere(
+              (w) => w?.name.toLowerCase().contains('maya') ?? false,
+              orElse: () => null,
+            );
+            if (mayaCity != null) {
+              await _onWoredaChanged(mayaCity);
+            }
+          }
+        }
+      } else if (restoreFrom.region.isNotEmpty) {
         await _restoreLocation(restoreFrom);
       }
     } catch (e) {
@@ -198,7 +235,12 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
     _phone.dispose();
     _email.dispose();
     _dateOfBirth.dispose();
+    _age.dispose();
     _householdSize.dispose();
+    _regionCtrl.dispose();
+    _zoneCtrl.dispose();
+    _woredaCtrl.dispose();
+    _kebeleCtrl.dispose();
     super.dispose();
   }
 
@@ -218,6 +260,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
             '${picked.year.toString().padLeft(4, '0')}-'
             '${picked.month.toString().padLeft(2, '0')}-'
             '${picked.day.toString().padLeft(2, '0')}';
+        _age.text = _calculateAge().toString();
       });
     }
   }
@@ -297,212 +340,272 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                 onPressed: widget.onCancel,
                 icon: const Icon(Icons.close),
               ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: LanguageSelector(isLight: true),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(strings.t('personalInformation'), style: textTheme.headlineSmall),
-              const SizedBox(height: 8),
-              Text(strings.t('captureHouseholdDetails'), style: textTheme.bodyMedium),
-              const SizedBox(height: 24),
-
-              // Name row
-              Row(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: _buildTextField(
-                      _firstName,
-                      strings.t('firstName'),
-                      required: true,
+                  // Hero Section
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.cardGradient,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusM),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildTextField(_middleName, strings.t('middleName')),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _buildTextField(_lastName, strings.t('lastName'), required: true),
-              const SizedBox(height: 12),
-
-              // Phone + Email
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      _phone,
-                      strings.t('phoneNumber'),
-                      required: true,
-                      keyboardType: TextInputType.phone,
-                      hintText: '+2519XXXXXXXX',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildTextField(
-                      _email,
-                      strings.t('emailAddress'),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Gender + Date of birth
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _gender,
-                      decoration: InputDecoration(labelText: strings.t('gender')),
-                      items: [
-                        DropdownMenuItem(value: 'FEMALE', child: Text(strings.t('female'))),
-                        DropdownMenuItem(value: 'MALE', child: Text(strings.t('male'))),
-                        DropdownMenuItem(value: 'OTHER', child: Text(strings.t('other'))),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strings.t('personalInformation'),
+                          style: textTheme.headlineSmall?.copyWith(color: Colors.white),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          strings.t('captureHouseholdDetails'),
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
                       ],
-                      onChanged: (v) => setState(() => _gender = v ?? 'FEMALE'),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _dateOfBirth,
-                      readOnly: true,
-                      decoration: InputDecoration(
-                        labelText: strings.t('dateOfBirth'),
-                        suffixIcon: const Icon(Icons.calendar_today_outlined),
+                  const SizedBox(height: 24),
+
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Name row
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildTextField(
+                                  _firstName,
+                                  strings.t('firstName'),
+                                  required: true,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildTextField(_middleName, strings.t('middleName')),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _buildTextField(_lastName, strings.t('lastName'), required: true),
+                          const SizedBox(height: 12),
+
+                          // Phone + Email
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildTextField(
+                                  _phone,
+                                  strings.t('phoneNumber'),
+                                  required: true,
+                                  keyboardType: TextInputType.phone,
+                                  hintText: '+2519XXXXXXXX',
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildTextField(
+                                  _email,
+                                  strings.t('emailAddress'),
+                                  keyboardType: TextInputType.emailAddress,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Gender + Date of birth
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  value: _gender,
+                                  decoration: InputDecoration(labelText: strings.t('gender')),
+                                  items: [
+                                    DropdownMenuItem(value: 'FEMALE', child: Text(strings.t('female'))),
+                                    DropdownMenuItem(value: 'MALE', child: Text(strings.t('male'))),
+                                    DropdownMenuItem(value: 'OTHER', child: Text(strings.t('other'))),
+                                  ],
+                                  onChanged: (v) => setState(() => _gender = v ?? 'FEMALE'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _dateOfBirth,
+                                  readOnly: true,
+                                  decoration: InputDecoration(
+                                    labelText: strings.t('dateOfBirth'),
+                                    hintText: 'YYYY-MM-DD',
+                                    suffixIcon: const Icon(Icons.calendar_today_outlined),
+                                  ),
+                                  validator: (v) =>
+                                      (v == null || v.trim().isEmpty) ? strings.t('required') : null,
+                                  onTap: _selectDate,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildTextField(
+                                  _age,
+                                  strings.t('age'),
+                                  required: true,
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty) ? strings.t('required') : null,
-                      onTap: _selectDate,
                     ),
                   ),
+                  const SizedBox(height: 20),
+
+                  // Household address section
+                  Text(strings.t('householdAddress'), style: textTheme.titleMedium),
+                  const SizedBox(height: 12),
+
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: _loadingLocations
+                          ? const Center(child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24),
+                              child: CircularProgressIndicator(),
+                            ))
+                          : _locationError != null
+                              ? _buildFallbackLocationFields(strings)
+                              : Column(
+                                  children: [
+                                    // Region + Zone
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: DropdownButtonFormField<LocationItem>(
+                                            value: _selectedRegion,
+                                            decoration: InputDecoration(labelText: strings.t('region')),
+                                            items: _regions
+                                                .map((r) => DropdownMenuItem(
+                                                      value: r,
+                                                      child: Text(r.displayName(Localizations.localeOf(context).languageCode)),
+                                                    ))
+                                                .toList(),
+                                            onChanged: _onRegionChanged,
+                                            validator: (v) => v == null ? strings.t('required') : null,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: DropdownButtonFormField<LocationItem>(
+                                            value: _selectedZone,
+                                            decoration: InputDecoration(labelText: strings.t('zone')),
+                                            items: _zones
+                                                .map((z) => DropdownMenuItem(
+                                                      value: z,
+                                                      child: Text(z.displayName(Localizations.localeOf(context).languageCode)),
+                                                    ))
+                                                .toList(),
+                                            onChanged: _selectedRegion == null ? null : _onZoneChanged,
+                                            validator: (v) => v == null ? strings.t('required') : null,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // Woreda + Kebele
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: DropdownButtonFormField<LocationItem>(
+                                            value: _selectedWoreda,
+                                            decoration: InputDecoration(labelText: strings.t('woreda')),
+                                            items: _woredas
+                                                .map((w) => DropdownMenuItem(
+                                                      value: w,
+                                                      child: Text(w.displayName(Localizations.localeOf(context).languageCode)),
+                                                    ))
+                                                .toList(),
+                                            onChanged: _selectedZone == null ? null : _onWoredaChanged,
+                                            validator: (v) => v == null ? strings.t('required') : null,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: DropdownButtonFormField<LocationItem>(
+                                            value: _selectedKebele,
+                                            decoration: InputDecoration(labelText: strings.t('kebele')),
+                                            items: _kebeles
+                                                .map((k) => DropdownMenuItem(
+                                                      value: k,
+                                                      child: Text(k.displayName(Localizations.localeOf(context).languageCode)),
+                                                    ))
+                                                .toList(),
+                                            onChanged: _selectedWoreda == null
+                                                ? null
+                                                : (v) => setState(() => _selectedKebele = v),
+                                            validator: (v) => v == null ? strings.t('required') : null,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Household size
+                  _buildTextField(
+                    _householdSize,
+                    strings.t('householdSize'),
+                    required: true,
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Birth certificate (optional)
+                  _DocumentPickerCard(
+                    title: strings.t('birthCertificate'),
+                    subtitle: strings.t('optionalImageOrPdf'),
+                    path: _birthCertificatePath,
+                    onPick: _pickBirthCertificate,
+                    isImage: _birthCertificatePath != null && _isImage(_birthCertificatePath!),
+                    uploadLabel: strings.t('uploadDocument'),
+                    replaceLabel: strings.t('replaceDocument'),
+                  ),
+                  const SizedBox(height: 32),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _submit,
+                      child: Text(strings.t('reviewInformation')),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
                 ],
               ),
-              const SizedBox(height: 20),
-
-              // Household address section
-              Text(strings.t('householdAddress'), style: textTheme.titleMedium),
-              const SizedBox(height: 12),
-
-              if (_loadingLocations)
-                const Center(child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: CircularProgressIndicator(),
-                ))
-              else if (_locationError != null)
-                // Fallback to free-text fields when API is unavailable
-                _buildFallbackLocationFields(strings)
-              else ...[
-                // Region + Zone
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<LocationItem>(
-                        initialValue: _selectedRegion,
-                        decoration: InputDecoration(labelText: strings.t('region')),
-                        items: _regions
-                            .map((r) => DropdownMenuItem(
-                                  value: r,
-                                  child: Text(r.displayName(Localizations.localeOf(context).languageCode)),
-                                ))
-                            .toList(),
-                        onChanged: _onRegionChanged,
-                        validator: (v) => v == null ? strings.t('required') : null,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DropdownButtonFormField<LocationItem>(
-                        initialValue: _selectedZone,
-                        decoration: InputDecoration(labelText: strings.t('zone')),
-                        items: _zones
-                            .map((z) => DropdownMenuItem(
-                                  value: z,
-                                  child: Text(z.displayName(Localizations.localeOf(context).languageCode)),
-                                ))
-                            .toList(),
-                        onChanged: _selectedRegion == null ? null : _onZoneChanged,
-                        validator: (v) => v == null ? strings.t('required') : null,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Woreda + Kebele
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<LocationItem>(
-                        initialValue: _selectedWoreda,
-                        decoration: InputDecoration(labelText: strings.t('woreda')),
-                        items: _woredas
-                            .map((w) => DropdownMenuItem(
-                                  value: w,
-                                  child: Text(w.displayName(Localizations.localeOf(context).languageCode)),
-                                ))
-                            .toList(),
-                        onChanged: _selectedZone == null ? null : _onWoredaChanged,
-                        validator: (v) => v == null ? strings.t('required') : null,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DropdownButtonFormField<LocationItem>(
-                        initialValue: _selectedKebele,
-                        decoration: InputDecoration(labelText: strings.t('kebele')),
-                        items: _kebeles
-                            .map((k) => DropdownMenuItem(
-                                  value: k,
-                                  child: Text(k.displayName(Localizations.localeOf(context).languageCode)),
-                                ))
-                            .toList(),
-                        onChanged: _selectedWoreda == null
-                            ? null
-                            : (v) => setState(() => _selectedKebele = v),
-                        validator: (v) => v == null ? strings.t('required') : null,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 12),
-
-              // Household size
-              _buildTextField(
-                _householdSize,
-                strings.t('householdSize'),
-                required: true,
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 20),
-
-              // Birth certificate (optional)
-              _DocumentPickerCard(
-                title: strings.t('birthCertificate'),
-                subtitle: strings.t('optionalImageOrPdf'),
-                path: _birthCertificatePath,
-                onPick: _pickBirthCertificate,
-                isImage: _birthCertificatePath != null && _isImage(_birthCertificatePath!),
-                uploadLabel: strings.t('uploadDocument'),
-                replaceLabel: strings.t('replaceDocument'),
-              ),
-              const SizedBox(height: 28),
-
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _submit,
-                  child: Text(strings.t('reviewInformation')),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -511,25 +614,26 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
 
   /// Fallback free-text fields when location API is unavailable (offline)
   Widget _buildFallbackLocationFields(dynamic strings) {
-    final regionCtrl = TextEditingController(text: _selectedRegion?.name ?? '');
-    final zoneCtrl = TextEditingController(text: _selectedZone?.name ?? '');
-    final woredaCtrl = TextEditingController(text: _selectedWoreda?.name ?? '');
-    final kebeleCtrl = TextEditingController(text: _selectedKebele?.name ?? '');
+    if (_regionCtrl.text.isEmpty && _selectedRegion != null) _regionCtrl.text = _selectedRegion!.name;
+    if (_zoneCtrl.text.isEmpty && _selectedZone != null) _zoneCtrl.text = _selectedZone!.name;
+    if (_woredaCtrl.text.isEmpty && _selectedWoreda != null) _woredaCtrl.text = _selectedWoreda!.name;
+    if (_kebeleCtrl.text.isEmpty && _selectedKebele != null) _kebeleCtrl.text = _selectedKebele!.name;
+
     return Column(
       children: [
         Row(
           children: [
-            Expanded(child: _buildTextField(regionCtrl, strings.t('region'), required: true)),
+            Expanded(child: _buildTextField(_regionCtrl, strings.t('region'), required: true)),
             const SizedBox(width: 12),
-            Expanded(child: _buildTextField(zoneCtrl, strings.t('zone'), required: true)),
+            Expanded(child: _buildTextField(_zoneCtrl, strings.t('zone'), required: true)),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _buildTextField(woredaCtrl, strings.t('woreda'), required: true)),
+            Expanded(child: _buildTextField(_woredaCtrl, strings.t('woreda'), required: true)),
             const SizedBox(width: 12),
-            Expanded(child: _buildTextField(kebeleCtrl, strings.t('kebele'), required: true)),
+            Expanded(child: _buildTextField(_kebeleCtrl, strings.t('kebele'), required: true)),
           ],
         ),
       ],
@@ -541,10 +645,10 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
     final strings = CbhiLocalizations.of(context);
 
     // Validate location — either dropdown or fallback text
-    final regionName = _selectedRegion?.name ?? '';
-    final zoneName = _selectedZone?.name ?? '';
-    final woredaName = _selectedWoreda?.name ?? '';
-    final kebeleName = _selectedKebele?.name ?? '';
+    final regionName = _selectedRegion?.name ?? _regionCtrl.text.trim();
+    final zoneName = _selectedZone?.name ?? _zoneCtrl.text.trim();
+    final woredaName = _selectedWoreda?.name ?? _woredaCtrl.text.trim();
+    final kebeleName = _selectedKebele?.name ?? _kebeleCtrl.text.trim();
 
     if (_locationError == null && (regionName.isEmpty || zoneName.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -558,7 +662,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
         firstName: _firstName.text.trim(),
         middleName: _middleName.text.trim().isEmpty ? null : _middleName.text.trim(),
         lastName: _lastName.text.trim(),
-        age: _calculateAge(),
+        age: int.tryParse(_age.text.trim()) ?? _calculateAge(),
         phone: _phone.text.trim(),
         email: _email.text.trim().isEmpty ? null : _email.text.trim(),
         gender: _gender,
