@@ -1,70 +1,77 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -e
 
-# ── Fix 1: Allow Flutter to run as root (Vercel runs as root) ────────────────
-export FLUTTER_ALLOW_ROOT=1 PUB_ALLOW_SUDO=1
+# --- Fix 1: Allow Flutter to run as root (Vercel runs as root) ---
+export FLUTTER_ALLOW_ROOT=1 
+export PUB_ALLOW_SUDO=1
 
-# ── Fix 2: Fix git "dubious ownership" errors ────────────────────────────────
+# --- Fix 2: Git safety ---
 git config --global --add safe.directory '*' || true
 
-# Use a relative directory within the project or $HOME
 FLUTTER_ROOT="$HOME/flutter"
 
 if [ ! -x "$FLUTTER_ROOT/bin/flutter" ]; then
-  echo "Installing Flutter SDK..."
-  
-  # Fetch the archive path for the current stable release
-  # This is much more reliable than manual version pinning
+  echo ">>> Installing Flutter SDK..."
   RELEASES_URL="https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json"
   
-  ARCHIVE_PATH="$(curl -fsSL "$RELEASES_URL" | node -e '
+  # More robust Node script to get the latest stable archive path
+  ARCHIVE_PATH=$(curl -fssL "$RELEASES_URL" | node -e '
     let raw = "";
     process.stdin.on("data", chunk => raw += chunk);
     process.stdin.on("end", () => {
       try {
         const data = JSON.parse(raw);
-        const hash = data.current_release.stable;
-        const release = data.releases.find(r => r.hash === hash);
-        if (!release) process.exit(1);
-        process.stdout.write(release.archive);
+        const stableHash = data.current_release.stable;
+        const release = data.releases.find(r => r.hash === stableHash || r.version === stableHash);
+        if (release && release.archive) {
+          process.stdout.write(release.archive);
+        } else {
+          console.error("No release found for hash:", stableHash);
+          process.exit(1);
+        }
       } catch (e) {
+        console.error("Error parsing JSON:", e.message);
         process.exit(1);
       }
     });
-  ')"
+  ')
 
-  echo "Downloading Flutter from: https://storage.googleapis.com/flutter_infra_release/releases/${ARCHIVE_PATH}"
-  curl -fsSL "https://storage.googleapis.com/flutter_infra_release/releases/${ARCHIVE_PATH}" -o /tmp/flutter.tar.xz
-  
+  if [ -z "$ARCHIVE_PATH" ]; then
+    echo "ERROR: Failed to determine Flutter archive path."
+    exit 1
+  fi
+
+  echo ">>> Downloading $ARCHIVE_PATH..."
+  curl -fssL "https://storage.googleapis.com/flutter_infra_release/releases/${ARCHIVE_PATH}" -o /tmp/flutter.tar.xz
   rm -rf "$FLUTTER_ROOT"
-  mkdir -p "$HOME"
-  
-  echo "Extracting Flutter..."
   tar -xf /tmp/flutter.tar.xz -C "$HOME"
   rm /tmp/flutter.tar.xz
 fi
 
 export PATH="$FLUTTER_ROOT/bin:$PATH"
 
-# Enable web and disable analytics early to avoid tool crashes
-echo "Configuring Flutter..."
+# Configuration
+echo ">>> Configuring Flutter..."
 flutter config --no-analytics
 flutter config --enable-web
 flutter doctor -v
 
-# Pre-download web artifacts to avoid lazy-loading during build
-echo "Pre-caching web artifacts..."
-flutter precache --web --no-analytics
+echo ">>> Pre-caching web artifacts..."
+flutter precache --web --suppress-analytics
 
-echo "Running pub get..."
+echo ">>> Running pub get..."
 flutter pub get
 
 API_URL="${CBHI_API_BASE_URL:-https://member-based-cbhi.vercel.app/api/v1}"
-echo "Building with API: $API_URL"
+echo ">>> Building for production..."
+echo ">>> API Base URL: $API_URL"
 
-echo "Starting web build..."
 flutter build web --release --no-source-maps --base-href / \
   --dart-define=CBHI_API_BASE_URL="$API_URL" \
-  --dart-define=APP_ENV="production"
+  --dart-define=APP_ENV="production" \
+  --no-pub
+
+echo ">>> Build complete."
+
 
 
