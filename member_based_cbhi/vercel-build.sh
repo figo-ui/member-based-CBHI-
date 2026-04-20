@@ -16,35 +16,9 @@ if [ ! -x "$FLUTTER_ROOT/bin/flutter" ]; then
   echo "Installing Flutter SDK..."
 
   # Fetch latest stable release archive path via stdin
-  RELEASES_URL="https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json"
-  
-  echo "Fetching release info from $RELEASES_URL"
-  JSON_DATA=$(curl -fsSL "$RELEASES_URL")
-  
-  ARCHIVE_PATH=$(echo "$JSON_DATA" | node -e '
-    let raw = "";
-    process.stdin.on("data", d => raw += d);
-    process.stdin.on("end", () => {
-      try {
-        const data = JSON.parse(raw);
-        const hash = data.current_release.stable;
-        const release = data.releases.find(r => r.hash === hash);
-        if (!release) {
-          console.error("Stable release not found for hash:", hash);
-          process.exit(1);
-        }
-        process.stdout.write(release.archive);
-      } catch (e) {
-        console.error("Failed to parse JSON:", e.message);
-        process.exit(1);
-      }
-    });
-  ')
-
-  if [ -z "$ARCHIVE_PATH" ]; then
-    echo "Error: Could not determine Flutter archive path."
-    exit 1
-  fi
+  # Pin Flutter version to avoid unexpected breakage from "latest stable"
+  FLUTTER_VERSION="3.41.7"
+  ARCHIVE_PATH="stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz"
 
   echo "Downloading Flutter from: https://storage.googleapis.com/flutter_infra_release/releases/${ARCHIVE_PATH}"
   curl -fsSL "https://storage.googleapis.com/flutter_infra_release/releases/${ARCHIVE_PATH}" -o /tmp/flutter.tar.xz
