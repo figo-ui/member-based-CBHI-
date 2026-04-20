@@ -35,6 +35,10 @@ class FacilityRepository {
     await prefs.remove(_tokenKey);
   }
 
+  Future<void> registerFcmToken(String token) async {
+    await _post('/auth/fcm-token', {'token': token});
+  }
+
   /// Returns true if the backend is reachable
   Future<bool> ping() async {
     try {

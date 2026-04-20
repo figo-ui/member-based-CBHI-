@@ -19,9 +19,11 @@ dependencies:
   flutter_animate: ^4.5.2
   file_picker: ^10.1.9
   mobile_scanner: ^6.0.4
-  # FIX ME-4: Add flutter_bloc for consistent state management
   flutter_bloc: ^8.1.6
   equatable: ^2.0.7
+  firebase_core: ^3.13.1
+  firebase_messaging: ^15.2.5
+  firebase_in_app_messaging: ^0.7.5+30
 
 dev_dependencies:
   flutter_test:

@@ -4,19 +4,16 @@ import 'package:firebase_in_app_messaging/firebase_in_app_messaging.dart'
 import 'package:flutter/foundation.dart';
 
 /// Handles Firebase Cloud Messaging (FCM) and In-App Messaging setup.
-/// Global implementation for Maya City CBHI apps.
 class FcmService {
   FcmService._();
   static final FcmService instance = FcmService._();
 
   final _fiam = FirebaseInAppMessaging.instance;
 
-  /// Initialize FCM, request permission, and return the device token.
-  /// For Web, requires service worker setup and VAPID key.
+  /// Initialize FCM.
   Future<String?> init({String? vapidKey}) async {
     final messaging = FirebaseMessaging.instance;
 
-    // Request permission (iOS/macOS/Android 13+)
     final settings = await messaging.requestPermission(
       alert: true,
       badge: true,
@@ -28,7 +25,6 @@ class FcmService {
       return null;
     }
 
-    // Get token (if Web, use VAPID key if provided)
     String? token;
     try {
       if (kIsWeb && vapidKey != null) {
@@ -40,39 +36,24 @@ class FcmService {
       debugPrint('[FCM] Failed to get token: $e');
     }
 
-    // iOS/Web foreground notification presentation
     await messaging.setForegroundNotificationPresentationOptions(
       alert: true,
       badge: true,
       sound: true,
     );
 
-    // Initial In-App Messaging config
     await _fiam.setMessagesSuppressed(false);
-    await _fiam.setAutomaticDataCollectionEnabled(true);
-
     return token;
   }
 
-  /// Manually trigger an in-app message event
-  Future<void> triggerEvent(String eventName) async {
-    await _fiam.triggerEvent(eventName);
-  }
-
-  /// Listen for token refreshes
   void onTokenRefresh(Future<void> Function(String token) onRefresh) {
-    FirebaseMessaging.instance.onTokenRefresh.listen((token) {
-      debugPrint('[FCM] Token refreshed: $token');
-      onRefresh(token);
-    });
+    FirebaseMessaging.instance.onTokenRefresh.listen(onRefresh);
   }
 
-  /// Handle foreground messages
   void onForegroundMessage(void Function(RemoteMessage message) handler) {
     FirebaseMessaging.onMessage.listen(handler);
   }
 
-  /// Handle notification tap when app is backgrounded
   void onNotificationTap(void Function(RemoteMessage message) handler) {
     FirebaseMessaging.onMessageOpenedApp.listen(handler);
   }

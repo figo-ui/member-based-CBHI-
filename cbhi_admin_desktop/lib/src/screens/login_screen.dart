@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../data/admin_repository.dart';
 import '../i18n/app_localizations.dart';
 import '../theme/admin_theme.dart';
+import '../shared/fcm_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
@@ -43,6 +44,17 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       await widget.repository.login(identifier: identifier, password: password);
+      
+      // Register FCM Token
+      try {
+        final token = await FcmService.instance.init();
+        if (token != null) {
+          await widget.repository.registerFcmToken(token);
+        }
+      } catch (e) {
+        debugPrint('[FCM] Token registration failed: $e');
+      }
+
       widget.onLogin();
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));

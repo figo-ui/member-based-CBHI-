@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../shared/web_stubs.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';

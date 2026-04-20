@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'src/cbhi_app.dart';
@@ -20,7 +21,9 @@ Future<void> main() async {
 
   // Initialize Firebase (required before any Firebase service)
   await Firebase.initializeApp();
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  if (!kIsWeb) {
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
 
   // Prevent flutter_animate from crashing when a widget is disposed
   // before its delayed animation fires (e.g., list items that scroll off-screen).
