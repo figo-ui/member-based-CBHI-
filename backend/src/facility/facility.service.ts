@@ -30,6 +30,7 @@ import {
   VerifyEligibilityQueryDto,
 } from './facility.dto';
 import { Notification } from '../notifications/notification.entity';
+import { NotificationService } from '../notifications/notification.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { User } from '../users/user.entity';
 
@@ -50,6 +51,7 @@ export class FacilityService {
     private readonly documentRepository: Repository<Document>,
     @InjectRepository(Notification)
     private readonly notificationRepository: Repository<Notification>,
+    private readonly notificationService: NotificationService,
     @Optional() private readonly wsGateway?: NotificationsGateway,
   ) {}
 
@@ -400,20 +402,17 @@ export class FacilityService {
       }, []);
 
     for (const recipient of recipients) {
-      await this.notificationRepository.save(
-        this.notificationRepository.create({
-          recipient,
-          type: NotificationType.CLAIM_UPDATE,
-          title,
-          message,
-          payload: {
-            claimId: claim.id,
-            claimNumber: claim.claimNumber,
-            status: claim.status,
-          },
-          language: recipient.preferredLanguage,
-          isRead: false,
-        }),
+      // FCM push + persistent DB notification via NotificationService
+      await this.notificationService.createAndSend(
+        recipient,
+        NotificationType.CLAIM_UPDATE,
+        title,
+        message,
+        {
+          claimId: claim.id,
+          claimNumber: claim.claimNumber,
+          status: claim.status,
+        },
       );
       // Real-time WebSocket push
       this.wsGateway?.pushClaimUpdate([recipient.id], {

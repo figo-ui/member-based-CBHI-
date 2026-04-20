@@ -291,6 +291,9 @@ class _MainShellState extends State<MainShell> {
                         ),
                       ),
                       const Spacer(),
+                      // Notification bell
+                      _AdminNotificationBell(repository: widget.repository),
+                      const SizedBox(width: 8),
                       PopupMenuButton<Locale>(
                         tooltip: strings.t('language'),
                         onSelected: widget.onLocaleChanged,
@@ -413,4 +416,223 @@ class _NavItem {
   final IconData icon;
   final IconData selectedIcon;
   final String label;
+}
+
+/// Notification bell for the admin top bar — shows unread count badge
+/// and opens a popover with recent notifications.
+class _AdminNotificationBell extends StatefulWidget {
+  const _AdminNotificationBell({required this.repository});
+  final AdminRepository repository;
+
+  @override
+  State<_AdminNotificationBell> createState() => _AdminNotificationBellState();
+}
+
+class _AdminNotificationBellState extends State<_AdminNotificationBell> {
+  List<Map<String, dynamic>> _notifications = [];
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      final list = await widget.repository.getNotifications();
+      if (mounted) setState(() => _notifications = list);
+    } catch (_) {
+      // Non-fatal — bell just shows 0
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  int get _unreadCount =>
+      _notifications.where((n) => n['isRead'] != true).length;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          tooltip: 'Notifications',
+          icon: const Icon(Icons.notifications_outlined),
+          onPressed: () => _showPanel(context),
+        ),
+        if (_unreadCount > 0)
+          Positioned(
+            top: 6,
+            right: 6,
+            child: Container(
+              width: 16,
+              height: 16,
+              decoration: const BoxDecoration(
+                color: AdminTheme.error,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  _unreadCount > 9 ? '9+' : '$_unreadCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _showPanel(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.transparent,
+      builder: (ctx) => Align(
+        alignment: Alignment.topRight,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 64, right: 16),
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              width: 360,
+              constraints: const BoxConstraints(maxHeight: 480),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Row(
+                      children: [
+                        const Text(
+                          'Notifications',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.refresh, size: 18),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _load();
+                          },
+                          tooltip: 'Refresh',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 18),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  if (_notifications.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Column(
+                        children: [
+                          Icon(Icons.notifications_none_outlined,
+                              size: 40, color: Colors.grey),
+                          SizedBox(height: 8),
+                          Text('No notifications',
+                              style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    )
+                  else
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: _notifications.length.clamp(0, 20),
+                        separatorBuilder: (_, __) =>
+                            const Divider(height: 1, indent: 56),
+                        itemBuilder: (_, i) {
+                          final n = _notifications[i];
+                          final isRead = n['isRead'] == true;
+                          return ListTile(
+                            dense: true,
+                            leading: Icon(
+                              _iconFor(n['type']?.toString() ?? ''),
+                              color: isRead
+                                  ? Colors.grey
+                                  : AdminTheme.primary,
+                              size: 20,
+                            ),
+                            title: Text(
+                              n['title']?.toString() ?? '',
+                              style: TextStyle(
+                                fontWeight: isRead
+                                    ? FontWeight.w400
+                                    : FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              n['message']?.toString() ?? '',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            trailing: isRead
+                                ? null
+                                : Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: AdminTheme.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                            onTap: n['id'] == null
+                                ? null
+                                : () async {
+                                    final nav = Navigator.of(ctx);
+                                    await widget.repository
+                                        .markNotificationRead(
+                                            n['id'].toString());
+                                    if (!mounted) return;
+                                    nav.pop();
+                                    _load();
+                                  },
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _iconFor(String type) {
+    switch (type) {
+      case 'CLAIM_UPDATE':
+        return Icons.receipt_long_outlined;
+      case 'PAYMENT_CONFIRMATION':
+        return Icons.payments_outlined;
+      case 'SYSTEM_ALERT':
+        return Icons.info_outline;
+      default:
+        return Icons.notifications_outlined;
+    }
+  }
 }

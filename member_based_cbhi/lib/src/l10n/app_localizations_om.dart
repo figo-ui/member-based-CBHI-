@@ -1817,4 +1817,7 @@ class AppLocalizationsOm extends AppLocalizations {
 
   @override
   String get passwordRequired => 'Jecha darbii barbaachisaa dha';
+
+  @override
+  String get markAllRead => 'Hunda akka dubbifametti mallattessi';
 }

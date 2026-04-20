@@ -1824,4 +1824,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get passwordRequired => 'Password is required';
+
+  @override
+  String get markAllRead => 'Mark all read';
 }

@@ -9,6 +9,7 @@ import 'src/cbhi_app.dart';
 import 'src/cbhi_data.dart';
 import 'src/shared/background_sync_service.dart';
 import 'src/shared/fcm_service.dart';
+import 'src/notifications/fcm_notification_overlay.dart';
 
 /// Background FCM handler — must be a top-level function
 @pragma('vm:entry-point')
@@ -97,9 +98,11 @@ Future<void> main() async {
           return breadcrumb;
         };
       },
-      appRunner: () => runApp(CbhiApp(repository: repository!)),
+      appRunner: () => runApp(
+        FcmNotificationOverlay(child: CbhiApp(repository: repository!)),
+      ),
     );
   } else {
-    runApp(CbhiApp(repository: repository));
+    runApp(FcmNotificationOverlay(child: CbhiApp(repository: repository)));
   }
 }

@@ -15,7 +15,6 @@ import {
   IndigentApplicationStatus,
   MembershipType,
   NotificationType,
-  PreferredLanguage,
   UserRole,
 } from '../common/enums/cbhi.enums';
 import { CBHIOfficer } from '../cbhi-officers/cbhi-officer.entity';
@@ -27,6 +26,7 @@ import { Beneficiary } from '../beneficiaries/beneficiary.entity';
 import { IndigentService } from '../indigent/indigent.service';
 import { IndigentApplication } from '../indigent/indigent.entity';
 import { Notification } from '../notifications/notification.entity';
+import { NotificationService } from '../notifications/notification.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { Payment } from '../payments/payment.entity';
 import { SmsService } from '../sms/sms.service';
@@ -72,6 +72,7 @@ export class AdminService {
     private readonly beneficiaryRepository: Repository<Beneficiary>,
     private readonly indigentService: IndigentService,
     private readonly coverageService: CoverageService,
+    private readonly notificationService: NotificationService,
     @Optional() private readonly smsService?: SmsService,
     @Optional() private readonly wsGateway?: NotificationsGateway,
   ) {}
@@ -180,7 +181,8 @@ export class AdminService {
     }
 
     if (user) {
-      await this.createNotification(
+      // FCM push + persistent notification via NotificationService
+      await this.notificationService.createAndSend(
         user,
         NotificationType.SYSTEM_ALERT,
         'Indigent application reviewed',
@@ -234,7 +236,7 @@ export class AdminService {
       }, []);
 
     for (const recipient of recipients) {
-      await this.createNotification(
+      await this.notificationService.createAndSend(
         recipient,
         NotificationType.CLAIM_UPDATE,
         'Claim decision updated',
@@ -495,26 +497,6 @@ export class AdminService {
         );
       }
     }
-  }
-
-  private async createNotification(
-    recipient: User,
-    type: NotificationType,
-    title: string,
-    message: string,
-    payload?: Record<string, unknown>,
-  ) {
-    await this.notificationRepository.save(
-      this.notificationRepository.create({
-        recipient,
-        type,
-        title,
-        message,
-        payload: payload ?? null,
-        language: recipient.preferredLanguage ?? PreferredLanguage.ENGLISH,
-        isRead: false,
-      }),
-    );
   }
 
   async exportToCsv(userId: string, query: { type?: string; from?: string; to?: string }) {

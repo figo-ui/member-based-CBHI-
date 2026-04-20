@@ -43,7 +43,7 @@ class AdminRepository {
   }
 
   Future<void> registerFcmToken(String token) async {
-    await _post('/auth/fcm-token', {'token': token});
+    await _post('/auth/fcm-token', {'fcmToken': token});
   }
 
   /// Returns true if the backend is reachable
@@ -183,6 +183,17 @@ class AdminRepository {
     );
     if (response.statusCode != 200) throw Exception('Export failed');
     return response.body;
+  }
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getNotifications() async {
+    final response = await _get('/notifications');
+    return _asList(response);
+  }
+
+  Future<void> markNotificationRead(String notificationId) async {
+    await _patch('/notifications/$notificationId/read', {});
   }
 
   // ── Benefit Packages ──────────────────────────────────────────────────────

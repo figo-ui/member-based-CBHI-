@@ -669,5 +669,6 @@
   "beneficiaryFullName": "Beneficiary full name",
   "beneficiaryPhoneRequired": "Phone number is required",
   "membershipOrHouseholdRequired": "Enter membership ID or household code + full name",
-  "passwordRequired": "Password is required"
+  "passwordRequired": "Password is required",
+  "markAllRead": "Mark all read"
 }

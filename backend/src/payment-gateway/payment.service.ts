@@ -4,9 +4,10 @@ import { randomBytes } from 'crypto';
 import { Repository } from 'typeorm';
 import { Beneficiary } from '../beneficiaries/beneficiary.entity';
 import { Coverage } from '../coverages/coverage.entity';
-import { CoverageStatus, NotificationType, PaymentMethod, PaymentStatus, PreferredLanguage } from '../common/enums/cbhi.enums';
+import { CoverageStatus, NotificationType, PaymentMethod, PaymentStatus } from '../common/enums/cbhi.enums';
 import { Household } from '../households/household.entity';
 import { Notification } from '../notifications/notification.entity';
+import { NotificationService } from '../notifications/notification.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { Payment } from '../payments/payment.entity';
 import { SmsService } from '../sms/sms.service';
@@ -32,6 +33,7 @@ export class PaymentService {
     private readonly beneficiaryRepository: Repository<Beneficiary>,
     @InjectRepository(Notification)
     private readonly notificationRepository: Repository<Notification>,
+    private readonly notificationService: NotificationService,
     @Optional() private readonly smsService?: SmsService,
     @Optional() private readonly wsGateway?: NotificationsGateway,
   ) {}
@@ -192,19 +194,15 @@ export class PaymentService {
           paidAmount: payment.amount,
         });
 
-        // B3: Persistent notification
+        // B3: Persistent notification + FCM push via NotificationService
         try {
           const headUser = coverage.household.headUser!;
-          await this.notificationRepository.save(
-            this.notificationRepository.create({
-              recipient: headUser,
-              type: NotificationType.PAYMENT_CONFIRMATION,
-              title: 'Payment confirmed',
-              message: `Your CBHI premium was received. Coverage active until ${coverage.endDate.toISOString().split('T')[0]}. Ref: ${txRef}`,
-              payload: { txRef, coverageNumber: coverage.coverageNumber, endDate: coverage.endDate.toISOString() },
-              language: headUser.preferredLanguage ?? PreferredLanguage.ENGLISH,
-              isRead: false,
-            }),
+          await this.notificationService.createAndSend(
+            headUser,
+            NotificationType.PAYMENT_CONFIRMATION,
+            'Payment confirmed',
+            `Your CBHI premium was received. Coverage active until ${coverage.endDate.toISOString().split('T')[0]}. Ref: ${txRef}`,
+            { txRef, coverageNumber: coverage.coverageNumber, endDate: coverage.endDate.toISOString() },
           );
         } catch (_) { /* non-blocking */ }
 

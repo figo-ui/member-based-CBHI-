@@ -1763,4 +1763,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get passwordRequired => 'የይለፍ ቃል ያስፈልጋል';
+
+  @override
+  String get markAllRead => 'ሁሉንም እንደተነበበ ምልክት አድርግ';
 }

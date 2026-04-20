@@ -645,5 +645,6 @@
   "beneficiaryFullName": "የተጠቃሚ ሙሉ ስም",
   "beneficiaryPhoneRequired": "ስልክ ቁጥር ያስፈልጋል",
   "membershipOrHouseholdRequired": "የአባልነት መለያ ወይም የቤተሰብ ኮድ + ሙሉ ስም ያስገቡ",
-  "passwordRequired": "የይለፍ ቃል ያስፈልጋል"
+  "passwordRequired": "የይለፍ ቃል ያስፈልጋል",
+  "markAllRead": "ሁሉንም እንደተነበበ ምልክት አድርግ"
 }

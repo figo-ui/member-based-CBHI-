@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "807775792445",
+    "project_id": "maya-city-cbhi",
+    "storage_bucket": "maya-city-cbhi.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:807775792445:android:199698af39b2d30beda954",
+        "android_client_info": {
+          "package_name": "et.gov.ehia.cbhi.member"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7DsYQCQf3rNqIaxoH39wYPI1rt5877A0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -36,7 +36,7 @@ class FacilityRepository {
   }
 
   Future<void> registerFcmToken(String token) async {
-    await _post('/auth/fcm-token', {'token': token});
+    await _post('/auth/fcm-token', {'fcmToken': token});
   }
 
   /// Returns true if the backend is reachable
@@ -91,6 +91,23 @@ class FacilityRepository {
   Future<List<Map<String, dynamic>>> getClaims() async {
     final response = await _get('/facility/claims');
     return _asList(response['claims']);
+  }
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getNotifications() async {
+    final response = await _get('/notifications');
+    return _asList(response);
+  }
+
+  Future<void> markNotificationRead(String notificationId) async {
+    final response = await _client
+        .patch(
+          Uri.parse('$kFacilityApiBase/notifications/$notificationId/read'),
+          headers: _headers,
+        )
+        .timeout(const Duration(seconds: 10));
+    _parse(response);
   }
 
   Map<String, String> get _headers => {

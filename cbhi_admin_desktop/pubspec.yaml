@@ -20,9 +20,11 @@ dependencies:
   google_fonts: ^8.0.2
   flutter_animate: ^4.5.2
   file_picker: ^10.1.9
-  firebase_core: ^3.13.1
-  firebase_messaging: ^15.2.5
-  firebase_in_app_messaging: ^0.7.5+30
+  firebase_core: ^4.7.0
+  firebase_messaging: ^16.2.0
+  firebase_in_app_messaging: ^0.9.2
+  firebase_analytics: ^12.3.0
+
 
 dev_dependencies:
   flutter_test:

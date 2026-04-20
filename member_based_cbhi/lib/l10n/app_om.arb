@@ -695,5 +695,6 @@
   "beneficiaryFullName": "Maqaa guutuu fayyadamaa",
   "beneficiaryPhoneRequired": "Lakkoofsa bilbilaa barbaachisaa dha",
   "membershipOrHouseholdRequired": "Lakkoofsa miseensummaa yookaan koodii maatii + maqaa guutuu galchi",
-  "passwordRequired": "Jecha darbii barbaachisaa dha"
+  "passwordRequired": "Jecha darbii barbaachisaa dha",
+  "markAllRead": "Hunda akka dubbifametti mallattessi"
 }

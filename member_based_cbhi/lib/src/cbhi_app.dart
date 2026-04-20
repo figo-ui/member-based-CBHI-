@@ -15,6 +15,7 @@ import 'claims/member_claims_screen.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'family/my_family_cubit.dart';
 import 'family/my_family_screen.dart';
+import 'notifications/notification_inbox_screen.dart';
 import 'profile/profile_screen.dart';
 import 'registration/registration_cubit.dart';
 import 'registration/registration_flow.dart';
@@ -294,6 +295,8 @@ class _HomeShellState extends State<_HomeShell> {
                         ),
                       ),
                     ),
+                  // Notification bell with unread badge
+                  _NotificationBell(snapshot: snapshot),
                   Container(
                     margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
@@ -393,6 +396,67 @@ class _HomeShellState extends State<_HomeShell> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Notification Bell — AppBar action with unread badge
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _NotificationBell extends StatelessWidget {
+  const _NotificationBell({required this.snapshot});
+  final CbhiSnapshot? snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final unreadCount = (snapshot?.notifications ?? [])
+        .where((n) => n['isRead'] != true)
+        .length;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(right: 4),
+          decoration: BoxDecoration(
+            color: AppTheme.primary.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: IconButton(
+            tooltip: 'Notifications',
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const NotificationInboxScreen(),
+              ),
+            ),
+          ),
+        ),
+        if (unreadCount > 0)
+          Positioned(
+            top: 6,
+            right: 6,
+            child: Container(
+              width: 16,
+              height: 16,
+              decoration: const BoxDecoration(
+                color: AppTheme.accent,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  unreadCount > 9 ? '9+' : '$unreadCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

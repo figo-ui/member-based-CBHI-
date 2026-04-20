@@ -8,36 +8,53 @@ export FLUTTER_ALLOW_ROOT=1 PUB_ALLOW_SUDO=1
 git config --global --add safe.directory '*' || true
 
 # Use a relative directory within the project or $HOME
-FLUTTER_ROOT="$HOME/.flutter-sdk"
-
-echo "Using FLUTTER_ROOT: $FLUTTER_ROOT"
+FLUTTER_ROOT="$HOME/flutter"
 
 if [ ! -x "$FLUTTER_ROOT/bin/flutter" ]; then
   echo "Installing Flutter SDK..."
-
-  # Fetch latest stable release archive path via stdin
-  # Pin Flutter version to avoid unexpected breakage from "latest stable"
-  FLUTTER_VERSION="3.41.7"
-  ARCHIVE_PATH="stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz"
+  
+  # Fetch the archive path for the current stable release
+  # This is much more reliable than manual version pinning
+  RELEASES_URL="https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json"
+  
+  ARCHIVE_PATH="$(curl -fsSL "$RELEASES_URL" | node -e '
+    let raw = "";
+    process.stdin.on("data", chunk => raw += chunk);
+    process.stdin.on("end", () => {
+      try {
+        const data = JSON.parse(raw);
+        const hash = data.current_release.stable;
+        const release = data.releases.find(r => r.hash === hash);
+        if (!release) process.exit(1);
+        process.stdout.write(release.archive);
+      } catch (e) {
+        process.exit(1);
+      }
+    });
+  ')"
 
   echo "Downloading Flutter from: https://storage.googleapis.com/flutter_infra_release/releases/${ARCHIVE_PATH}"
   curl -fsSL "https://storage.googleapis.com/flutter_infra_release/releases/${ARCHIVE_PATH}" -o /tmp/flutter.tar.xz
   
   rm -rf "$FLUTTER_ROOT"
-  mkdir -p "$(dirname "$FLUTTER_ROOT")"
+  mkdir -p "$HOME"
   
   echo "Extracting Flutter..."
-  tar -xf /tmp/flutter.tar.xz -C "$(dirname "$FLUTTER_ROOT")"
-  mv "$(dirname "$FLUTTER_ROOT")/flutter" "$FLUTTER_ROOT"
+  tar -xf /tmp/flutter.tar.xz -C "$HOME"
   rm /tmp/flutter.tar.xz
 fi
 
 export PATH="$FLUTTER_ROOT/bin:$PATH"
 
-# Enable web explicitly
+# Enable web and disable analytics early to avoid tool crashes
 echo "Configuring Flutter..."
-flutter config --enable-web --no-analytics
-flutter --version
+flutter config --no-analytics
+flutter config --enable-web
+flutter doctor -v
+
+# Pre-download web artifacts to avoid lazy-loading during build
+echo "Pre-caching web artifacts..."
+flutter precache --web --no-analytics
 
 echo "Running pub get..."
 flutter pub get
@@ -46,7 +63,8 @@ API_URL="${CBHI_API_BASE_URL:-https://member-based-cbhi.vercel.app/api/v1}"
 echo "Building with API: $API_URL"
 
 echo "Starting web build..."
-flutter build web --release --verbose --no-source-maps \
+flutter build web --release --no-source-maps --base-href / \
   --dart-define=CBHI_API_BASE_URL="$API_URL" \
   --dart-define=APP_ENV="production"
+
 
