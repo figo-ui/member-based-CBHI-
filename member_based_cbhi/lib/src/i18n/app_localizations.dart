@@ -15,13 +15,11 @@ class AppLocalizations {
   static const frameworkSupportedLocales = <Locale>[
     Locale('en'),
     Locale('am'),
-    Locale('om'),
   ];
 
   static Locale resolveFrameworkLocale(Locale locale) {
     return switch (locale.languageCode) {
       'am' => const Locale('am'),
-      'om' || 'orm' => const Locale('om'),
       _ => const Locale('en'),
     };
   }

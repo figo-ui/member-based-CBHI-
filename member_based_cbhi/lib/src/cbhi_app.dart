@@ -61,7 +61,7 @@ class CbhiApp extends StatelessWidget {
               }
               return supportedLocales.first;
             },
-            localizationsDelegates: CbhiLocalizations.delegatesFor(frameworkLocale),
+            localizationsDelegates: CbhiLocalizations.delegatesFor(appLocale),
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: state.isDarkMode ? ThemeMode.dark : ThemeMode.light,
