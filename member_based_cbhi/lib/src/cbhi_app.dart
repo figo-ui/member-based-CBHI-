@@ -44,22 +44,19 @@ class CbhiApp extends StatelessWidget {
       child: BlocBuilder<AppCubit, AppState>(
         builder: (context, state) {
           final appLocale = state.locale;
-          final frameworkLocale = CbhiLocalizations.resolveFrameworkLocale(
-            appLocale,
-          );
 
           return MaterialApp(
             debugShowCheckedModeBanner: false,
-            locale: frameworkLocale,
-            supportedLocales: CbhiLocalizations.frameworkSupportedLocales,
+            locale: appLocale,
+            supportedLocales: CbhiLocalizations.supportedLocales,
             localeResolutionCallback: (locale, supportedLocales) {
-              if (locale == null) return supportedLocales.first;
-              for (final supportedLocale in supportedLocales) {
-                if (supportedLocale.languageCode == locale.languageCode) {
-                  return supportedLocale;
+              if (locale == null) return const Locale('en');
+              for (final supported in supportedLocales) {
+                if (supported.languageCode == locale.languageCode) {
+                  return supported;
                 }
               }
-              return supportedLocales.first;
+              return const Locale('en');
             },
             localizationsDelegates: CbhiLocalizations.delegatesFor(appLocale),
             theme: AppTheme.lightTheme,

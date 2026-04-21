@@ -128,27 +128,20 @@ class RegistrationCubit extends Cubit<RegistrationState> {
       );
 
       final phone = state.personalInfo?.phone;
-      OtpChallenge? challenge;
-      if (phone != null && phone.isNotEmpty) {
-        try {
-          challenge = await repository.sendOtp(phoneNumber: phone);
-        } catch (_) {
-          // Non-fatal — user can resend from the setup screen
-        }
-      }
 
+      // Skip OTP — go straight to password setup if we have a phone number,
+      // otherwise mark as completed (offline/no-phone path).
       final next = state.copyWith(
         membership: membership,
-        currentStep: challenge != null
+        currentStep: (phone != null && phone.isNotEmpty)
             ? RegistrationStep.setupAccount
             : RegistrationStep.completed,
         registeredPhone: phone,
-        setupChallenge: challenge,
+        setupChallenge: null,
         isLoading: false,
         clearError: true,
       );
       emit(next);
-      // Clear draft on successful registration
       await _clearDraft();
     } catch (e) {
       emit(state.copyWith(errorMessage: e.toString(), isLoading: false));

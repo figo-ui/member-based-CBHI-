@@ -67,9 +67,8 @@ class _RegistrationFlowState extends State<RegistrationFlow> {
             // ── NEW: account setup after registration ──────────────────────
             case RegistrationStep.setupAccount:
               final phone = state.registeredPhone ?? '';
-              final challenge = state.setupChallenge;
-              if (challenge == null || phone.isEmpty) {
-                // Fallback: no challenge available — go straight to completed
+              if (phone.isEmpty) {
+                // No phone — skip straight to completed
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   regCubit.reset();
                   authCubit.adoptRegisteredSession();
@@ -82,7 +81,6 @@ class _RegistrationFlowState extends State<RegistrationFlow> {
                 authCubit: authCubit,
                 repository: repo,
                 phoneNumber: phone,
-                challenge: challenge,
               );
 
             case RegistrationStep.completed:

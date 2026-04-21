@@ -945,17 +945,9 @@ class CbhiRepository {
       );
     } on _ApiException catch (error) {
       if (!error.retryable) {
-        rethrow;
+        rethrow; // surface validation / auth errors to the user
       }
-
-      await localDb.queueAction('registration_full', fullPayload);
-      final snapshot = _buildPendingSnapshot(
-        personalInfo: personalInfo,
-        membership: membership,
-      );
-      await localDb.writeSnapshot(snapshot);
-      return snapshot;
-    } catch (_) {
+      // Only queue offline for transient network errors
       await localDb.queueAction('registration_full', fullPayload);
       final snapshot = _buildPendingSnapshot(
         personalInfo: personalInfo,
