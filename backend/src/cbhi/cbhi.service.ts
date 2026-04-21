@@ -119,7 +119,7 @@ export class CbhiService {
 
     const beneficiary = await this.beneficiaryRepository.save(
       this.beneficiaryRepository.create({
-        memberNumber: this.generateCode('MBR'),
+        memberNumber: this.generateCode('MBR'), // finalized in step 2 with structured ID
         fullName: this.composeFullName(
           dto.firstName,
           dto.middleName,
@@ -204,6 +204,16 @@ export class CbhiService {
       eligibility,
     );
     await this.householdRepository.save(household);
+
+    // ── Assign structured Membership ID now that we know the membership type ──
+    // Format: PM-<KEBELE>-<HHSEQ>-01 (paying) or IM-<KEBELE>-<HHSEQ>-01 (indigent)
+    const hhSeq = await this.nextHouseholdSeqForKebele(household.kebele);
+    beneficiary.memberNumber = await this.generateMembershipId(
+      dto.membershipType,
+      household.kebele,
+      hhSeq,
+      1, // household head is always member 01
+    );
 
     beneficiary.isEligible =
       dto.membershipType === MembershipType.PAYING || eligibility.approved;
@@ -523,10 +533,21 @@ export class CbhiService {
       phoneNumber,
     });
     const dateOfBirth = new Date(dto.dateOfBirth);
+    // Determine next member sequence for this household
+    const memberSeq = await this.nextMemberSeqForHousehold(household.id);
+    const memberNumber = await this.generateMembershipId(
+      household.membershipType,
+      household.kebele,
+      // Re-derive the household sequence from the head's memberNumber (e.g. PM-MAYA-0001-01 → 1)
+      this.extractHouseholdSeq(
+        await this.loadPrimaryBeneficiary(household.id).then((b) => b.memberNumber),
+      ),
+      memberSeq,
+    );
     const beneficiary = await this.beneficiaryRepository.save(
       this.beneficiaryRepository.create({
         household,
-        memberNumber: this.generateCode('MBR'),
+        memberNumber,
         fullName: this.composeFullName(
           dto.firstName,
           dto.middleName,
@@ -1619,6 +1640,64 @@ export class CbhiService {
 
   private generateCode(prefix: string) {
     return `${prefix}-${randomBytes(4).toString('hex').toUpperCase()}`;
+  }
+
+  /**
+   * Generates a structured Membership ID:
+   *   PM-<KEBELE>-<HHSEQ>-<MEMBERSEQ>  (paying)
+   *   IM-<KEBELE>-<HHSEQ>-<MEMBERSEQ>  (indigent)
+   *
+   * KEBELE   = kebele name, uppercased, spaces→hyphens, max 10 chars
+   * HHSEQ    = zero-padded count of households in that kebele (e.g. 0001)
+   * MEMBERSEQ= 01 for household head, 02/03/... for each family member
+   */
+  private async generateMembershipId(
+    membershipType: MembershipType | null | undefined,
+    kebele: string,
+    householdSeq: number,
+    memberSeq: number,
+  ): Promise<string> {
+    const prefix = membershipType === MembershipType.INDIGENT ? 'IM' : 'PM';
+    const kebeleCode = kebele
+      .toUpperCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^A-Z0-9\-]/g, '')
+      .substring(0, 10);
+    const hhPart = String(householdSeq).padStart(4, '0');
+    const memberPart = String(memberSeq).padStart(2, '0');
+    return `${prefix}-${kebeleCode}-${hhPart}-${memberPart}`;
+  }
+
+  /** Count existing households in a kebele to derive the next sequence number */
+  private async nextHouseholdSeqForKebele(kebele: string): Promise<number> {
+    const count = await this.householdRepository.count({
+      where: { kebele },
+    });
+    return count + 1;
+  }
+
+  /** Count existing beneficiaries in a household to derive the next member seq */
+  private async nextMemberSeqForHousehold(householdId: string): Promise<number> {
+    const count = await this.beneficiaryRepository.count({
+      where: { household: { id: householdId } },
+      withDeleted: false,
+    });
+    return count + 1;
+  }
+
+  /**
+   * Extracts the household sequence number from an existing memberNumber.
+   * e.g. "PM-MAYA-0003-01" → 3
+   * Falls back to a random number if the format doesn't match.
+   */
+  private extractHouseholdSeq(memberNumber: string): number {
+    const parts = memberNumber.split('-');
+    // Format: PREFIX-KEBELE-HHSEQ-MEMBERSEQ (4+ parts, HHSEQ is second-to-last)
+    if (parts.length >= 4) {
+      const seq = parseInt(parts[parts.length - 2], 10);
+      if (!isNaN(seq)) return seq;
+    }
+    return Math.floor(Math.random() * 9999) + 1;
   }
 
   private addMonths(base: Date, months: number) {
