@@ -63,16 +63,21 @@ echo ">>> Running pub get..."
 flutter pub get
 
 # --- Fix 3: Memory & Build Optimization ---
-# Increase memory limits for the build process
+# Increase memory limits for the Dart VM and Flutter tool
+export DART_VM_OPTIONS="--max-old-space-size=4096"
 export NODE_OPTIONS="--max-old-space-size=4096"
 
 API_URL="${CBHI_API_BASE_URL:-https://member-based-cbhi.vercel.app/api/v1}"
 echo ">>> Building for production..."
 echo ">>> API Base URL: $API_URL"
 
-# We use -O2 instead of default -O4 to reduce memory usage during compilation on Vercel.
-# Added --verbose to help debug the "Failed to compile" error if it persists.
+# Ensure a clean slate
+flutter clean
+
+# We use --web-renderer html to reduce memory usage and avoid CanvasKit overhead.
+# We also keep -O2 optimization and verbose logging.
 flutter build web --release --no-source-maps --base-href / \
+  --web-renderer html \
   --dart-define=CBHI_API_BASE_URL="$API_URL" \
   --dart-define=APP_ENV="production" \
   --dart2js-optimization=O2 \
