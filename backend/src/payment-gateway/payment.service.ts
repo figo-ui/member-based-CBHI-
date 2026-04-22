@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Optional } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomBytes } from 'crypto';
 import { Repository } from 'typeorm';
@@ -21,6 +21,8 @@ import { ChapaService } from './chapa.service';
  */
 @Injectable()
 export class PaymentService {
+  private readonly logger = new Logger(PaymentService.name);
+
   constructor(
     private readonly chapaService: ChapaService,
     @InjectRepository(Coverage)
@@ -59,6 +61,10 @@ export class PaymentService {
 
     const txRef = `CBHI-${household.householdCode}-${randomBytes(6).toString('hex').toUpperCase()}`;
 
+    // Build a return URL that routes through backend callback → app deep link
+    const appBaseUrl = process.env.APP_BASE_URL ?? 'http://localhost:3000';
+    const returnUrl = `${appBaseUrl}/api/v1/payments/callback?tx_ref=${txRef}`;
+
     const result = await this.chapaService.initiatePayment({
       amount,
       currency: 'ETB',
@@ -67,6 +73,7 @@ export class PaymentService {
       firstName: user.firstName,
       lastName: user.lastName ?? 'Member',
       txRef,
+      returnUrl,
       description: description ?? `CBHI premium for household ${household.householdCode}`,
       metadata: {
         householdCode: household.householdCode,
@@ -79,10 +86,13 @@ export class PaymentService {
       throw new BadRequestException(result.message);
     }
 
+    this.logger.log(`Initiating payment for user ${user.id}: ${amount} ${result.data?.['currency'] || 'ETB'}`);
+
     await this.paymentRepository.save(
       this.paymentRepository.create({
         transactionReference: txRef,
         amount: amount.toFixed(2),
+        currency: 'ETB',
         method: PaymentMethod.MOBILE_MONEY,
         status: PaymentStatus.PENDING,
         providerName: 'Chapa',
@@ -116,8 +126,16 @@ export class PaymentService {
     }
 
     const result = await this.chapaService.verifyPayment(txRef);
+    this.logger.log(`Verification result for ${txRef}: ${result.status} - ${result.amount} ${result.currency}`);
 
     if (result.status === 'success' && payment.status !== PaymentStatus.SUCCESS) {
+      // Security check: validate amount and currency
+      if (result.amount && Math.abs(result.amount - parseFloat(payment.amount)) > 0.01) {
+        this.logger.error(`Amount mismatch for ${txRef}: expected ${payment.amount}, got ${result.amount}`);
+        throw new BadRequestException('Payment amount mismatch.');
+      }
+      
+      payment.chapaReference = result.data?.['reference']?.toString();
       await this.activateCoverageAfterPayment(payment, txRef);
     } else if (result.status === 'failed') {
       payment.status = PaymentStatus.FAILED;
@@ -133,6 +151,9 @@ export class PaymentService {
       paidAt: result.paidAt,
       message: result.message,
       coverageActivated: result.status === 'success',
+      coverageEndDate: payment.coverage?.endDate?.toISOString(),
+      company_name: 'Maya City CBHI',
+      customer_email: payment.coverage?.household?.headUser?.email ?? 'member@cbhi.et',
     };
   }
 

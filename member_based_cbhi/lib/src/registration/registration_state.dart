@@ -7,6 +7,7 @@ enum RegistrationStep {
   identity,
   membership,
   indigentProof,
+  payment,
   /// New: after registration succeeds, user must set up account via SMS code
   setupAccount,
   completed,
@@ -24,6 +25,8 @@ class RegistrationState {
   final String? registeredPhone;
   /// OTP challenge returned after registration — drives AccountSetupScreen
   final OtpChallenge? setupChallenge;
+  /// Snapshot returned after successful registration — used for payment
+  final CbhiSnapshot? registrationSnapshot;
 
   const RegistrationState({
     this.currentStep = RegistrationStep.start,
@@ -34,6 +37,7 @@ class RegistrationState {
     this.isLoading = false,
     this.registeredPhone,
     this.setupChallenge,
+    this.registrationSnapshot,
   });
 
   RegistrationState copyWith({
@@ -47,6 +51,7 @@ class RegistrationState {
     bool clearMembership = false,
     String? registeredPhone,
     OtpChallenge? setupChallenge,
+    CbhiSnapshot? registrationSnapshot,
   }) {
     return RegistrationState(
       currentStep: currentStep ?? this.currentStep,
@@ -57,6 +62,7 @@ class RegistrationState {
       isLoading: isLoading ?? this.isLoading,
       registeredPhone: registeredPhone ?? this.registeredPhone,
       setupChallenge: setupChallenge ?? this.setupChallenge,
+      registrationSnapshot: registrationSnapshot ?? this.registrationSnapshot,
     );
   }
 }

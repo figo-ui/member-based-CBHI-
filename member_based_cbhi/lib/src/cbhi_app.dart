@@ -232,6 +232,44 @@ class _HomeShellState extends State<_HomeShell> {
   int _index = 0;
 
   @override
+  void initState() {
+    super.initState();
+    _checkFirstLogin();
+  }
+
+  Future<void> _checkFirstLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstLogin = prefs.getBool('cbhi_first_login_done') != true;
+    if (isFirstLogin) {
+      if (mounted) {
+        setState(() => _index = 1); // Land on Family screen
+        _showOnboarding();
+      }
+      await prefs.setBool('cbhi_first_login_done', true);
+    }
+  }
+
+  void _showOnboarding() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final strings = CbhiLocalizations.of(context);
+      showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(strings.t('onboardingTitle1')),
+          content: Text(strings.t('onboardingBody1')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(strings.t('ok')),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final strings = CbhiLocalizations.of(context);
 

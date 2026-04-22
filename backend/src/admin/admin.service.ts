@@ -861,4 +861,41 @@ export class AdminService {
 
     return { facilities: results.sort((a, b) => b.totalClaims - a.totalClaims), generatedAt: new Date().toISOString() };
   }
+
+  async listPayments(userId: string, status?: string, page = 1, limit = 50) {
+    await this.assertOfficerAccess(userId, 'claims');
+    const qb = this.paymentRepository.createQueryBuilder('payment')
+      .leftJoinAndSelect('payment.coverage', 'coverage')
+      .leftJoinAndSelect('coverage.household', 'household')
+      .leftJoinAndSelect('payment.processedBy', 'user')
+      .orderBy('payment.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (status) {
+      qb.andWhere('payment.status = :status', { status });
+    }
+
+    const [payments, total] = await qb.getManyAndCount();
+    return {
+      payments: payments.map((p) => ({
+        id: p.id,
+        txRef: p.transactionReference,
+        amount: Number(p.amount),
+        currency: p.currency,
+        status: p.status,
+        method: p.method,
+        provider: p.providerName,
+        receiptNumber: p.receiptNumber,
+        paidAt: p.paidAt?.toISOString() ?? null,
+        householdCode: p.coverage?.household?.householdCode ?? null,
+        userName: p.processedBy ? `${p.processedBy.firstName} ${p.processedBy.lastName || ''}`.trim() : null,
+        createdAt: p.createdAt.toISOString(),
+      })),
+      total,
+      page,
+      limit,
+      syncedAt: new Date().toISOString(),
+    };
+  }
 }

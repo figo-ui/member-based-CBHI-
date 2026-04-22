@@ -69,8 +69,7 @@ class _ClaimAppealsScreenState extends State<ClaimAppealsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        strings.t('claimNumber') + ': ' +
-                            (appeal['claimNumber']?.toString() ?? '—'),
+                        '${strings.t('claimNumber')}: ${appeal['claimNumber']?.toString() ?? '—'}',
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
@@ -88,7 +87,7 @@ class _ClaimAppealsScreenState extends State<ClaimAppealsScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: newStatus,
+                  initialValue: newStatus,
                   decoration: InputDecoration(labelText: strings.t('decision')),
                   items: ['APPROVED', 'REJECTED']
                       .map((s) => DropdownMenuItem(

@@ -34,6 +34,7 @@ export interface ChapaVerifyResult {
   paidAt?: string;
   message: string;
   isDemo?: boolean;
+  data?: Record<string, unknown>;
 }
 
 /**
@@ -163,6 +164,7 @@ export class ChapaService {
         paymentMethod: result.data?.payment_method,
         paidAt: result.data?.created_at,
         message: result.message ?? 'Verification complete',
+        data: result.data as Record<string, unknown>,
       };
     } catch (error) {
       this.logger.error(`Chapa verify exception: ${(error as Error).message}`);

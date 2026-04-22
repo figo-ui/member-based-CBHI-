@@ -450,7 +450,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                             children: [
                               Expanded(
                                 child: DropdownButtonFormField<String>(
-                                  value: _gender,
+                                  initialValue: _gender,
                                   decoration: InputDecoration(labelText: strings.t('gender')),
                                   items: [
                                     DropdownMenuItem(value: 'FEMALE', child: Text(strings.t('female'))),
@@ -513,7 +513,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                                       children: [
                                         Expanded(
                                           child: DropdownButtonFormField<LocationItem>(
-                                            value: _selectedRegion,
+                                            initialValue: _selectedRegion,
                                             decoration: InputDecoration(labelText: strings.t('region')),
                                             items: _regions
                                                 .map((r) => DropdownMenuItem(
@@ -528,7 +528,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: DropdownButtonFormField<LocationItem>(
-                                            value: _selectedZone,
+                                            initialValue: _selectedZone,
                                             decoration: InputDecoration(labelText: strings.t('zone')),
                                             items: _zones
                                                 .map((z) => DropdownMenuItem(
@@ -548,7 +548,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                                       children: [
                                         Expanded(
                                           child: DropdownButtonFormField<LocationItem>(
-                                            value: _selectedWoreda,
+                                            initialValue: _selectedWoreda,
                                             decoration: InputDecoration(labelText: strings.t('woreda')),
                                             items: _woredas
                                                 .map((w) => DropdownMenuItem(
@@ -563,7 +563,7 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: DropdownButtonFormField<LocationItem>(
-                                            value: _selectedKebele,
+                                            initialValue: _selectedKebele,
                                             decoration: InputDecoration(labelText: strings.t('kebele')),
                                             items: _kebeles
                                                 .map((k) => DropdownMenuItem(

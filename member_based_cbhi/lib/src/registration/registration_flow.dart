@@ -10,6 +10,7 @@ import 'confirmation/personal_info_confirmation.dart';
 import 'identity/identity_verification_screen.dart';
 import 'membership/membership_selection_screen.dart';
 import 'indigent_proof_screen.dart';
+import '../payment/payment_screen.dart';
 
 class RegistrationFlow extends StatefulWidget {
   const RegistrationFlow({super.key});
@@ -73,6 +74,18 @@ class _RegistrationFlowState extends State<RegistrationFlow> {
               return const MembershipSelectionScreen();
             case RegistrationStep.indigentProof:
               return const IndigentProofScreen();
+            case RegistrationStep.payment:
+              final snapshot = state.registrationSnapshot;
+              if (snapshot == null) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+              return PaymentScreen(
+                repository: repo,
+                snapshot: snapshot,
+                onPaymentComplete: regCubit.submitPaymentSuccess,
+              );
 
             // ── NEW: account setup after registration ──────────────────────
             case RegistrationStep.setupAccount:
@@ -118,6 +131,7 @@ class _RegistrationCompletedView extends StatelessWidget {
           child: BlocBuilder<AuthCubit, AuthState>(
             builder: (context, auth) {
               final authenticated = auth.status == AuthStatus.authenticated;
+              final strings = CbhiLocalizations.of(context);
               return Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -128,15 +142,15 @@ class _RegistrationCompletedView extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    authenticated ? 'Registration complete' : 'Registration saved',
+                    authenticated ? strings.t('registrationCompleted') : strings.t('registrationSavedForSync'),
                     style: Theme.of(context).textTheme.headlineSmall,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 12),
                   Text(
                     authenticated
-                        ? 'You are signed in. Continue to your dashboard below.'
-                        : 'When you are online, open the app again and sign in with your phone number to finish syncing your account.',
+                        ? strings.t('registrationSuccessMessage')
+                        : strings.t('offlineQueueMessage'),
                     style: Theme.of(context).textTheme.bodyMedium,
                     textAlign: TextAlign.center,
                   ),
@@ -147,7 +161,7 @@ class _RegistrationCompletedView extends StatelessWidget {
                         context.read<RegistrationCubit>().reset();
                         context.read<AuthCubit>().leaveGuest();
                       },
-                      child: const Text('Back to sign in'),
+                      child: Text(strings.t('backToSignIn')),
                     ),
                 ],
               );

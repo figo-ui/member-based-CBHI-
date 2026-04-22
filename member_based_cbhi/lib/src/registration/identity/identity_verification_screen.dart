@@ -128,7 +128,7 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
                                     labelText: strings.t('identityType'),
                                     prefixIcon: const Icon(Icons.category_outlined),
                                   ),
-                                  value: selectedIdentityType,
+                                  initialValue: selectedIdentityType,
                                   items: [
                                     DropdownMenuItem(value: 'NATIONAL_ID', child: Text(strings.t('nationalId'))),
                                     DropdownMenuItem(value: 'PASSPORT', child: Text(strings.t('passport'))),
@@ -176,7 +176,7 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
                                     labelText: strings.t('mainOccupation'),
                                     prefixIcon: const Icon(Icons.work_history_outlined),
                                   ),
-                                  value: selectedEmploymentStatus,
+                                  initialValue: selectedEmploymentStatus,
                                   items: employmentOptions
                                       .map((option) => DropdownMenuItem(
                                             value: option['value'],
@@ -231,4 +231,4 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
       ),
     );
   }
-}
+}

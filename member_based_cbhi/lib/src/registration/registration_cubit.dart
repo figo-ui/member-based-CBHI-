@@ -111,6 +111,18 @@ class RegistrationCubit extends Cubit<RegistrationState> {
     await _runRegistration(membership, proofPaths);
   }
 
+  void submitPaymentSuccess() {
+    final phone = state.personalInfo?.phone;
+    final next = state.copyWith(
+      currentStep: (phone != null && phone.isNotEmpty)
+          ? RegistrationStep.setupAccount
+          : RegistrationStep.completed,
+      clearError: true,
+    );
+    emit(next);
+    _saveDraft(next);
+  }
+
   // ── Registration submission ────────────────────────────────────────────────
 
   Future<void> _runRegistration(
@@ -120,7 +132,7 @@ class RegistrationCubit extends Cubit<RegistrationState> {
     emit(state.copyWith(isLoading: true, clearError: true, errorMessage: null));
 
     try {
-      await repository.registerFull(
+      final snapshot = await repository.registerFull(
         personalInfo: state.personalInfo!,
         identity: state.identity!,
         membership: membership,
@@ -128,14 +140,18 @@ class RegistrationCubit extends Cubit<RegistrationState> {
       );
 
       final phone = state.personalInfo?.phone;
+      final bool needsPayment = membership.type == MembershipType.paying && !membership.isIndigent;
 
       // Skip OTP — go straight to password setup if we have a phone number,
       // otherwise mark as completed (offline/no-phone path).
       final next = state.copyWith(
         membership: membership,
-        currentStep: (phone != null && phone.isNotEmpty)
-            ? RegistrationStep.setupAccount
-            : RegistrationStep.completed,
+        registrationSnapshot: snapshot,
+        currentStep: needsPayment
+            ? RegistrationStep.payment
+            : (phone != null && phone.isNotEmpty)
+                ? RegistrationStep.setupAccount
+                : RegistrationStep.completed,
         registeredPhone: phone,
         setupChallenge: null,
         isLoading: false,

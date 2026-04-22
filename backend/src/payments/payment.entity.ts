@@ -12,6 +12,9 @@ export class Payment extends AuditableEntity {
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   amount!: string;
 
+  @Column({ length: 3, default: 'ETB' })
+  currency!: string;
+
   @Column({ type: 'enum', enum: PaymentMethod })
   method!: PaymentMethod;
 
@@ -23,6 +26,9 @@ export class Payment extends AuditableEntity {
 
   @Column({ type: 'varchar', length: 120, nullable: true })
   receiptNumber?: string | null;
+
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  chapaReference?: string | null;
 
   @Column({ type: 'timestamptz', nullable: true })
   paidAt?: Date | null;

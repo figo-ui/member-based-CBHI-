@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:app_links/app_links.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../cbhi_data.dart';
@@ -33,35 +35,100 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _verifying = false;
   bool _waitingForCallback = false;
   Map<String, dynamic>? _verifyResult;
-  // F7: Step indicator
   int _currentStep = 0;
+  bool _isOnline = true;
 
-  // FIX ME-5: Deep link listener for automatic payment verification
+  // Auto-polling
+  Timer? _pollTimer;
+  int _pollCount = 0;
+  static const int _maxPollCount = 60; // 5 min at 5s interval
+  static const Duration _pollInterval = Duration(seconds: 5);
+
+  // Deep link listener
   late final AppLinks _appLinks;
+  StreamSubscription? _linkSub;
 
   @override
   void initState() {
     super.initState();
+    _checkConnectivity();
     _appLinks = AppLinks();
-    _appLinks.uriLinkStream.listen((uri) {
-      // Chapa redirects to cbhi://payment-callback?tx_ref=CBHI-xxx
-      if (uri.path.contains('payment-callback') || uri.queryParameters.containsKey('tx_ref')) {
-        final txRef = uri.queryParameters['tx_ref'];
-        if (txRef != null && txRef == _txRef && mounted) {
-          _verifyPayment();
-        }
-      }
-    });
+    _linkSub = _appLinks.uriLinkStream.listen(_handleDeepLink);
   }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
+    _linkSub?.cancel();
     super.dispose();
+  }
+
+  void _handleDeepLink(Uri uri) {
+    if (uri.host == 'payment-callback' ||
+        uri.queryParameters.containsKey('tx_ref')) {
+      final txRef = uri.queryParameters['tx_ref'];
+      if (txRef != null && txRef == _txRef && mounted) {
+        _pollTimer?.cancel();
+        _verifyPayment();
+      }
+    }
+  }
+
+  Future<void> _checkConnectivity() async {
+    final result = await Connectivity().checkConnectivity();
+    if (mounted) {
+      setState(() => _isOnline = !result.contains(ConnectivityResult.none));
+    }
   }
 
   double get _premiumAmount => widget.snapshot.premiumAmount;
 
+  // ── Auto-polling ──────────────────────────────────────────────────────────
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollCount = 0;
+    _pollTimer = Timer.periodic(_pollInterval, (_) async {
+      _pollCount++;
+      if (_pollCount > _maxPollCount || !mounted) {
+        _pollTimer?.cancel();
+        if (mounted) {
+          setState(() => _waitingForCallback = false);
+        }
+        return;
+      }
+      await _verifyPaymentSilent();
+    });
+  }
+
+  /// Silent verify — doesn't show loading indicator or errors, just checks
+  Future<void> _verifyPaymentSilent() async {
+    if (_txRef == null || !mounted) return;
+    try {
+      final result = await widget.repository.verifyPayment(_txRef!);
+      if (result['status'] == 'success' && mounted) {
+        _pollTimer?.cancel();
+        setState(() {
+          _verifyResult = result;
+          _verifying = false;
+          _waitingForCallback = false;
+          _currentStep = 2;
+        });
+        _showReceiptDialog(result);
+      }
+    } catch (_) {
+      // Silent — don't show errors during polling
+    }
+  }
+
+  // ── Payment actions ───────────────────────────────────────────────────────
+
   Future<void> _initiatePayment() async {
+    await _checkConnectivity();
+    if (!_isOnline) {
+      setState(() => _error = 'No internet connection. Please check your network and try again.');
+      return;
+    }
     if (_premiumAmount <= 0) {
       setState(() => _error = 'No premium amount set for this household.');
       return;
@@ -74,8 +141,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     try {
       final result = await widget.repository.initiatePayment(
         amount: _premiumAmount,
-        description:
-            'CBHI premium for household ${widget.snapshot.householdCode}',
+        description: 'CBHI premium for household ${widget.snapshot.householdCode}',
       );
 
       setState(() {
@@ -93,39 +159,35 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
+  Future<void> _openCheckoutAndPoll() async {
+    if (_checkoutUrl == null) return;
+    final uri = Uri.tryParse(_checkoutUrl!);
+    if (uri != null) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      setState(() => _waitingForCallback = true);
+      _startPolling();
+    }
+  }
+
   Future<void> _verifyPayment() async {
     if (_txRef == null) return;
     setState(() => _verifying = true);
 
     try {
       final result = await widget.repository.verifyPayment(_txRef!);
-      setState(() {
-        _verifyResult = result;
-        _verifying = false;
-      });
-
-    if (result['status'] == 'success' && mounted) {
+      if (result['status'] == 'success' && mounted) {
+        _pollTimer?.cancel();
         setState(() {
           _verifyResult = result;
           _verifying = false;
           _waitingForCallback = false;
           _currentStep = 2;
         });
-        // F8: Show receipt screen instead of snackbar
-        await showDialog<void>(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => _ReceiptDialog(
-            result: result,
-            txRef: _txRef ?? '',
-            onDone: widget.onPaymentComplete,
-          ),
-        );
+        _showReceiptDialog(result);
       } else {
         setState(() {
           _verifyResult = result;
           _verifying = false;
-          _waitingForCallback = false;
         });
       }
     } catch (e) {
@@ -137,6 +199,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
+  void _showReceiptDialog(Map<String, dynamic> result) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _ReceiptDialog(
+        result: result,
+        txRef: _txRef ?? '',
+        onDone: widget.onPaymentComplete,
+      ),
+    );
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final strings = CbhiLocalizations.of(context);
@@ -147,11 +223,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // F7: Step indicator
             _PaymentStepIndicator(currentStep: _currentStep),
             const SizedBox(height: 16),
 
-            const SizedBox(height: 16),
+            // Connectivity warning
+            if (!_isOnline) ...[
+              _OfflineBanner(onRetry: _checkConnectivity),
+              const SizedBox(height: 12),
+            ],
 
             // Amount card
             Container(
@@ -195,23 +274,44 @@ class _PaymentScreenState extends State<PaymentScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.06),
+                color: const Color(0xFF7DC242).withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(AppTheme.radiusM),
-                border: Border.all(
-                  color: AppTheme.primary.withValues(alpha: 0.15),
-                ),
+                border: Border.all(color: const Color(0xFF7DC242).withValues(alpha: 0.15)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.payment, color: AppTheme.primary),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7DC242).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.payment, color: Color(0xFF7DC242), size: 20),
+                      ),
                       const SizedBox(width: 10),
-                      Text(
-                        strings.t('acceptedPaymentMethods'),
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(color: AppTheme.primary),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              strings.t('acceptedPaymentMethods'),
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: const Color(0xFF7DC242),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              'Powered by Chapa',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppTheme.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -219,21 +319,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: [
-                      _PaymentChip(
-                        label: 'Telebirr',
-                        icon: Icons.phone_android,
-                      ),
-                      _PaymentChip(
-                        label: 'CBE Birr',
-                        icon: Icons.account_balance,
-                      ),
+                    children: const [
+                      _PaymentChip(label: 'Telebirr', icon: Icons.phone_android),
+                      _PaymentChip(label: 'CBE Birr', icon: Icons.account_balance),
                       _PaymentChip(label: 'Amole', icon: Icons.wallet),
-                      _PaymentChip(label: 'HelloCash', icon: Icons.money),
-                      _PaymentChip(
-                        label: 'Bank Transfer',
-                        icon: Icons.swap_horiz,
-                      ),
+                      _PaymentChip(label: 'M-Pesa', icon: Icons.money),
+                      _PaymentChip(label: 'Bank Transfer', icon: Icons.swap_horiz),
                     ],
                   ),
                 ],
@@ -242,187 +333,71 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
             const SizedBox(height: 24),
 
+            // Error display
             if (_error != null)
               Container(
                 padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   color: AppTheme.error.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(AppTheme.radiusS),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: AppTheme.error,
-                      size: 18,
-                    ),
+                    const Icon(Icons.error_outline, color: AppTheme.error, size: 18),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _error!,
-                        style: const TextStyle(color: AppTheme.error),
-                      ),
-                    ),
+                    Expanded(child: Text(_error!, style: const TextStyle(color: AppTheme.error))),
                   ],
                 ),
               ),
 
+            // Step 1: Initiate button
             if (!_paymentInitiated) ...[
               const SizedBox(height: 8),
               FilledButton.icon(
-                onPressed: _isLoading ? null : _initiatePayment,
+                onPressed: (_isLoading || !_isOnline) ? null : _initiatePayment,
                 icon: _isLoading
                     ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                        width: 18, height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : const Icon(Icons.open_in_new),
-                label: Text(
-                  strings.f('payViaChapa', {
-                    'amount': _premiumAmount.toStringAsFixed(2),
-                  }),
-                ),
+                label: Text(strings.f('payViaChapa', {'amount': _premiumAmount.toStringAsFixed(2)})),
+                style: FilledButton.styleFrom(backgroundColor: const Color(0xFF7DC242)),
               ).animate().fadeIn(duration: 400.ms, delay: 200.ms),
             ],
 
+            // Step 2: Checkout initiated
             if (_paymentInitiated && _checkoutUrl != null) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.success.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusM),
-                  border: Border.all(
-                    color: AppTheme.success.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.check_circle_outline,
-                          color: AppTheme.success,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          strings.t('paymentInitiated'),
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(color: AppTheme.success),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${strings.t('transactionLabel')}: $_txRef',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(strings.t('completePaymentOnChapa')),
-                    const SizedBox(height: 16),
-                    // Open Chapa in external browser
-                    FilledButton.icon(
-                      onPressed: () async {
-                        final uri = Uri.tryParse(_checkoutUrl!);
-                        if (uri != null) {
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
-                          setState(() => _waitingForCallback = true);
-                        }
-                      },
-                      icon: const Icon(Icons.open_in_new),
-                      label: Text(strings.t('openChapaCheckout')),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppTheme.primary,
-                      ),
-                    ).animate().fadeIn(duration: 300.ms),
-
-                    // F6: Waiting for callback indicator
-                    if (_waitingForCallback) ...[
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Listening for payment callback...',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: AppTheme.primary,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ).animate().fadeIn(duration: 300.ms),
+              _CheckoutSection(
+                strings: strings,
+                txRef: _txRef ?? '',
+                waitingForCallback: _waitingForCallback,
+                pollCount: _pollCount,
+                maxPollCount: _maxPollCount,
+                onOpenCheckout: _openCheckoutAndPoll,
+              ),
 
               const SizedBox(height: 16),
 
+              // Manual verify button
               FilledButton.icon(
                 onPressed: _verifying ? null : _verifyPayment,
                 icon: _verifying
                     ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                        width: 18, height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : const Icon(Icons.verified_outlined),
                 label: Text(strings.t('verifyPayment')),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppTheme.success,
-                ),
+                style: FilledButton.styleFrom(backgroundColor: AppTheme.success),
               ),
             ],
 
-            if (_verifyResult != null) ...[
+            // Verify result (non-success)
+            if (_verifyResult != null && _verifyResult!['status'] != 'success') ...[
               const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color:
-                      (_verifyResult!['status'] == 'success'
-                              ? AppTheme.success
-                              : AppTheme.warning)
-                          .withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusM),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${strings.t('statusLabel')}: ${_verifyResult!['status']?.toString().toUpperCase()}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: _verifyResult!['status'] == 'success'
-                            ? AppTheme.success
-                            : AppTheme.warning,
-                      ),
-                    ),
-                    if (_verifyResult!['amount'] != null)
-                      Text(
-                        '${strings.t('amountLabel')}: ${_verifyResult!['amount']} ${strings.t('etb')}',
-                      ),
-                    if (_verifyResult!['paymentMethod'] != null)
-                      Text(
-                        '${strings.t('methodLabel')}: ${_verifyResult!['paymentMethod']}',
-                      ),
-                    Text(_verifyResult!['message']?.toString() ?? ''),
-                  ],
-                ),
-              ),
+              _VerifyResultCard(result: _verifyResult!, strings: strings),
             ],
           ],
         ),
@@ -431,9 +406,212 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 }
 
+// ── Offline Banner ──────────────────────────────────────────────────────────
+
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner({required this.onRetry});
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.warning.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppTheme.radiusS),
+        border: Border.all(color: AppTheme.warning.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.wifi_off, color: AppTheme.warning, size: 20),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'No internet connection',
+              style: TextStyle(color: AppTheme.warning, fontWeight: FontWeight.w600),
+            ),
+          ),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Checkout section (after initiate) ───────────────────────────────────────
+
+class _CheckoutSection extends StatelessWidget {
+  const _CheckoutSection({
+    required this.strings,
+    required this.txRef,
+    required this.waitingForCallback,
+    required this.pollCount,
+    required this.maxPollCount,
+    required this.onOpenCheckout,
+  });
+
+  final dynamic strings;
+  final String txRef;
+  final bool waitingForCallback;
+  final int pollCount;
+  final int maxPollCount;
+  final VoidCallback onOpenCheckout;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.success.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+        border: Border.all(color: AppTheme.success.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.check_circle_outline, color: AppTheme.success),
+              const SizedBox(width: 8),
+              Text(
+                strings.t('paymentInitiated'),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppTheme.success),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${strings.t('transactionLabel')}: $txRef',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 12),
+          Text(strings.t('completePaymentOnChapa')),
+          const SizedBox(height: 16),
+
+          // Open Chapa checkout
+          FilledButton.icon(
+            onPressed: onOpenCheckout,
+            icon: const Icon(Icons.open_in_new),
+            label: Text(strings.t('openChapaCheckout')),
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF7DC242)),
+          ).animate().fadeIn(duration: 300.ms),
+
+          // Auto-polling indicator
+          if (waitingForCallback) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(AppTheme.radiusS),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 16, height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Waiting for payment confirmation...',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Auto-checking every 5 seconds',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Progress ring
+                  SizedBox(
+                    width: 32, height: 32,
+                    child: CircularProgressIndicator(
+                      value: pollCount / maxPollCount,
+                      strokeWidth: 3,
+                      color: AppTheme.primary,
+                      backgroundColor: AppTheme.primary.withValues(alpha: 0.15),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    ).animate().fadeIn(duration: 300.ms);
+  }
+}
+
+// ── Verify result card (pending/failed) ─────────────────────────────────────
+
+class _VerifyResultCard extends StatelessWidget {
+  const _VerifyResultCard({required this.result, required this.strings});
+  final Map<String, dynamic> result;
+  final dynamic strings;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPending = result['status'] == 'pending';
+    final color = isPending ? AppTheme.warning : AppTheme.error;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(isPending ? Icons.schedule : Icons.cancel_outlined, color: color, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                '${strings.t('statusLabel')}: ${result['status']?.toString().toUpperCase()}',
+                style: TextStyle(fontWeight: FontWeight.w700, color: color),
+              ),
+            ],
+          ),
+          if (result['amount'] != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text('${strings.t('amountLabel')}: ${result['amount']} ${strings.t('etb')}'),
+            ),
+          if (result['message'] != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(result['message'].toString(), style: Theme.of(context).textTheme.bodySmall),
+            ),
+          if (isPending) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Payment is still processing. It will be verified automatically.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Payment chip ────────────────────────────────────────────────────────────
+
 class _PaymentChip extends StatelessWidget {
   const _PaymentChip({required this.label, required this.icon});
-
   final String label;
   final IconData icon;
 
@@ -442,30 +620,23 @@ class _PaymentChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: AppTheme.primary.withValues(alpha: 0.08),
+        color: const Color(0xFF7DC242).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppTheme.radiusS),
-        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+        border: Border.all(color: const Color(0xFF7DC242).withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppTheme.primary),
+          Icon(icon, size: 14, color: const Color(0xFF7DC242)),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppTheme.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF7DC242), fontWeight: FontWeight.w600)),
         ],
       ),
     );
   }
 }
 
-// ── F7: Payment step indicator ────────────────────────────────────────────────
+// ── Step indicator ──────────────────────────────────────────────────────────
 
 class _PaymentStepIndicator extends StatelessWidget {
   const _PaymentStepIndicator({required this.currentStep});
@@ -480,9 +651,7 @@ class _PaymentStepIndicator extends StatelessWidget {
           return Expanded(
             child: Container(
               height: 2,
-              color: i ~/ 2 < currentStep
-                  ? AppTheme.primary
-                  : Colors.grey.shade200,
+              color: i ~/ 2 < currentStep ? AppTheme.primary : Colors.grey.shade200,
             ),
           );
         }
@@ -493,8 +662,7 @@ class _PaymentStepIndicator extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 28,
-              height: 28,
+              width: 28, height: 28,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: isDone || isActive ? AppTheme.primary : Colors.grey.shade200,
@@ -528,7 +696,7 @@ class _PaymentStepIndicator extends StatelessWidget {
   }
 }
 
-// ── F8: Receipt dialog ────────────────────────────────────────────────────────
+// ── Receipt dialog ──────────────────────────────────────────────────────────
 
 class _ReceiptDialog extends StatelessWidget {
   const _ReceiptDialog({
@@ -542,31 +710,66 @@ class _ReceiptDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final endDate = result['endDate']?.toString() ?? result['coverageEndDate']?.toString();
+    final endDate = result['coverageEndDate']?.toString() ?? result['endDate']?.toString();
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.check_circle, color: AppTheme.success, size: 64),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.success.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_circle, color: AppTheme.success, size: 48),
+          ),
           const SizedBox(height: 12),
           Text(
             'Payment Successful',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.success,
-                ),
+              fontWeight: FontWeight.w700,
+              color: AppTheme.success,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Your CBHI coverage is now active',
+            style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 8),
           _ReceiptRow(label: 'Amount', value: '${result['amount'] ?? ''} ETB'),
           _ReceiptRow(label: 'Reference', value: txRef),
           if (result['paymentMethod'] != null)
             _ReceiptRow(label: 'Method', value: result['paymentMethod'].toString()),
+          if (result['paidAt'] != null)
+            _ReceiptRow(label: 'Paid At', value: _formatDate(result['paidAt'].toString())),
           if (endDate != null)
-            _ReceiptRow(
-              label: 'Coverage active until',
-              value: endDate.split('T').first,
+            _ReceiptRow(label: 'Coverage until', value: _formatDate(endDate)),
+          const SizedBox(height: 8),
+          const Divider(),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppTheme.success.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, size: 16, color: AppTheme.success),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'A confirmation notification has been sent to your phone.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
       actions: [
@@ -580,6 +783,12 @@ class _ReceiptDialog extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _formatDate(String raw) {
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return raw;
+    return '${parsed.day.toString().padLeft(2, '0')}/${parsed.month.toString().padLeft(2, '0')}/${parsed.year}';
   }
 }
 
@@ -596,7 +805,14 @@ class _ReceiptRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: Theme.of(context).textTheme.bodySmall),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+          Flexible(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

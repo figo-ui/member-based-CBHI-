@@ -6,6 +6,8 @@ import {
   Headers,
   Param,
   Post,
+  Query,
+  Redirect,
 } from '@nestjs/common';
 import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -51,6 +53,20 @@ export class PaymentGatewayController {
     @Param('txRef') txRef: string,
   ) {
     return this.paymentService.verifyPayment(txRef);
+  }
+
+  /**
+   * Chapa return_url redirect — after payment, Chapa sends the user here.
+   * We redirect to the mobile app deep link so app_links triggers auto-verify.
+   */
+  @Public()
+  @Get('callback')
+  @Redirect()
+  paymentCallback(@Query('tx_ref') txRef: string) {
+    return {
+      url: `cbhi://payment-callback?tx_ref=${txRef ?? ''}`,
+      statusCode: 302,
+    };
   }
 
   @Public()

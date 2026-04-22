@@ -214,4 +214,19 @@ export class AdminController {
   ) {
     return this.claimAppealService.reviewAppeal(user.id, appealId, body);
   }
+
+  @Get('payments')
+  listPayments(
+    @CurrentUser() user: User,
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminService.listPayments(
+      user.id,
+      status,
+      page ? Number(page) : 1,
+      limit ? Math.min(Number(limit), 100) : 50,
+    );
+  }
 }
