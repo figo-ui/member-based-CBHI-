@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/auth_cubit.dart';
 import '../benefits/benefit_utilization_widget.dart';
@@ -13,6 +14,8 @@ import '../payment/payment_screen.dart';
 import '../shared/animated_widgets.dart';
 import '../shared/skeleton_widgets.dart';
 import '../theme/app_theme.dart';
+
+const _kTempPasswordKey = 'cbhi_has_temp_password';
 
 /// Home / Dashboard screen — shows househol   d coverage status, metrics,
 /// payment history, and recent notifications.
@@ -45,6 +48,8 @@ class DashboardScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(AppTheme.spacingM),
             children: [
+              // ── Setup banner: shown after registration until password is changed ──
+              _SetupBanner(),
               // Hero card
               AnimatedHeroCard(
                 icon: authState.isFamilyMember
@@ -636,3 +641,121 @@ Future<void> _showRenewCoverageSheet(
     },
   );
 }
+
+// ── Setup Banner ─────────────────────────────────────────────────────────────
+
+/// Shown after registration until the user changes their temporary password.
+/// Dismissed permanently when the user taps "Change Password" or "Dismiss".
+class _SetupBanner extends StatefulWidget {
+  @override
+  State<_SetupBanner> createState() => _SetupBannerState();
+}
+
+class _SetupBannerState extends State<_SetupBanner> {
+  bool _visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _check();
+  }
+
+  Future<void> _check() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasTempPassword = prefs.getBool(_kTempPasswordKey) ?? false;
+    if (hasTempPassword && mounted) {
+      setState(() => _visible = true);
+    }
+  }
+
+  Future<void> _dismiss() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kTempPasswordKey);
+    if (mounted) setState(() => _visible = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_visible) return const SizedBox.shrink();
+    final strings = CbhiLocalizations.of(context);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.warning.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+        border: Border.all(color: AppTheme.warning.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.lock_outline, color: AppTheme.warning, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  strings.t('setupAccountTitle'),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.warning,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  strings.t('tempPasswordWarning'),
+                  style: const TextStyle(fontSize: 12, height: 1.4),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    FilledButton.tonal(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.warning.withValues(alpha: 0.15),
+                        foregroundColor: AppTheme.warning,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () {
+                        _dismiss();
+                        // Navigate to profile → change password
+                        // The bottom nav index 4 is Profile
+                        final scaffold = Scaffold.maybeOf(context);
+                        if (scaffold != null) {
+                          // Signal parent to switch to profile tab
+                          _ProfileTabNotification().dispatch(context);
+                        }
+                      },
+                      child: Text(strings.t('changePassword'), style: const TextStyle(fontSize: 12)),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: _dismiss,
+                      child: Text(strings.t('remindMeLater'), style: const TextStyle(fontSize: 12)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 16),
+            onPressed: _dismiss,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: -0.1, end: 0);
+  }
+}
+
+class _ProfileTabNotification extends Notification {}

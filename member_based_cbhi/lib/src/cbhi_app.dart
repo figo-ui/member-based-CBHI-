@@ -204,7 +204,10 @@ class _BootstrapScreenState extends State<_BootstrapScreen> {
           }
 
           if (authState.status == AuthStatus.guest) {
-            return const RegistrationFlow();
+            return PopScope(
+              canPop: false,
+              child: const RegistrationFlow(),
+            );
           }
 
           if (authState.status == AuthStatus.authenticated) {

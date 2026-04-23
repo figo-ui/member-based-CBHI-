@@ -695,5 +695,9 @@
     "placeholders": { "claimNumber": {"type": "String"} }
   },
   "appealSubmitted": "Iyyannoon milkaa'inaan dhiyaate",
-  "appealPending": "Iyyannoon ilaalamaa jira"
+  "appealPending": "Iyyannoon ilaalamaa jira",
+
+  "tempPasswordWarning": "Herreggaan kee jecha darbii yeroo qabu uumameera. Amma jijjiiri.",
+  "remindMeLater": "Booda na yaadadhu",
+  "backToSignIn": "Gara seensaatti deebi'i"
 }

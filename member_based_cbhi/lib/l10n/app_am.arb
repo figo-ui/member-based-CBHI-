@@ -676,5 +676,9 @@
     "placeholders": { "claimNumber": {"type": "String"} }
   },
   "appealSubmitted": "ይግባኝ በተሳካ ሁኔታ ቀርቧል",
-  "appealPending": "ይግባኝ በግምገማ ላይ ነው"
+  "appealPending": "ይግባኝ በግምገማ ላይ ነው",
+
+  "tempPasswordWarning": "መለያዎ በጊዜያዊ የይለፍ ቃል ተፈጥሯል። አሁን ይቀይሩ።",
+  "remindMeLater": "ኋላ አስታውሰኝ",
+  "backToSignIn": "ወደ ግባ ተመለስ"
 }

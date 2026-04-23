@@ -680,5 +680,9 @@
     "placeholders": { "claimNumber": {"type": "String"} }
   },
   "appealSubmitted": "Appeal submitted successfully",
-  "appealPending": "Appeal Pending Review"
+  "appealPending": "Appeal Pending Review",
+
+  "tempPasswordWarning": "Your account was created with a temporary password. Change it now to secure your account.",
+  "remindMeLater": "Remind me later",
+  "backToSignIn": "Back to Sign In"
 }

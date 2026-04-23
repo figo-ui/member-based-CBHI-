@@ -665,6 +665,9 @@ const _en = <String, String>{
   'yes': 'Yes',
   'yourRights': '4. Your Rights',
   'zone': 'Zone',
+  'tempPasswordWarning': 'Your account was created with a temporary password. Change it now to secure your account.',
+  'remindMeLater': 'Remind me later',
+  'backToSignIn': 'Back to Sign In',
 };
 
 const _am = <String, String>{
@@ -1266,6 +1269,9 @@ const _am = <String, String>{
   'yes': 'አዎ',
   'yourRights': '4. መብቶችዎ',
   'zone': 'ዞን',
+  'tempPasswordWarning': 'መለያዎ በጊዜያዊ የይለፍ ቃል ተፈጥሯል። አሁን ይቀይሩ።',
+  'remindMeLater': 'ኋላ አስታውሰኝ',
+  'backToSignIn': 'ወደ ግባ ተመለስ',
 };
 
 const _om = <String, String>{
@@ -1867,6 +1873,9 @@ const _om = <String, String>{
   'yes': 'Eeyyee',
   'yourRights': '4. Mirga Kee',
   'zone': 'Godina',
+  'tempPasswordWarning': 'Herreggaan kee jecha darbii yeroo qabu uumameera. Amma jijjiiri.',
+  'remindMeLater': 'Booda na yaadadhu',
+  'backToSignIn': 'Gara seensaatti deebi\'i',
 };
 
 final _strings = <String, Map<String, String>>{

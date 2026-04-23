@@ -112,11 +112,8 @@ class RegistrationCubit extends Cubit<RegistrationState> {
   }
 
   void submitPaymentSuccess() {
-    final phone = state.personalInfo?.phone;
     final next = state.copyWith(
-      currentStep: (phone != null && phone.isNotEmpty)
-          ? RegistrationStep.setupAccount
-          : RegistrationStep.completed,
+      currentStep: RegistrationStep.completed,
       clearError: true,
     );
     emit(next);
@@ -139,21 +136,17 @@ class RegistrationCubit extends Cubit<RegistrationState> {
         indigentProofPaths: indigentProofPaths,
       );
 
-      final phone = state.personalInfo?.phone;
-      final bool needsPayment = membership.type == MembershipType.paying && !membership.isIndigent;
+      // Registration complete — open dashboard immediately.
+      // Payment and eligibility can be completed anytime from the dashboard.
+      // A temporary password is auto-generated; banner shown until changed.
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('cbhi_has_temp_password', true);
 
-      // Skip OTP — go straight to password setup if we have a phone number,
-      // otherwise mark as completed (offline/no-phone path).
       final next = state.copyWith(
         membership: membership,
         registrationSnapshot: snapshot,
-        currentStep: needsPayment
-            ? RegistrationStep.payment
-            : (phone != null && phone.isNotEmpty)
-                ? RegistrationStep.setupAccount
-                : RegistrationStep.completed,
-        registeredPhone: phone,
-        setupChallenge: null,
+        currentStep: RegistrationStep.completed,
+        registeredPhone: state.personalInfo?.phone,
         isLoading: false,
         clearError: true,
       );
