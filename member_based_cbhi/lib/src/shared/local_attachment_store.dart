@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path/path.dart' as p;
-import 'package:sqflite/sqflite.dart' if (dart.library.html) 'db_stubs.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart' if (dart.library.html) 'db_stubs.dart';
 
 // Import dart:io only for non-web platforms.
 import 'dart:io' if (dart.library.html) 'web_stubs.dart'; 
