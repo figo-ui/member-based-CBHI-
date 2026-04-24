@@ -21,6 +21,32 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
   String? selectedIdentityType;
   String? selectedEmploymentStatus;
 
+  // Real-time ID duplicate detection
+  String? _idError;
+  bool _checkingId = false;
+  DateTime? _lastIdCheck;
+
+  Future<void> _checkId(String value) async {
+    final id = value.trim();
+    if (id.length < 4) {
+      if (_idError != null) setState(() => _idError = null);
+      return;
+    }
+    final now = DateTime.now();
+    _lastIdCheck = now;
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    if (_lastIdCheck != now || !mounted) return;
+
+    setState(() => _checkingId = true);
+    final regCubit = context.read<RegistrationCubit>();
+    final error = await regCubit.repository.checkIdAvailability(id);
+    if (!mounted) return;
+    setState(() {
+      _idError = error;
+      _checkingId = false;
+    });
+  }
+
   @override
   void dispose() {
     _idNumberController.dispose();
@@ -152,9 +178,29 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
                                   decoration: InputDecoration(
                                     labelText: strings.t('identityNumber'),
                                     prefixIcon: const Icon(Icons.numbers_outlined),
+                                    errorText: _idError,
+                                    suffixIcon: _checkingId
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: Padding(
+                                              padding: EdgeInsets.all(12),
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            ),
+                                          )
+                                        : _idError != null
+                                            ? const Icon(Icons.error_outline, color: Colors.red)
+                                            : null,
                                   ),
-                                  validator: (v) => (v == null || v.isEmpty) ? strings.t('required') : null,
-                                  onChanged: (v) => identityCubit.updateIdentityNumber(v),
+                                  validator: (v) {
+                                    if (v == null || v.isEmpty) return strings.t('required');
+                                    if (_idError != null) return _idError;
+                                    return null;
+                                  },
+                                  onChanged: (v) {
+                                    identityCubit.updateIdentityNumber(v);
+                                    _checkId(v);
+                                  },
                                 ),
 
                                 const SizedBox(height: 40),
@@ -206,7 +252,9 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
                             onPressed: () {
                               if (_formKey.currentState!.validate() &&
                                   selectedIdentityType != null &&
-                                  selectedEmploymentStatus != null) {
+                                  selectedEmploymentStatus != null &&
+                                  _idError == null &&
+                                  !_checkingId) {
                                 
                                 final identityModel = IdentityModel(
                                   identityType: selectedIdentityType!,

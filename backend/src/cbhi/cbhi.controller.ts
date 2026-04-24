@@ -36,6 +36,20 @@ export class CbhiController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @Get('registration/check-phone/:phone')
+  checkPhoneAvailability(@Param('phone') phone: string) {
+    return this.cbhiService.checkPhoneAvailability(phone);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @Get('registration/check-id/:idNumber')
+  checkIdAvailability(@Param('idNumber') idNumber: string) {
+    return this.cbhiService.checkIdAvailability(idNumber);
+  }
+
+  @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('registration/step-2')
   registerStepTwo(@Body() dto: RegistrationStepTwoDto) {

@@ -814,6 +814,32 @@ class CbhiRepository {
     }
   }
 
+  /// Real-time check: is this phone number already registered?
+  /// Returns null if available, or an error message string if taken.
+  Future<String?> checkPhoneAvailability(String phone) async {
+    try {
+      final encoded = Uri.encodeComponent(phone.trim());
+      final result = await _getJson('/cbhi/registration/check-phone/$encoded');
+      final available = result['available'] == true;
+      return available ? null : (result['message']?.toString() ?? 'Phone number already registered.');
+    } catch (_) {
+      return null; // Don't block registration on check failure
+    }
+  }
+
+  /// Real-time check: is this ID number already registered?
+  /// Returns null if available, or an error message string if taken.
+  Future<String?> checkIdAvailability(String idNumber) async {
+    try {
+      final encoded = Uri.encodeComponent(idNumber.trim());
+      final result = await _getJson('/cbhi/registration/check-id/$encoded');
+      final available = result['available'] == true;
+      return available ? null : (result['message']?.toString() ?? 'ID number already registered.');
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<OtpChallenge> sendOtp({String? phoneNumber, String? email}) async {
     final response = await _postJson('/auth/send-otp', {
       'phoneNumber': phoneNumber,

@@ -51,6 +51,11 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
   String _gender = 'FEMALE';
   String? _birthCertificatePath;
 
+  // Real-time duplicate detection
+  String? _phoneError;
+  bool _checkingPhone = false;
+  DateTime? _lastPhoneCheck;
+
   // Location cascade state
   List<LocationItem> _regions = [];
   List<LocationItem> _zones = [];
@@ -333,6 +338,27 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
     }
   }
 
+  Future<void> _checkPhone(String value) async {
+    final phone = value.trim();
+    if (phone.length < 10) {
+      if (_phoneError != null) setState(() => _phoneError = null);
+      return;
+    }
+    // Debounce — wait 600ms after last keystroke
+    final now = DateTime.now();
+    _lastPhoneCheck = now;
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    if (_lastPhoneCheck != now || !mounted) return;
+
+    setState(() => _checkingPhone = true);
+    final error = await widget.repository?.checkPhoneAvailability(phone);
+    if (!mounted) return;
+    setState(() {
+      _phoneError = error;
+      _checkingPhone = false;
+    });
+  }
+
   bool _isImage(String path) {
     final n = path.toLowerCase();
     return n.endsWith('.png') || n.endsWith('.jpg') || n.endsWith('.jpeg');
@@ -426,12 +452,33 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
                           Row(
                             children: [
                               Expanded(
-                                child: _buildTextField(
-                                  _phone,
-                                  strings.t('phoneNumber'),
-                                  required: true,
+                                child: TextFormField(
+                                  controller: _phone,
                                   keyboardType: TextInputType.phone,
-                                  hintText: '+2519XXXXXXXX',
+                                  decoration: InputDecoration(
+                                    labelText: strings.t('phoneNumber'),
+                                    hintText: '+2519XXXXXXXX',
+                                    alignLabelWithHint: true,
+                                    errorText: _phoneError,
+                                    suffixIcon: _checkingPhone
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: Padding(
+                                              padding: EdgeInsets.all(12),
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            ),
+                                          )
+                                        : _phoneError != null
+                                            ? const Icon(Icons.error_outline, color: Colors.red)
+                                            : null,
+                                  ),
+                                  onChanged: _checkPhone,
+                                  validator: (v) {
+                                    if (v == null || v.trim().isEmpty) return strings.t('required');
+                                    if (_phoneError != null) return _phoneError;
+                                    return null;
+                                  },
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -654,6 +701,8 @@ class _PersonalInfoFormState extends State<PersonalInfoForm> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
+    if (_phoneError != null) return; // Block if phone is taken
+    if (_checkingPhone) return; // Block if check in progress
     final strings = CbhiLocalizations.of(context);
 
     // Validate location — either dropdown or fallback text

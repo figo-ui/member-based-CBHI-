@@ -163,9 +163,11 @@ class RegistrationCubit extends Cubit<RegistrationState> {
         indigentProofPaths: indigentProofPaths,
       );
     } catch (e) {
-      // If it's a non-retryable error (validation), surface it
-      if (e.toString().contains('400') || e.toString().contains('validation')) {
-        emit(state.copyWith(errorMessage: e.toString(), isLoading: false));
+      // Parse clean message from backend error JSON
+      final message = _parseErrorMessage(e.toString());
+      // If it's a 400 (validation/duplicate), surface it — don't go offline
+      if (e.toString().contains('400') || e.toString().contains('Bad Request')) {
+        emit(state.copyWith(errorMessage: message, isLoading: false));
         return;
       }
       // Network/server error — use offline snapshot so dashboard still opens
@@ -191,6 +193,29 @@ class RegistrationCubit extends Cubit<RegistrationState> {
   String _generateTempPassword() {
     final random = DateTime.now().millisecondsSinceEpoch % 1000000;
     return random.toString().padLeft(6, '0');
+  }
+
+  /// Extracts a clean human-readable message from a backend error string.
+  /// Backend errors look like: Request failed for /path: {"statusCode":400,"message":"..."}
+  String _parseErrorMessage(String raw) {
+    try {
+      // Find JSON object in the error string
+      final start = raw.indexOf('{');
+      if (start != -1) {
+        final jsonStr = raw.substring(start);
+        final decoded = jsonDecode(jsonStr) as Map<String, dynamic>;
+        final msg = decoded['message'];
+        if (msg is String && msg.isNotEmpty) return msg;
+        if (msg is List && msg.isNotEmpty) return msg.join(', ');
+      }
+    } catch (_) {}
+    // Fallback: strip the path prefix
+    final colonIdx = raw.indexOf(':');
+    if (colonIdx != -1 && colonIdx < raw.length - 1) {
+      final after = raw.substring(colonIdx + 1).trim();
+      if (after.isNotEmpty && !after.startsWith('{')) return after;
+    }
+    return raw;
   }
 
   CbhiSnapshot _buildOfflineSnapshot(MembershipSelection membership) {

@@ -1638,6 +1638,34 @@ export class CbhiService {
     }
   }
 
+  /** Real-time phone availability check — used by Flutter registration form */
+  async checkPhoneAvailability(rawPhone: string) {
+    const phoneNumber = this.authService.normalizePhoneNumber(rawPhone);
+    if (!phoneNumber) {
+      return { available: false, message: 'Invalid phone number format.' };
+    }
+    const existing = await this.userRepository.findOne({ where: { phoneNumber } });
+    return {
+      available: !existing,
+      message: existing ? 'That phone number is already registered.' : null,
+    };
+  }
+
+  /** Real-time ID number availability check — used by Flutter registration form */
+  async checkIdAvailability(idNumber: string) {
+    const trimmed = idNumber?.trim();
+    if (!trimmed || trimmed.length < 4) {
+      return { available: true, message: null };
+    }
+    const existing = await this.userRepository.findOne({
+      where: { identityNumber: trimmed },
+    });
+    return {
+      available: !existing,
+      message: existing ? 'That ID number is already registered.' : null,
+    };
+  }
+
   private generateCode(prefix: string) {
     return `${prefix}-${randomBytes(4).toString('hex').toUpperCase()}`;
   }
