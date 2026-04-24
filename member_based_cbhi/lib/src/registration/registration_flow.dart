@@ -26,8 +26,6 @@ class _RegistrationFlowState extends State<RegistrationFlow> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      // Restores any in-progress draft from SharedPreferences so the user
-      // doesn't lose their registration progress after the app is killed.
       await context.read<RegistrationCubit>().startRegistration();
     });
   }
@@ -36,16 +34,7 @@ class _RegistrationFlowState extends State<RegistrationFlow> {
   Widget build(BuildContext context) {
     return MultiBlocListener(
       listeners: [
-        BlocListener<RegistrationCubit, RegistrationState>(
-          listenWhen: (prev, curr) =>
-              curr.currentStep == RegistrationStep.completed &&
-              prev.currentStep != RegistrationStep.completed,
-          listener: (context, _) {
-            context.read<AuthCubit>().adoptRegisteredSession();
-          },
-        ),
-        // When auth becomes authenticated (e.g. after account setup),
-        // reset the registration cubit so the flow is fully cleared.
+        // When auth becomes authenticated, reset the registration cubit.
         BlocListener<AuthCubit, AuthState>(
           listenWhen: (prev, curr) =>
               prev.status != AuthStatus.authenticated &&
@@ -88,11 +77,9 @@ class _RegistrationFlowState extends State<RegistrationFlow> {
                 onPaymentComplete: regCubit.submitPaymentSuccess,
               );
 
-            // ── NEW: account setup after registration ──────────────────────
             case RegistrationStep.setupAccount:
               final phone = state.registeredPhone ?? '';
               if (phone.isEmpty) {
-                // No phone — skip straight to completed
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   regCubit.reset();
                   authCubit.adoptRegisteredSession();
@@ -120,8 +107,28 @@ class _RegistrationFlowState extends State<RegistrationFlow> {
   }
 }
 
-class _RegistrationCompletedView extends StatelessWidget {
+// ── Registration Completed ────────────────────────────────────────────────────
+
+class _RegistrationCompletedView extends StatefulWidget {
   const _RegistrationCompletedView();
+
+  @override
+  State<_RegistrationCompletedView> createState() =>
+      _RegistrationCompletedViewState();
+}
+
+class _RegistrationCompletedViewState
+    extends State<_RegistrationCompletedView> {
+  @override
+  void initState() {
+    super.initState();
+    // Immediately try to adopt the session that was stored during registration.
+    // This is the primary trigger — the BlocListener approach had a race condition.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AuthCubit>().adoptRegisteredSession();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -133,8 +140,8 @@ class _RegistrationCompletedView extends StatelessWidget {
             builder: (context, auth) {
               final strings = CbhiLocalizations.of(context);
 
-              // Still waiting for adoptRegisteredSession() to complete
-              if (auth.status == AuthStatus.checking || auth.isBusy) {
+              // Show spinner while adoptRegisteredSession() is in progress
+              if (auth.isBusy) {
                 return const Center(child: CircularProgressIndicator());
               }
 
@@ -164,14 +171,22 @@ class _RegistrationCompletedView extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 28),
-                  if (!authenticated)
+                  if (!authenticated) ...[
+                    // Retry button — in case the session fetch failed transiently
                     FilledButton(
+                      onPressed: () =>
+                          context.read<AuthCubit>().adoptRegisteredSession(),
+                      child: Text(strings.t('retry')),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
                       onPressed: () {
                         context.read<RegistrationCubit>().reset();
                         context.read<AuthCubit>().leaveGuest();
                       },
                       child: Text(strings.t('backToSignIn')),
                     ),
+                  ],
                 ],
               );
             },

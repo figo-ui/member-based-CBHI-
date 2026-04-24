@@ -36,13 +36,28 @@ class AuthCubit extends Cubit<AuthState> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kWasGuestKey);
 
-    final session = await repository.restoreSession();
-    if (session == null) return;
-    emit(state.copyWith(
-      status: AuthStatus.authenticated,
-      session: session,
-      clearError: true,
-    ));
+    emit(state.copyWith(isBusy: true, clearError: true));
+
+    // Try up to 3 times — the session token was just stored by _storeAuthIfPresent
+    // but SecureStorage writes can occasionally be async on web
+    for (var attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) {
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      }
+      final session = await repository.restoreSession();
+      if (session != null) {
+        emit(state.copyWith(
+          isBusy: false,
+          status: AuthStatus.authenticated,
+          session: session,
+          clearError: true,
+        ));
+        return;
+      }
+    }
+
+    // Session not found after retries — stay unauthenticated so user can sign in
+    emit(state.copyWith(isBusy: false));
   }
 
   Future<void> bootstrap() async {

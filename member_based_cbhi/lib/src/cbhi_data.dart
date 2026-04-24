@@ -947,7 +947,8 @@ class CbhiRepository {
       if (!error.retryable) {
         rethrow; // surface validation / auth errors to the user
       }
-      // Only queue offline for transient network errors
+      // Retryable (5xx / network) — queue offline and return pending snapshot
+      // so the user can still see their data while we retry in the background
       await localDb.queueAction('registration_full', fullPayload);
       final snapshot = _buildPendingSnapshot(
         personalInfo: personalInfo,
