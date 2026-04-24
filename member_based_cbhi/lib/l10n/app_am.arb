@@ -680,5 +680,11 @@
 
   "tempPasswordWarning": "መለያዎ በጊዜያዊ የይለፍ ቃል ተፈጥሯል። አሁን ይቀይሩ።",
   "remindMeLater": "ኋላ አስታውሰኝ",
-  "backToSignIn": "ወደ ግባ ተመለስ"
+  "backToSignIn": "ወደ ግባ ተመለስ",
+  "indigentUploadNowOrLater": "ሰነዶቹን አሁን መስቀል ይፈልጋሉ ወይስ ወደ ዳሽቦርድ ሄደው ኋላ ይስቅሉ?",
+  "uploadNow": "አሁን ስቀል",
+  "uploadLater": "ኋላ ስቀል",
+  "payingPayNowOrLater": "ፕሪሚየምዎን አሁን መክፈል ይፈልጋሉ ወይስ ወደ ዳሽቦርድ ሄደው ኋላ ይክፈሉ?",
+  "payNow": "አሁን ክፈል",
+  "payLater": "ኋላ ክፈል"
 }

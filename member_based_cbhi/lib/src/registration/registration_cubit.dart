@@ -53,6 +53,24 @@ class RegistrationCubit extends Cubit<RegistrationState> {
     _saveDraft(next);
   }
 
+  void goBackToConfirmation() {
+    final next = state.copyWith(
+      currentStep: RegistrationStep.confirmation,
+      clearError: true,
+    );
+    emit(next);
+    _saveDraft(next);
+  }
+
+  void goBackToIdentity() {
+    final next = state.copyWith(
+      currentStep: RegistrationStep.identity,
+      clearError: true,
+    );
+    emit(next);
+    _saveDraft(next);
+  }
+
   void confirmPersonalInfo() {
     final next = state.copyWith(
       currentStep: RegistrationStep.identity,

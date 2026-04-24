@@ -20,6 +20,10 @@ class MembershipSelectionScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(strings.t('membershipSelection')),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => regCubit.goBackToIdentity(),
+        ),
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 12),
@@ -74,17 +78,17 @@ class MembershipSelectionScreen extends StatelessWidget {
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(child: _buildIndigentCard(regCubit, strings)),
+                          Expanded(child: _buildIndigentCard(context, regCubit, strings)),
                           const SizedBox(width: 24),
-                          Expanded(child: _buildPayingCard(regCubit, strings)),
+                          Expanded(child: _buildPayingCard(context, regCubit, strings)),
                         ],
                       );
                     } else {
                       return Column(
                         children: [
-                          _buildIndigentCard(regCubit, strings),
+                          _buildIndigentCard(context, regCubit, strings),
                           const SizedBox(height: 20),
-                          _buildPayingCard(regCubit, strings),
+                          _buildPayingCard(context, regCubit, strings),
                         ],
                       );
                     }
@@ -131,7 +135,7 @@ class MembershipSelectionScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildIndigentCard(RegistrationCubit cubit, dynamic strings) {
+  Widget _buildIndigentCard(BuildContext context, RegistrationCubit cubit, dynamic strings) {
     return _MembershipCard(
       icon: Icons.volunteer_activism_outlined,
       title: strings.t('indigentMembership'),
@@ -143,13 +147,11 @@ class MembershipSelectionScreen extends StatelessWidget {
       ],
       color: AppTheme.success,
       isRecommended: true,
-      onSelect: () => cubit.beginIndigentProof(
-        const MembershipSelection(type: MembershipType.indigent),
-      ),
+      onSelect: (BuildContext ctx) => _showIndigentDialog(ctx, cubit, strings),
     ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideX(begin: -0.05, end: 0);
   }
 
-  Widget _buildPayingCard(RegistrationCubit cubit, dynamic strings) {
+  Widget _buildPayingCard(BuildContext context, RegistrationCubit cubit, dynamic strings) {
     return _MembershipCard(
       icon: Icons.payments_outlined,
       title: strings.t('payingMembership'),
@@ -161,13 +163,78 @@ class MembershipSelectionScreen extends StatelessWidget {
       ],
       color: AppTheme.primary,
       isRecommended: false,
-      onSelect: () => cubit.submitPayingMembership(
-        const MembershipSelection(
-          type: MembershipType.paying,
-          premiumAmount: 500,
-        ),
-      ),
+      onSelect: (BuildContext ctx) => _showPayingDialog(ctx, cubit, strings),
     ).animate().fadeIn(duration: 400.ms, delay: 200.ms).slideX(begin: 0.05, end: 0);
+  }
+
+  void _showIndigentDialog(
+      BuildContext context, RegistrationCubit cubit, dynamic strings) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(strings.t('indigentMembership')),
+        content: Text(strings.t('indigentUploadNowOrLater')),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              // Submit now without docs — can upload later from dashboard
+              cubit.submitPayingMembership(
+                const MembershipSelection(type: MembershipType.indigent),
+              );
+            },
+            child: Text(strings.t('uploadLater')),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              cubit.beginIndigentProof(
+                const MembershipSelection(type: MembershipType.indigent),
+              );
+            },
+            child: Text(strings.t('uploadNow')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPayingDialog(
+      BuildContext context, RegistrationCubit cubit, dynamic strings) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(strings.t('payingMembership')),
+        content: Text(strings.t('payingPayNowOrLater')),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              // Submit now without payment — can pay later from dashboard
+              cubit.submitPayingMembership(
+                const MembershipSelection(
+                  type: MembershipType.paying,
+                  premiumAmount: 500,
+                ),
+              );
+            },
+            child: Text(strings.t('payLater')),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              cubit.submitPayingMembership(
+                const MembershipSelection(
+                  type: MembershipType.paying,
+                  premiumAmount: 500,
+                ),
+              );
+            },
+            child: Text(strings.t('payNow')),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -188,7 +255,7 @@ class _MembershipCard extends StatelessWidget {
   final List<String> features;
   final Color color;
   final bool isRecommended;
-  final VoidCallback onSelect;
+  final void Function(BuildContext context) onSelect;
 
   @override
   Widget build(BuildContext context) {
@@ -201,7 +268,7 @@ class _MembershipCard extends StatelessWidget {
         boxShadow: AppTheme.subtleShadow,
       ),
       child: InkWell(
-        onTap: onSelect,
+        onTap: () => onSelect(context),
         borderRadius: BorderRadius.circular(AppTheme.radiusM),
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -263,7 +330,7 @@ class _MembershipCard extends StatelessWidget {
                   )),
               const SizedBox(height: 16),
               FilledButton.icon(
-                onPressed: onSelect,
+                onPressed: () => onSelect(context),
                 icon: const Icon(Icons.arrow_forward, size: 18),
                 label: Text(strings.t('selectThisOption')),
                 style: FilledButton.styleFrom(backgroundColor: color),

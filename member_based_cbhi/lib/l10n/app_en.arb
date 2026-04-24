@@ -684,5 +684,11 @@
 
   "tempPasswordWarning": "Your account was created with a temporary password. Change it now to secure your account.",
   "remindMeLater": "Remind me later",
-  "backToSignIn": "Back to Sign In"
+  "backToSignIn": "Back to Sign In",
+  "indigentUploadNowOrLater": "Would you like to upload your supporting documents now, or continue to the dashboard and upload later?",
+  "uploadNow": "Upload Now",
+  "uploadLater": "Upload Later",
+  "payingPayNowOrLater": "Would you like to pay your premium now, or continue to the dashboard and pay later?",
+  "payNow": "Pay Now",
+  "payLater": "Pay Later"
 }

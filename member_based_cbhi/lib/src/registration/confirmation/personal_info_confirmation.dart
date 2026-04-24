@@ -18,6 +18,10 @@ class PersonalInfoConfirmation extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(strings.t('reviewYourInformation')),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => regCubit.goBackToPersonalInfo(),
+        ),
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 12),
@@ -159,4 +163,4 @@ class _InfoRow {
   final String label;
   final String value;
   _InfoRow(this.label, this.value);
-}
+}

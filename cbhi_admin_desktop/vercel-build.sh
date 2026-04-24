@@ -14,8 +14,8 @@ if [ ! -x "$FLUTTER_ROOT/bin/flutter" ]; then
   echo ">>> Installing Flutter SDK..."
   RELEASES_URL="https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json"
   
-  # Pin to a specific stable version (3.24.3) known for stability on Vercel
-  ARCHIVE_PATH="stable/linux/flutter_linux_3.24.3-stable.tar.xz"
+  # Pin to Flutter 3.41.7 (Dart 3.7.x — satisfies sdk: ^3.10.1)
+  ARCHIVE_PATH="stable/linux/flutter_linux_3.41.7-stable.tar.xz"
 
   if [ -z "$ARCHIVE_PATH" ]; then
     echo "ERROR: Failed to determine Flutter archive path."
@@ -38,14 +38,7 @@ flutter config --no-analytics
 flutter config --enable-web
 flutter doctor -v
 
-echo ">>> Running flutter create to refresh platform files..."
-flutter create . --platforms web
-
-echo ">>> Running pub get..."
-flutter pub get
-
-# --- Fix 3: Memory & Build Optimization ---
-# Increase memory limits for the Dart VM and Flutter tool
+# --- Memory optimization ---
 export DART_VM_OPTIONS="--max-old-space-size=4096"
 export NODE_OPTIONS="--max-old-space-size=4096"
 
@@ -53,11 +46,11 @@ API_URL="${CBHI_API_BASE_URL:-https://member-based-cbhi.vercel.app/api/v1}"
 echo ">>> Building for production..."
 echo ">>> API Base URL: $API_URL"
 
-# Ensure a clean slate
 flutter clean
+flutter pub get
 
 # Use a single-line command to avoid shell escaping issues
-flutter build web --release --no-source-maps --base-href / --dart-define=CBHI_API_BASE_URL="$API_URL" --dart-define=APP_ENV="production" --dart2js-optimization=O2 --verbose --no-pub
+flutter build web --release --no-tree-shake-icons --no-source-maps --no-pub --base-href / --dart-define=CBHI_API_BASE_URL="$API_URL" --dart-define=APP_ENV="production"
 
 echo ">>> Build complete."
 

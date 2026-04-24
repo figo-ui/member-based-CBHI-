@@ -668,6 +668,12 @@ const _en = <String, String>{
   'tempPasswordWarning': 'Your account was created with a temporary password. Change it now to secure your account.',
   'remindMeLater': 'Remind me later',
   'backToSignIn': 'Back to Sign In',
+  'indigentUploadNowOrLater': 'Would you like to upload your supporting documents now, or continue to the dashboard and upload later?',
+  'uploadNow': 'Upload Now',
+  'uploadLater': 'Upload Later',
+  'payingPayNowOrLater': 'Would you like to pay your premium now, or continue to the dashboard and pay later?',
+  'payNow': 'Pay Now',
+  'payLater': 'Pay Later',
 };
 
 const _am = <String, String>{
@@ -1272,6 +1278,12 @@ const _am = <String, String>{
   'tempPasswordWarning': 'መለያዎ በጊዜያዊ የይለፍ ቃል ተፈጥሯል። አሁን ይቀይሩ።',
   'remindMeLater': 'ኋላ አስታውሰኝ',
   'backToSignIn': 'ወደ ግባ ተመለስ',
+  'indigentUploadNowOrLater': 'ሰነዶቹን አሁን መስቀል ይፈልጋሉ ወይስ ወደ ዳሽቦርድ ሄደው ኋላ ይስቅሉ?',
+  'uploadNow': 'አሁን ስቀል',
+  'uploadLater': 'ኋላ ስቀል',
+  'payingPayNowOrLater': 'ፕሪሚየምዎን አሁን መክፈል ይፈልጋሉ ወይስ ወደ ዳሽቦርድ ሄደው ኋላ ይክፈሉ?',
+  'payNow': 'አሁን ክፈል',
+  'payLater': 'ኋላ ክፈል',
 };
 
 const _om = <String, String>{
@@ -1876,6 +1888,12 @@ const _om = <String, String>{
   'tempPasswordWarning': 'Herreggaan kee jecha darbii yeroo qabu uumameera. Amma jijjiiri.',
   'remindMeLater': 'Booda na yaadadhu',
   'backToSignIn': 'Gara seensaatti deebi\'i',
+  'indigentUploadNowOrLater': 'Galmee deeggarsa amma fe\'uu barbaaddaa moo daashboorditti deemtee booda fe\'uu barbaaddaa?',
+  'uploadNow': 'Amma Fe\'i',
+  'uploadLater': 'Booda Fe\'i',
+  'payingPayNowOrLater': 'Kaffalti kee amma kaffaluu barbaaddaa moo daashboorditti deemtee booda kaffaluu barbaaddaa?',
+  'payNow': 'Amma Kaffali',
+  'payLater': 'Booda Kaffali',
 };
 
 final _strings = <String, Map<String, String>>{

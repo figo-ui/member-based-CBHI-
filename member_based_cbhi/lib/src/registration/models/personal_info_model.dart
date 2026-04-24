@@ -62,8 +62,8 @@ class PersonalInfoModel {
         'address': {
           'region': region,
           'zone': zone,
-          'woreda': woreda,
-          'kebele': kebele,
+          if (woreda != null && woreda!.isNotEmpty) 'woreda': woreda,
+          if (kebele != null && kebele!.isNotEmpty) 'kebele': kebele,
         },
         'householdSize': householdSize,
         'preferredLanguage': preferredLanguage,

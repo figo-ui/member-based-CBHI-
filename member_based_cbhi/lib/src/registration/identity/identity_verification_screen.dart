@@ -47,6 +47,10 @@ class _IdentityVerificationScreenState extends State<IdentityVerificationScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(strings.t('identityAndEmployment')),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.read<RegistrationCubit>().goBackToConfirmation(),
+        ),
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 12),

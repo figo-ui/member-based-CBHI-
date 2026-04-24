@@ -31,11 +31,13 @@ export class AddressDto {
   @IsString()
   zone!: string;
 
+  @IsOptional()
   @IsString()
-  woreda!: string;
+  woreda?: string;
 
+  @IsOptional()
   @IsString()
-  kebele!: string;
+  kebele?: string;
 }
 
 export class InlineAttachmentDto {

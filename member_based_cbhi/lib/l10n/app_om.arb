@@ -699,5 +699,11 @@
 
   "tempPasswordWarning": "Herreggaan kee jecha darbii yeroo qabu uumameera. Amma jijjiiri.",
   "remindMeLater": "Booda na yaadadhu",
-  "backToSignIn": "Gara seensaatti deebi'i"
+  "backToSignIn": "Gara seensaatti deebi'i",
+  "indigentUploadNowOrLater": "Galmee deeggarsa amma fe'uu barbaaddaa moo daashboorditti deemtee booda fe'uu barbaaddaa?",
+  "uploadNow": "Amma Fe'i",
+  "uploadLater": "Booda Fe'i",
+  "payingPayNowOrLater": "Kaffalti kee amma kaffaluu barbaaddaa moo daashboorditti deemtee booda kaffaluu barbaaddaa?",
+  "payNow": "Amma Kaffali",
+  "payLater": "Booda Kaffali"
 }
