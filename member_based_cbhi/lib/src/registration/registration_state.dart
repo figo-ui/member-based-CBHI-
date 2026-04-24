@@ -21,11 +21,9 @@ class RegistrationState {
   final MembershipSelection? membership;
   final String? errorMessage;
   final bool isLoading;
-  /// Phone number used during registration — needed for account setup OTP
+  final bool isOffline;
   final String? registeredPhone;
-  /// OTP challenge returned after registration — drives AccountSetupScreen
   final OtpChallenge? setupChallenge;
-  /// Snapshot returned after successful registration — used for payment
   final CbhiSnapshot? registrationSnapshot;
 
   const RegistrationState({
@@ -35,6 +33,7 @@ class RegistrationState {
     this.membership,
     this.errorMessage,
     this.isLoading = false,
+    this.isOffline = false,
     this.registeredPhone,
     this.setupChallenge,
     this.registrationSnapshot,
@@ -47,6 +46,7 @@ class RegistrationState {
     MembershipSelection? membership,
     String? errorMessage,
     bool? isLoading,
+    bool? isOffline,
     bool clearError = false,
     bool clearMembership = false,
     String? registeredPhone,
@@ -60,6 +60,7 @@ class RegistrationState {
       membership: clearMembership ? null : membership ?? this.membership,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       isLoading: isLoading ?? this.isLoading,
+      isOffline: isOffline ?? this.isOffline,
       registeredPhone: registeredPhone ?? this.registeredPhone,
       setupChallenge: setupChallenge ?? this.setupChallenge,
       registrationSnapshot: registrationSnapshot ?? this.registrationSnapshot,

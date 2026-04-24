@@ -60,8 +60,8 @@ class AdminRepository {
 
   Future<Map<String, dynamic>> getSummaryReport({String? from, String? to}) async {
     final query = <String, String>{
-      'from': from ?? '',
-      'to': to ?? '',
+      if (from != null && from.isNotEmpty) 'from': from,
+      if (to != null && to.isNotEmpty) 'to': to,
     };
     final qs = query.isEmpty ? '' : '?${Uri(queryParameters: query).query}';
     return _get('/admin/reports/summary$qs');
@@ -303,8 +303,8 @@ class AdminRepository {
 
   Future<Map<String, dynamic>> getFinancialDashboard({String? from, String? to}) async {
     final query = <String, String>{
-      'from': ?from,
-      'to': ?to,
+      if (from != null && from.isNotEmpty) 'from': from,
+      if (to != null && to.isNotEmpty) 'to': to,
     };
     final qs = query.isEmpty ? '' : '?${Uri(queryParameters: query).query}';
     return _get('/admin/reports/financial$qs');
@@ -326,8 +326,8 @@ class AdminRepository {
 
   Future<List<Map<String, dynamic>>> getFacilityPerformance({String? from, String? to}) async {
     final query = <String, String>{
-      'from': ?from,
-      'to': ?to,
+      if (from != null && from.isNotEmpty) 'from': from,
+      if (to != null && to.isNotEmpty) 'to': to,
     };
     final qs = query.isEmpty ? '' : '?${Uri(queryParameters: query).query}';
     final response = await _get('/admin/reports/facility-performance$qs');

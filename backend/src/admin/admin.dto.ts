@@ -8,6 +8,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ClaimStatus, IndigentApplicationStatus } from '../common/enums/cbhi.enums';
 
 export class ReviewClaimDto {
@@ -50,10 +51,12 @@ export class UpdateSystemSettingDto {
 export class ReportsQueryDto {
   @IsOptional()
   @IsDateString()
+  @Transform(({ value }: { value: unknown }) => (value === '' ? undefined : value))
   from?: string;
 
   @IsOptional()
   @IsDateString()
+  @Transform(({ value }: { value: unknown }) => (value === '' ? undefined : value))
   to?: string;
 }
 
@@ -64,10 +67,12 @@ export class ExportQueryDto {
 
   @IsOptional()
   @IsDateString()
+  @Transform(({ value }: { value: unknown }) => (value === '' ? undefined : value))
   from?: string;
 
   @IsOptional()
   @IsDateString()
+  @Transform(({ value }: { value: unknown }) => (value === '' ? undefined : value))
   to?: string;
 }
 

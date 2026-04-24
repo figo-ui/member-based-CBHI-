@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../cbhi_data.dart';
+import '../registration/models/personal_info_model.dart';
 import '../shared/fcm_service.dart';
 import 'auth_state.dart';
 
@@ -31,18 +32,21 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   /// After registration, the API may persist a session — pick it up without OTP.
-  Future<void> adoptRegisteredSession() async {
-    // Clear the guest flag since registration is complete
+  /// If online registration succeeded, the session is already stored.
+  /// If offline, we create a minimal local session so the dashboard opens.
+  Future<void> adoptRegisteredSession({
+    PersonalInfoModel? personalInfo,
+    CbhiSnapshot? offlineSnapshot,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kWasGuestKey);
 
     emit(state.copyWith(isBusy: true, clearError: true));
 
-    // Try up to 3 times — the session token was just stored by _storeAuthIfPresent
-    // but SecureStorage writes can occasionally be async on web
+    // Try to get the real session (stored by _storeAuthIfPresent during online registration)
     for (var attempt = 0; attempt < 3; attempt++) {
       if (attempt > 0) {
-        await Future<void>.delayed(const Duration(milliseconds: 300));
+        await Future<void>.delayed(const Duration(milliseconds: 400));
       }
       final session = await repository.restoreSession();
       if (session != null) {
@@ -56,7 +60,35 @@ class AuthCubit extends Cubit<AuthState> {
       }
     }
 
-    // Session not found after retries — stay unauthenticated so user can sign in
+    // No real session — build a minimal local session from registration data
+    // so the dashboard opens immediately (online or offline).
+    // The real session will be established when the user signs in next time.
+    if (personalInfo != null) {
+      final localSession = AuthSession(
+        accessToken: 'pending-sync',
+        tokenType: 'Bearer',
+        expiresAt: DateTime.now().add(const Duration(hours: 24)).toIso8601String(),
+        user: AppUserProfile(
+          id: 'local-${DateTime.now().millisecondsSinceEpoch}',
+          displayName: '${personalInfo.firstName} ${personalInfo.lastName}',
+          firstName: personalInfo.firstName,
+          lastName: personalInfo.lastName,
+          phoneNumber: personalInfo.phone,
+          email: personalInfo.email,
+          role: 'HOUSEHOLD_HEAD',
+          householdCode: offlineSnapshot?.householdCode,
+        ),
+      );
+      emit(state.copyWith(
+        isBusy: false,
+        status: AuthStatus.authenticated,
+        session: localSession,
+        clearError: true,
+      ));
+      return;
+    }
+
+    // Absolute fallback — stay unauthenticated
     emit(state.copyWith(isBusy: false));
   }
 

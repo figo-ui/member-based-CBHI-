@@ -146,33 +146,88 @@ class RegistrationCubit extends Cubit<RegistrationState> {
   ) async {
     emit(state.copyWith(isLoading: true, clearError: true, errorMessage: null));
 
+    // Generate 6-digit temp password immediately — shown regardless of online/offline
+    final tempPassword = _generateTempPassword();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('cbhi_temp_password', tempPassword);
+    await prefs.setBool('cbhi_has_temp_password', true);
+
+    CbhiSnapshot? snapshot;
+    bool isOffline = false;
+
     try {
-      final snapshot = await repository.registerFull(
+      snapshot = await repository.registerFull(
         personalInfo: state.personalInfo!,
         identity: state.identity!,
         membership: membership,
         indigentProofPaths: indigentProofPaths,
       );
-
-      // Registration complete — open dashboard immediately.
-      // Payment and eligibility can be completed anytime from the dashboard.
-      // A temporary password is auto-generated; banner shown until changed.
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('cbhi_has_temp_password', true);
-
-      final next = state.copyWith(
-        membership: membership,
-        registrationSnapshot: snapshot,
-        currentStep: RegistrationStep.completed,
-        registeredPhone: state.personalInfo?.phone,
-        isLoading: false,
-        clearError: true,
-      );
-      emit(next);
-      await _clearDraft();
     } catch (e) {
-      emit(state.copyWith(errorMessage: e.toString(), isLoading: false));
+      // If it's a non-retryable error (validation), surface it
+      if (e.toString().contains('400') || e.toString().contains('validation')) {
+        emit(state.copyWith(errorMessage: e.toString(), isLoading: false));
+        return;
+      }
+      // Network/server error — use offline snapshot so dashboard still opens
+      isOffline = true;
+      snapshot = _buildOfflineSnapshot(membership);
+      await repository.localDb.writeSnapshot(snapshot);
     }
+
+    final next = state.copyWith(
+      membership: membership,
+      registrationSnapshot: snapshot,
+      currentStep: RegistrationStep.completed,
+      registeredPhone: state.personalInfo?.phone,
+      isLoading: false,
+      isOffline: isOffline,
+      clearError: true,
+    );
+    emit(next);
+    if (!isOffline) await _clearDraft();
+  }
+
+  /// Generates a random 6-digit numeric password
+  String _generateTempPassword() {
+    final random = DateTime.now().millisecondsSinceEpoch % 1000000;
+    return random.toString().padLeft(6, '0');
+  }
+
+  CbhiSnapshot _buildOfflineSnapshot(MembershipSelection membership) {
+    final info = state.personalInfo!;
+    return CbhiSnapshot(
+      household: {
+        'householdCode': 'LOCAL-${DateTime.now().millisecondsSinceEpoch}',
+        'coverageStatus': 'PENDING_RENEWAL',
+        'membershipType': membership.type.name,
+        'memberCount': info.householdSize,
+        'headUser': {
+          'firstName': info.firstName,
+          'middleName': info.middleName,
+          'lastName': info.lastName,
+          'phoneNumber': info.phone,
+        },
+      },
+      coverage: null,
+      card: null,
+      eligibility: null,
+      viewer: null,
+      claims: const [],
+      payments: const [],
+      notifications: const [
+        {
+          'id': 'offline-sync-1',
+          'type': 'SYSTEM_ALERT',
+          'title': 'Sync Required',
+          'body': 'Your registration is saved offline. Open the app when online to sync your account.',
+          'isRead': false,
+          'createdAt': '',
+        }
+      ],
+      digitalCards: const [],
+      familyMembers: const [],
+      syncedAt: '',
+    );
   }
 
   void reset() {
