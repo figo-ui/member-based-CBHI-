@@ -131,8 +131,14 @@ class _RegistrationCompletedView extends StatelessWidget {
           padding: const EdgeInsets.all(24),
           child: BlocBuilder<AuthCubit, AuthState>(
             builder: (context, auth) {
-              final authenticated = auth.status == AuthStatus.authenticated;
               final strings = CbhiLocalizations.of(context);
+
+              // Still waiting for adoptRegisteredSession() to complete
+              if (auth.status == AuthStatus.checking || auth.isBusy) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final authenticated = auth.status == AuthStatus.authenticated;
               return Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -143,7 +149,9 @@ class _RegistrationCompletedView extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    authenticated ? strings.t('registrationCompleted') : strings.t('registrationSavedForSync'),
+                    authenticated
+                        ? strings.t('registrationCompleted')
+                        : strings.t('registrationSavedForSync'),
                     style: Theme.of(context).textTheme.headlineSmall,
                     textAlign: TextAlign.center,
                   ),
