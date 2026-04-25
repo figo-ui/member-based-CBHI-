@@ -52,20 +52,20 @@ All Flutter code must compile cleanly for both Android and Flutter Web (dart2js 
   - Run `flutter analyze` in `member_based_cbhi`; fix any dart2js-incompatible imports
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Apply `AppTheme` design-token consistency to existing screens
-  - [ ] 5.1 Audit and fix `FamilyMemberLoginScreen`: apply header info-card pattern (icon container + title + subtitle), `AppTheme.spacingL` padding, `AppTheme.radiusM` input borders, `AppTheme.primary` focus borders, full-width `FilledButton`
+- [x] 5. Apply `AppTheme` design-token consistency to existing screens
+  - [x] 5.1 Audit and fix `FamilyMemberLoginScreen`: apply header info-card pattern (icon container + title + subtitle), `AppTheme.spacingL` padding, `AppTheme.radiusM` input borders, `AppTheme.primary` focus borders, full-width `FilledButton`
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.6, 1.7_
-  - [ ] 5.2 Audit and fix `MyFamilyScreen` and `AddBeneficiaryScreen`: replace hardcoded colors/spacing with `AppTheme` tokens; use `GlassCard` for card containers; use `EmptyState` widget for empty states
+  - [x] 5.2 Audit and fix `MyFamilyScreen` and `AddBeneficiaryScreen`: replace hardcoded colors/spacing with `AppTheme` tokens; use `GlassCard` for card containers; use `EmptyState` widget for empty states
     - _Requirements: 1.1, 1.2, 1.3, 1.10_
-  - [ ] 5.3 Audit and fix `GrievanceScreen` and `IndigentApplicationScreen`: replace hardcoded values with `AppTheme` tokens; ensure dark-mode compatibility
+  - [x] 5.3 Audit and fix `GrievanceScreen` and `IndigentApplicationScreen`: replace hardcoded values with `AppTheme` tokens; ensure dark-mode compatibility
     - _Requirements: 1.1, 1.7, 1.8_
-  - [ ] 5.4 Audit and fix `PaymentScreen` and `DigitalCardScreen`: apply `AppTheme.spacingM`/`spacingL` padding, `AppTheme.radiusM` containers, `AppTheme.primary` interactive elements
+  - [x] 5.4 Audit and fix `PaymentScreen` and `DigitalCardScreen`: apply `AppTheme.spacingM`/`spacingL` padding, `AppTheme.radiusM` containers, `AppTheme.primary` interactive elements
     - _Requirements: 1.1, 1.3, 1.7_
-  - [ ] 5.5 Verify `NavigationBar` uses `AppTheme.primary` as indicator color in light mode and `AppTheme.accent` in dark mode via `AppTheme.navigationBarTheme`
+  - [x] 5.5 Verify `NavigationBar` uses `AppTheme.primary` as indicator color in light mode and `AppTheme.accent` in dark mode via `AppTheme.navigationBarTheme`
     - _Requirements: 4.5_
 
-- [ ] 6. Implement `RegistrationStepIndicator` and apply to all registration steps
-  - [ ] 6.1 Create `lib/src/registration/registration_step_indicator.dart`
+- [x] 6. Implement `RegistrationStepIndicator` and apply to all registration steps
+  - [x] 6.1 Create `lib/src/registration/registration_step_indicator.dart`
     - Define `RegistrationStep` enum with `stepNumber` extension and `totalSteps = 7`
     - Implement `RegistrationStepIndicator` widget: `LinearProgressIndicator` (value = `stepNumber / totalSteps`) + `"Step N of 7"` label using `AppTheme.primary`
     - _Requirements: 2.1_
@@ -73,32 +73,32 @@ All Flutter code must compile cleanly for both Android and Flutter Web (dart2js 
     - **Property 2: Registration step indicator is present for every non-terminal step**
     - Enumerate all `RegistrationStep` values except `completed`; pump each step screen; assert `RegistrationStepIndicator` found with correct `stepNumber`
     - **Validates: Requirements 2.1**
-  - [ ] 6.3 Insert `RegistrationStepIndicator` at the top of each step screen body in `RegistrationFlow`: `PersonalInfoForm`, `IdentityVerificationScreen`, `MembershipSelectionScreen`, indigent proof step, payment step, `SetupAccountScreen`
+  - [x] 6.3 Insert `RegistrationStepIndicator` at the top of each step screen body in `RegistrationFlow`: `PersonalInfoForm`, `IdentityVerificationScreen`, `MembershipSelectionScreen`, indigent proof step, payment step, `SetupAccountScreen`
     - _Requirements: 2.1_
-  - [ ] 6.4 Apply `AppTheme` tokens to `PersonalInfoForm`: `spacingL` padding, `radiusM` input borders, `primary`-colored focus borders
+  - [x] 6.4 Apply `AppTheme` tokens to `PersonalInfoForm`: `spacingL` padding, `radiusM` input borders, `primary`-colored focus borders
     - _Requirements: 2.2_
-  - [ ] 6.5 Style `IdentityVerificationScreen` document upload areas as dashed-border containers with `AppTheme.primary.withValues(alpha: 0.15)` border and `AppTheme.radiusM` radius
+  - [x] 6.5 Style `IdentityVerificationScreen` document upload areas as dashed-border containers with `AppTheme.primary.withValues(alpha: 0.15)` border and `AppTheme.radiusM` radius
     - _Requirements: 2.3_
-  - [ ] 6.6 Style `MembershipSelectionScreen` tiers as `GlassCard` with `AppTheme.primary` selection indicator
+  - [x] 6.6 Style `MembershipSelectionScreen` tiers as `GlassCard` with `AppTheme.primary` selection indicator
     - _Requirements: 2.4_
-  - [ ] 6.7 Pin "Next"/"Continue" buttons as full-width `FilledButton` at bottom with `AppTheme.spacingM` padding; add `Icons.arrow_back_ios_new` back button to each step `AppBar`
+  - [x] 6.7 Pin "Next"/"Continue" buttons as full-width `FilledButton` at bottom with `AppTheme.spacingM` padding; add `Icons.arrow_back_ios_new` back button to each step `AppBar`
     - _Requirements: 2.5, 2.6_
-  - [ ] 6.8 Verify `_RegistrationCompletedView` uses `AppTheme.success` for success icon and `AppTheme.warning` for temp-password card
+  - [x] 6.8 Verify `_RegistrationCompletedView` uses `AppTheme.success` for success icon and `AppTheme.warning` for temp-password card
     - _Requirements: 2.7_
 
-- [ ] 7. Update `WelcomeScreen` navigation and add descriptive hints
-  - [ ] 7.1 Add descriptive subtitle text beneath each action button: `strings.t('signInHint')` under Sign In, `strings.t('familyLoginHint')` under Family Login, `strings.t('registerHint')` under Register
+- [x] 7. Update `WelcomeScreen` navigation and add descriptive hints
+  - [x] 7.1 Add descriptive subtitle text beneath each action button: `strings.t('signInHint')` under Sign In, `strings.t('familyLoginHint')` under Family Login, `strings.t('registerHint')` under Register
     - Show hint text only when `MediaQuery.of(context).size.width > 360`
     - _Requirements: 3.1, 3.5_
-  - [ ] 7.2 Update "Sign In" button `onPressed` to navigate to `UnifiedLoginScreen(loginMode: LoginMode.householdHead)` with a right-to-left slide transition (300 ms)
+  - [x] 7.2 Update "Sign In" button `onPressed` to navigate to `UnifiedLoginScreen(loginMode: LoginMode.householdHead)` with a right-to-left slide transition (300 ms)
     - _Requirements: 3.2_
-  - [ ] 7.3 Update "Family Login" button `onPressed` to navigate to `UnifiedLoginScreen(loginMode: LoginMode.familyMember)` with the same 300 ms slide transition
+  - [x] 7.3 Update "Family Login" button `onPressed` to navigate to `UnifiedLoginScreen(loginMode: LoginMode.familyMember)` with the same 300 ms slide transition
     - _Requirements: 3.3_
-  - [ ] 7.4 Verify "Register" button calls `AuthCubit.continueAsGuest()` (no route push — `_BootstrapScreen` handles the transition via `AuthStatus.guest`)
+  - [x] 7.4 Verify "Register" button calls `AuthCubit.continueAsGuest()` (no route push — `_BootstrapScreen` handles the transition via `AuthStatus.guest`)
     - _Requirements: 3.4_
 
-- [ ] 8. Implement `UnifiedLoginScreen`
-  - [ ] 8.1 Create `lib/src/auth/unified_login_screen.dart`
+- [x] 8. Implement `UnifiedLoginScreen`
+  - [x] 8.1 Create `lib/src/auth/unified_login_screen.dart`
     - Define `LoginMode` enum (`householdHead`, `familyMember`) and `AdaptiveAuthMethod` enum (`biometric`, `passkey`, `otp`, `password`)
     - Scaffold with `AppBar` (back → `WelcomeScreen`, clears all `TextEditingController`s via `PopScope`)
     - `SingleChildScrollView` body with `AppTheme.spacingL` padding
@@ -109,9 +109,9 @@ All Flutter code must compile cleanly for both Android and Flutter Web (dart2js 
     - Inline `_InlineError` widget using `AppTheme.error` color
     - Security note text using `AppTheme.textSecondary` / `bodySmall`
     - _Requirements: 11.1, 11.2, 11.5, 11.6, 11.7, 11.8, 11.9, 14.9_
-  - [ ] 8.2 Implement `householdHead` mode: show only phone/identifier field and adaptive primary auth button; hide family lookup fields
+  - [x] 8.2 Implement `householdHead` mode: show only phone/identifier field and adaptive primary auth button; hide family lookup fields
     - _Requirements: 11.3_
-  - [ ] 8.3 Implement `familyMember` mode: show family lookup section (phone, membership ID, household code, full name) above the auth method selector
+  - [x] 8.3 Implement `familyMember` mode: show family lookup section (phone, membership ID, household code, full name) above the auth method selector
     - _Requirements: 11.4, 11.7_
   - [ ]* 8.4 Write property test for `UnifiedLoginScreen` mode controlling field visibility
     - **Property 3: UnifiedLoginScreen mode controls family lookup field visibility**
@@ -121,27 +121,27 @@ All Flutter code must compile cleanly for both Android and Flutter Web (dart2js 
     - **Property 4: Adaptive auth method determines primary button label**
     - For each `AdaptiveAuthMethod`, pump `UnifiedLoginScreen` and assert `FilledButton` label matches expected localization key
     - **Validates: Requirements 11.5**
-  - [ ] 8.6 Implement `_MethodPicker`: inline expandable list of all available methods for the current platform; selecting a method calls `setState(() => _activeMethod = method)` without navigation
+  - [x] 8.6 Implement `_MethodPicker`: inline expandable list of all available methods for the current platform; selecting a method calls `setState(() => _activeMethod = method)` without navigation
     - Hide biometric option on web (`kIsWeb`); hide passkey option on mobile (`!kIsWeb`)
     - _Requirements: 11.6, 11.7, 12.9, 13.10_
-  - [ ] 8.7 Wire `UnifiedLoginScreen` auth success to `AuthCubit`: OTP path calls `authCubit.verifyOtp()`; password path calls `authCubit.loginWithPassword()` or `authCubit.loginFamilyMemberWithPassword()`; biometric path calls `authCubit.loginWithStoredToken(token)`
+  - [x] 8.7 Wire `UnifiedLoginScreen` auth success to `AuthCubit`: OTP path calls `authCubit.verifyOtp()`; password path calls `authCubit.loginWithPassword()` or `authCubit.loginFamilyMemberWithPassword()`; biometric path calls `authCubit.loginWithStoredToken(token)`
     - _Requirements: 11.10_
 
-- [ ] 9. Implement biometric auto-trigger and retry logic in `UnifiedLoginScreen`
-  - [ ] 9.1 In `UnifiedLoginScreen.initState`, schedule a 500 ms delayed call to `_triggerBiometric()` when `!kIsWeb && await BiometricService.isBiometricEnabled()`
+- [x] 9. Implement biometric auto-trigger and retry logic in `UnifiedLoginScreen`
+  - [x] 9.1 In `UnifiedLoginScreen.initState`, schedule a 500 ms delayed call to `_triggerBiometric()` when `!kIsWeb && await BiometricService.isBiometricEnabled()`
     - _Requirements: 12.1_
-  - [ ] 9.2 Implement `_triggerBiometric()`: call `BiometricService.authenticateAndGetToken()`; on success call `authCubit.loginWithStoredToken(token)`; on failure increment `_biometricAttempts`; retry up to 3 times; on 3rd failure `setState(() => _activeMethod = AdaptiveAuthMethod.otp)`; on user cancel (null token, attempts == 0) switch to OTP without retry
+  - [x] 9.2 Implement `_triggerBiometric()`: call `BiometricService.authenticateAndGetToken()`; on success call `authCubit.loginWithStoredToken(token)`; on failure increment `_biometricAttempts`; retry up to 3 times; on 3rd failure `setState(() => _activeMethod = AdaptiveAuthMethod.otp)`; on user cancel (null token, attempts == 0) switch to OTP without retry
     - _Requirements: 12.2, 12.3, 12.4_
   - [ ]* 9.3 Write property test for biometric retry counter
     - **Property 5: Biometric retry counter falls back to OTP at exactly 3 failures**
     - Simulate `n` biometric failures (1 ≤ n ≤ 3); assert active method is `biometric` for `n < 3` and `otp` for `n == 3`
     - **Validates: Requirements 12.3**
-  - [ ] 9.4 When biometric is available but not enrolled, show OTP as primary method and display a non-intrusive enrollment banner offering to enable biometric after successful OTP login; banner navigates to `ProfileScreen` biometric section; banner is permanently dismissible
+  - [x] 9.4 When biometric is available but not enrolled, show OTP as primary method and display a non-intrusive enrollment banner offering to enable biometric after successful OTP login; banner navigates to `ProfileScreen` biometric section; banner is permanently dismissible
     - _Requirements: 12.6, 12.7_
-  - [ ] 9.5 Render biometric primary button with `Icons.fingerprint` / `Icons.face` icon and `strings.t('signInWithBiometric')` label when biometric is the active method
+  - [x] 9.5 Render biometric primary button with `Icons.fingerprint` / `Icons.face` icon and `strings.t('signInWithBiometric')` label when biometric is the active method
     - _Requirements: 12.5, 12.10_
 
-- [ ] 10. Enhance `BiometricService` with token expiry validation
+- [x] 10. Enhance `BiometricService` with token expiry validation
   - Update `BiometricService.authenticateAndGetToken()` to read `cbhi_biometric_token_expiry` from `SecureStorageService`; if expiry is in the past, call `disableBiometric()` and return `null`
   - Update `BiometricService.enableBiometric()` to accept `tokenExpiry: DateTime` and store it under `cbhi_biometric_token_expiry`
   - Update callers in `ProfileScreen` biometric enable flow to pass the token expiry from the session
@@ -151,31 +151,31 @@ All Flutter code must compile cleanly for both Android and Flutter Web (dart2js 
     - Generate random past `DateTime` values; store as token expiry; assert `authenticateAndGetToken()` returns null without triggering biometric prompt
     - **Validates: Requirements 14.8**
 
-- [ ] 11. Checkpoint — Ensure Flutter auth layer compiles and tests pass
+- [x] 11. Checkpoint — Ensure Flutter auth layer compiles and tests pass
   - Run `flutter analyze`; verify no dart2js-incompatible imports in any new file
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 12. Implement `PasskeyService` with conditional imports (web only)
-  - [ ] 12.1 Create `lib/src/shared/passkey_stub.dart`: stub implementations returning `false`/`null` for all methods; no `dart:io` or `Platform` references
+- [x] 12. Implement `PasskeyService` with conditional imports (web only)
+  - [x] 12.1 Create `lib/src/shared/passkey_stub.dart`: stub implementations returning `false`/`null` for all methods; no `dart:io` or `Platform` references
     - _Requirements: 13.9, 13.10_
-  - [ ] 12.2 Create `lib/src/shared/passkey_web.dart`: web implementation using `dart:js_interop` and `package:web` to call `navigator.credentials.get()` and `navigator.credentials.create()`; define `PasskeyAssertion` and `PasskeyAttestation` data classes
+  - [x] 12.2 Create `lib/src/shared/passkey_web.dart`: web implementation using `dart:js_interop` and `package:web` to call `navigator.credentials.get()` and `navigator.credentials.create()`; define `PasskeyAssertion` and `PasskeyAttestation` data classes
     - No `dart:io`, no `Platform` references
     - _Requirements: 13.2, 13.3, 13.9_
-  - [ ] 12.3 Create `lib/src/shared/passkey_service.dart`: conditional import dispatcher (`passkey_stub.dart` if `dart.library.js_interop` is absent, `passkey_web.dart` otherwise); expose `isAvailable()`, `authenticate()`, `register()` static methods
+  - [x] 12.3 Create `lib/src/shared/passkey_service.dart`: conditional import dispatcher (`passkey_stub.dart` if `dart.library.js_interop` is absent, `passkey_web.dart` otherwise); expose `isAvailable()`, `authenticate()`, `register()` static methods
     - _Requirements: 13.2_
-  - [ ] 12.4 Add passkey authentication flow to `UnifiedLoginScreen` (web only): on init call `PasskeyService.isAvailable()`; if available and user has credentials, set `_activeMethod = AdaptiveAuthMethod.passkey`; primary button calls `PasskeyService.authenticate()` then `CbhiRepository.authenticateWithPasskey()`; on failure/cancel fall back to OTP with inline error
+  - [x] 12.4 Add passkey authentication flow to `UnifiedLoginScreen` (web only): on init call `PasskeyService.isAvailable()`; if available and user has credentials, set `_activeMethod = AdaptiveAuthMethod.passkey`; primary button calls `PasskeyService.authenticate()` then `CbhiRepository.authenticateWithPasskey()`; on failure/cancel fall back to OTP with inline error
     - _Requirements: 13.1, 13.7, 13.8_
-  - [ ] 12.5 Add `CbhiRepository` methods: `getPasskeyAuthenticateOptions(identifier)`, `authenticateWithPasskey(dto)`, `getPasskeyRegisterOptions()`, `registerPasskey(dto)`, `removePasskey(credentialId)`
+  - [x] 12.5 Add `CbhiRepository` methods: `getPasskeyAuthenticateOptions(identifier)`, `authenticateWithPasskey(dto)`, `getPasskeyRegisterOptions()`, `registerPasskey(dto)`, `removePasskey(credentialId)`
     - _Requirements: 13.3, 13.7, 13.12_
 
-- [ ] 13. Add Passkeys section to `ProfileScreen` (web only)
+- [x] 13. Add Passkeys section to `ProfileScreen` (web only)
   - Add a "Passkeys" section visible only when `kIsWeb`; list registered passkeys fetched from backend; provide "Add passkey" button that calls `PasskeyService.register()` then `CbhiRepository.registerPasskey()`; provide delete button per credential that calls `CbhiRepository.removePasskey(credentialId)`
   - _Requirements: 13.11, 13.12, 13.13_
 
-- [ ] 14. Backend: add security-hardening columns to `User` entity and create migration
-  - [ ] 14.1 Add columns to `backend/src/users/user.entity.ts`: `tokenVersion: number` (default 0), `otpFailCount: number` (default 0, select: false), `otpRateLimitCount: number` (default 0, select: false), `otpRateLimitWindowStart: Date | null` (select: false)
+- [x] 14. Backend: add security-hardening columns to `User` entity and create migration
+  - [x] 14.1 Add columns to `backend/src/users/user.entity.ts`: `tokenVersion: number` (default 0), `otpFailCount: number` (default 0, select: false), `otpRateLimitCount: number` (default 0, select: false), `otpRateLimitWindowStart: Date | null` (select: false)
     - _Requirements: 14.1, 14.2, 14.7_
-  - [ ] 14.2 Create TypeORM migration `backend/src/database/migrations/<timestamp>-PasskeyAndSecurityHardening.ts`
+  - [x] 14.2 Create TypeORM migration `backend/src/database/migrations/<timestamp>-PasskeyAndSecurityHardening.ts`
     - `ALTER TABLE users ADD COLUMN token_version INT NOT NULL DEFAULT 0`
     - `ALTER TABLE users ADD COLUMN otp_fail_count INT NOT NULL DEFAULT 0`
     - `ALTER TABLE users ADD COLUMN otp_rate_limit_count INT NOT NULL DEFAULT 0`
@@ -183,53 +183,53 @@ All Flutter code must compile cleanly for both Android and Flutter Web (dart2js 
     - `CREATE TABLE passkey_credentials (...)` per `PasskeyCredential` entity schema
     - _Requirements: 14.1, 14.2_
 
-- [ ] 15. Backend: create `PasskeyCredential` entity and `PasskeyService`
-  - [ ] 15.1 Create `backend/src/auth/passkey-credential.entity.ts`: `PasskeyCredential` entity with `credentialId`, `publicKey`, `signCount`, `rpId`, `deviceName`, `lastUsedAt`, `ManyToOne` to `User`
+- [x] 15. Backend: create `PasskeyCredential` entity and `PasskeyService`
+  - [x] 15.1 Create `backend/src/auth/passkey-credential.entity.ts`: `PasskeyCredential` entity with `credentialId`, `publicKey`, `signCount`, `rpId`, `deviceName`, `lastUsedAt`, `ManyToOne` to `User`
     - _Requirements: 13.13_
-  - [ ] 15.2 Create `backend/src/auth/passkey.service.ts`: implement `getRegisterOptions()`, `verifyAndStoreAttestation()`, `getAuthenticateOptions()`, `verifyAssertion()`
+  - [x] 15.2 Create `backend/src/auth/passkey.service.ts`: implement `getRegisterOptions()`, `verifyAndStoreAttestation()`, `getAuthenticateOptions()`, `verifyAssertion()`
     - Security validation: verify `clientDataJSON.origin` vs `PASSKEY_RP_ORIGIN` env var; verify `rpIdHash` vs `SHA-256(PASSKEY_RP_ID)`; verify `signCount > credential.signCount` (replay prevention); verify ECDSA P-256 signature; update `signCount` and `lastUsedAt` on success
     - _Requirements: 13.4, 13.5, 13.13, 14.10_
 
-- [ ] 16. Backend: create `PasskeyController` and wire into `AuthModule`
-  - [ ] 16.1 Create `backend/src/auth/passkey.controller.ts` with endpoints: `POST register-options`, `POST register`, `POST authenticate-options` (`@Public()`), `POST authenticate` (`@Public()`), `DELETE :credentialId`
+- [x] 16. Backend: create `PasskeyController` and wire into `AuthModule`
+  - [x] 16.1 Create `backend/src/auth/passkey.controller.ts` with endpoints: `POST register-options`, `POST register`, `POST authenticate-options` (`@Public()`), `POST authenticate` (`@Public()`), `DELETE :credentialId`
     - Define DTOs: `PasskeyRegisterDto`, `PasskeyAuthOptionsDto`, `PasskeyAuthenticateDto`
     - _Requirements: 13.4, 13.5, 13.6_
-  - [ ] 16.2 Add `PasskeyCredential` to `TypeOrmModule.forFeature` in `AuthModule`; add `PasskeyController` and `PasskeyService` to `AuthModule` providers/controllers
+  - [x] 16.2 Add `PasskeyCredential` to `TypeOrmModule.forFeature` in `AuthModule`; add `PasskeyController` and `PasskeyService` to `AuthModule` providers/controllers
     - _Requirements: 13.4, 13.5_
 
-- [ ] 17. Backend: harden `AuthService` — OTP rate limiting, fail counter, token expiry, and `tokenVersion`
-  - [ ] 17.1 Implement OTP rate limiting in `AuthService.sendOtp()`: check `otpRateLimitWindowStart`; if within 10-minute window and `otpRateLimitCount >= 3`, throw `TooManyRequestsException` (HTTP 429); otherwise increment counter or reset window
+- [x] 17. Backend: harden `AuthService` — OTP rate limiting, fail counter, token expiry, and `tokenVersion`
+  - [x] 17.1 Implement OTP rate limiting in `AuthService.sendOtp()`: check `otpRateLimitWindowStart`; if within 10-minute window and `otpRateLimitCount >= 3`, throw `TooManyRequestsException` (HTTP 429); otherwise increment counter or reset window
     - _Requirements: 14.1_
-  - [ ] 17.2 Write property test for OTP rate limiting
+  - [x] 17.2 Write property test for OTP rate limiting
     - **Property 6: OTP rate limiting rejects requests beyond the threshold**
     - For random phone numbers, call `sendOtp` 3 times (should succeed), then 4th call asserts HTTP 429
     - **Validates: Requirements 14.1**
-  - [ ] 17.3 Implement OTP fail counter in `AuthService.verifyOtp()`: on wrong code increment `otpFailCount`; when `otpFailCount >= 5` call `clearOtp()` and throw `UnauthorizedException` with "Too many failed attempts" message; reset counter on successful verification
+  - [x] 17.3 Implement OTP fail counter in `AuthService.verifyOtp()`: on wrong code increment `otpFailCount`; when `otpFailCount >= 5` call `clearOtp()` and throw `UnauthorizedException` with "Too many failed attempts" message; reset counter on successful verification
     - _Requirements: 14.2_
   - [ ]* 17.4 Write property test for OTP invalidation after 5 failures
     - **Property 7: OTP token is invalidated after 5 failed verification attempts**
     - Simulate 5 wrong-code verifications; assert 6th attempt with correct code also fails
     - **Validates: Requirements 14.2**
-  - [ ] 17.5 Extend OTP expiry from 5 minutes to 10 minutes in `AuthService.sendOtp()` (`Date.now() + 10 * 60 * 1000`); verify `assertOtp()` rejects expired tokens with HTTP 400
+  - [x] 17.5 Extend OTP expiry from 5 minutes to 10 minutes in `AuthService.sendOtp()` (`Date.now() + 10 * 60 * 1000`); verify `assertOtp()` rejects expired tokens with HTTP 400
     - _Requirements: 14.4_
   - [ ]* 17.6 Write property test for OTP hash storage
     - **Property 8: OTP codes are stored as SHA-256 hashes, never as plaintext**
     - Generate random OTP codes and purposes; assert `hashValue(purpose + ":" + code) !== code` and stored hash equals `SHA-256(purpose + ":" + code)`
     - **Validates: Requirements 14.3**
-  - [ ] 17.7 Implement `tokenVersion` invalidation in `AuthService`: increment `user.tokenVersion` in `resetPassword()` and `setPassword()`; add `tokenVersion` claim to JWT payload in `issueSession()`; validate `tokenVersion` in `requireUserFromAuthorization()` by comparing JWT claim to current DB value
+  - [x] 17.7 Implement `tokenVersion` invalidation in `AuthService`: increment `user.tokenVersion` in `resetPassword()` and `setPassword()`; add `tokenVersion` claim to JWT payload in `issueSession()`; validate `tokenVersion` in `requireUserFromAuthorization()` by comparing JWT claim to current DB value
     - _Requirements: 14.7_
-  - [ ] 17.8 Write property test for `tokenVersion` session invalidation
+  - [x] 17.8 Write property test for `tokenVersion` session invalidation
     - **Property 9: Password change invalidates all prior sessions via tokenVersion**
     - For random users with active JWTs, after `resetPassword`, assert `tokenVersion` incremented and old JWT fails `requireUserFromAuthorization`
     - **Validates: Requirements 14.7**
 
-- [ ] 18. Backend: configure RS256 JWT signing for production
+- [x] 18. Backend: configure RS256 JWT signing for production
   - Update `AuthModule` `JwtModule.registerAsync` to use `RS256` algorithm and load RSA private/public key from `AUTH_JWT_PRIVATE_KEY` / `AUTH_JWT_PUBLIC_KEY` env vars when `NODE_ENV === 'production'`; fall back to HS256 + `AUTH_JWT_SECRET` in development/test
   - Update `AuthService.requireUserFromAuthorization()` to use the correct verification key based on environment
   - Document required env vars in `backend/.env.example`
   - _Requirements: 14.5_
 
-- [ ] 19. Checkpoint — Ensure backend compiles and all backend tests pass
+- [x] 19. Checkpoint — Ensure backend compiles and all backend tests pass
   - Run `npm run build` in `backend`; run `npm test`
   - Ensure all tests pass, ask the user if questions arise.
 

@@ -748,5 +748,18 @@
     "placeholders": { "count": {"type": "int"} }
   },
   "changePin": "PIN jijjiiri",
-  "pinChanged": "PIN milkaa'inaan jijjiirameera"
+  "pinChanged": "PIN milkaa'inaan jijjiirameera",
+
+  "passkeysSection": "Paaskiiwwan",
+  "passkeysSubtitle": "Paaskiiwwan galmaa'an kan seensa weebii bulchi",
+  "addPasskey": "Paaskii dabaluu",
+  "deletePasskey": "Haqi",
+  "noPasskeysRegistered": "Paaskiin hin galmoofne",
+  "noPasskeysSubtitle": "Weebii irratti dafii seenuuf paaskii dabaluu",
+  "passkeyAdded": "Paaskiin milkaa'inaan dabalameera",
+  "passkeyDeleted": "Paaskiin haqqameera",
+  "passkeyDeleteConfirmTitle": "Paaskii Haqi?",
+  "passkeyDeleteConfirmMessage": "Paaskiin kun herrega kee irraa ni haqqama.",
+  "passkeyDevice": "Paaskii meeshaa",
+  "passkeyAddFailed": "Paaskii dabaluun hin milkoofne. Irra deebi'i yaali."
 }

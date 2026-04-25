@@ -733,5 +733,18 @@
     "placeholders": { "count": {"type": "int"} }
   },
   "changePin": "Change PIN",
-  "pinChanged": "PIN changed successfully"
+  "pinChanged": "PIN changed successfully",
+
+  "passkeysSection": "Passkeys",
+  "passkeysSubtitle": "Manage your registered passkeys for web sign-in",
+  "addPasskey": "Add passkey",
+  "deletePasskey": "Delete",
+  "noPasskeysRegistered": "No passkeys registered",
+  "noPasskeysSubtitle": "Add a passkey to sign in faster on the web",
+  "passkeyAdded": "Passkey added successfully",
+  "passkeyDeleted": "Passkey removed",
+  "passkeyDeleteConfirmTitle": "Remove Passkey?",
+  "passkeyDeleteConfirmMessage": "This passkey will be removed from your account.",
+  "passkeyDevice": "Device passkey",
+  "passkeyAddFailed": "Failed to add passkey. Please try again."
 }

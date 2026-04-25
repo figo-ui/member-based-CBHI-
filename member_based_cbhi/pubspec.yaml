@@ -42,6 +42,7 @@ dependencies:
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
   sentry_flutter: ^8.14.2     # v8.14 supports Kotlin 2.1 + AGP 8.9; v9 requires code changes
+  crypto: ^3.0.3              # SHA-256 for local PIN hashing
 
 dev_dependencies:
   flutter_test:

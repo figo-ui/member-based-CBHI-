@@ -729,5 +729,18 @@
     "placeholders": { "count": {"type": "int"} }
   },
   "changePin": "ፒን ቀይር",
-  "pinChanged": "ፒን በተሳካ ሁኔታ ተቀይሯል"
+  "pinChanged": "ፒን በተሳካ ሁኔታ ተቀይሯል",
+
+  "passkeysSection": "ፓስኪዎች",
+  "passkeysSubtitle": "ለድር ግቤት የተመዘገቡ ፓስኪዎችዎን ያስተዳድሩ",
+  "addPasskey": "ፓስኪ ጨምር",
+  "deletePasskey": "ሰርዝ",
+  "noPasskeysRegistered": "ምንም ፓስኪ አልተመዘገበም",
+  "noPasskeysSubtitle": "በድሩ ላይ ፈጠን ብለው ለመግባት ፓስኪ ይጨምሩ",
+  "passkeyAdded": "ፓስኪ በተሳካ ሁኔታ ተጨምሯል",
+  "passkeyDeleted": "ፓስኪ ተሰርዟል",
+  "passkeyDeleteConfirmTitle": "ፓስኪ ይሰርዙ?",
+  "passkeyDeleteConfirmMessage": "ይህ ፓስኪ ከመለያዎ ይወገዳል።",
+  "passkeyDevice": "የመሣሪያ ፓስኪ",
+  "passkeyAddFailed": "ፓስኪ ማከል አልተሳካም። እንደገና ይሞክሩ።"
 }

@@ -1,38 +1,68 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'registration_cubit.dart';
 
-/// Step progress indicator for the registration flow.
-/// Displays a linear progress bar and "Step N of 7" label.
+// ─────────────────────────────────────────────────────────────────────────────
+// Step number extension on RegistrationStep
+// ─────────────────────────────────────────────────────────────────────────────
+
+extension RegistrationStepX on RegistrationStep {
+  /// 1-based step number for display. Returns null for non-displayable steps.
+  int? get stepNumber => switch (this) {
+        RegistrationStep.personalInfo => 1,
+        RegistrationStep.confirmation => 2,
+        RegistrationStep.identity => 3,
+        RegistrationStep.membership => 4,
+        RegistrationStep.indigentProof => 5,
+        RegistrationStep.payment => 6,
+        RegistrationStep.setupAccount => 7,
+        _ => null,
+      };
+
+  static const int totalSteps = 7;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RegistrationStepIndicator widget
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Displays a linear progress bar + "Step N of 7" label at the top of each
+/// registration step screen.
+///
+/// Usage: place at the top of the step screen's Scaffold body, before the
+/// main content.
 class RegistrationStepIndicator extends StatelessWidget {
   const RegistrationStepIndicator({
     super.key,
-    required this.currentStep,
-    required this.totalSteps,
+    required this.step,
   });
 
-  final int currentStep;
-  final int totalSteps;
+  final RegistrationStep step;
 
   @override
   Widget build(BuildContext context) {
-    final progress = totalSteps > 0 ? currentStep / totalSteps : 0.0;
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacingM,
-        vertical: AppTheme.spacingS,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    final stepNumber = step.stepNumber;
+    if (stepNumber == null) return const SizedBox.shrink();
+
+    final progress = stepNumber / RegistrationStepX.totalSteps;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacingM,
+            vertical: AppTheme.spacingS,
+          ),
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Step $currentStep of $totalSteps',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                'Step $stepNumber of ${RegistrationStepX.totalSteps}',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: AppTheme.primary,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
               ),
               Text(
@@ -43,18 +73,14 @@ class RegistrationStepIndicator extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-              backgroundColor: AppTheme.primary.withValues(alpha: 0.12),
-              valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primary),
-            ),
-          ),
-        ],
-      ),
+        ),
+        LinearProgressIndicator(
+          value: progress,
+          backgroundColor: AppTheme.primary.withValues(alpha: 0.12),
+          valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primary),
+          minHeight: 3,
+        ),
+      ],
     );
   }
 }

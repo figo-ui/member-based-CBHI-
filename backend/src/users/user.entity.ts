@@ -98,6 +98,19 @@ export class User extends AuditableEntity {
   @Column({ default: false })
   totpEnabled!: boolean;
 
+  // ── Security hardening ────────────────────────────────────────────────────
+  @Column({ type: 'int', default: 0 })
+  tokenVersion!: number;
+
+  @Column({ type: 'int', default: 0, select: false })
+  otpFailCount!: number;
+
+  @Column({ type: 'int', default: 0, select: false })
+  otpRateLimitCount!: number;
+
+  @Column({ type: 'timestamptz', nullable: true, select: false })
+  otpRateLimitWindowStart?: Date | null;
+
   // ── FCM Push Notifications ─────────────────────────────────────────────────
   @Column({ type: 'varchar', length: 512, nullable: true })
   fcmToken?: string | null;

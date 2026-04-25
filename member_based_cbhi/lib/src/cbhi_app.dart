@@ -20,6 +20,7 @@ import 'notifications/notification_inbox_screen.dart';
 import 'profile/profile_screen.dart';
 import 'registration/registration_cubit.dart';
 import 'registration/registration_flow.dart';
+import 'shared/animated_widgets.dart';
 import 'shared/connectivity_banner.dart';
 import 'shared/connectivity_cubit.dart';
 import 'theme/app_theme.dart';
@@ -249,230 +250,297 @@ class _HomeShellState extends State<_HomeShell> {
   Future<void> _checkFirstLogin() async {
     final prefs = await SharedPreferences.getInstance();
     final isFirstLogin = prefs.getBool('cbhi_first_login_done') != true;
-    if (isFirstLogin) {
-      if (mounted) {
-        setState(() => _index = 1); // Land on Family screen
-        _showOnboarding();
-      }
+    if (isFirstLogin && mounted) {
       await prefs.setBool('cbhi_first_login_done', true);
+      // Show a non-blocking SnackBar guiding to Family tab
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final strings = CbhiLocalizations.of(context);
+        // Check if family member — if so, no Family tab to navigate to
+        final isFamilyMember =
+            context.read<AuthCubit>().state.isFamilyMember;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(strings.t('onboardingBody1')),
+            duration: const Duration(seconds: 5),
+            action: isFamilyMember
+                ? null
+                : SnackBarAction(
+                    label: strings.t('goToFamily'),
+                    onPressed: () {
+                      // Family tab is index 1 for household heads
+                      if (mounted) setState(() => _index = 1);
+                    },
+                  ),
+          ),
+        );
+      });
     }
   }
 
-  void _showOnboarding() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final strings = CbhiLocalizations.of(context);
-      showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(strings.t('onboardingTitle1')),
-          content: Text(strings.t('onboardingBody1')),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(strings.t('ok')),
-            ),
-          ],
-        ),
-      );
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = CbhiLocalizations.of(context);
-
-    final pages = [
-      const DashboardScreen(),
-      const MyFamilyScreen(),
-      const DigitalCardScreen(),
+  /// Build the ordered page list based on role.
+  /// Family members don't see the Family tab — indices shift accordingly.
+  List<Widget> _buildPages(bool isFamilyMember, AppCubit appCubit) {
+    final pages = <Widget>[const DashboardScreen()];
+    if (!isFamilyMember) pages.add(const MyFamilyScreen());
+    pages.add(const DigitalCardScreen());
+    pages.add(
       BlocBuilder<AppCubit, AppState>(
         builder: (context, state) {
           final snapshot = state.snapshot ?? CbhiSnapshot.empty();
           return MemberClaimsScreen(
             snapshot: snapshot,
-            repository: context.read<AppCubit>().repository,
+            repository: appCubit.repository,
           );
         },
       ),
-      const ProfileScreen(),
+    );
+    pages.add(const ProfileScreen());
+    return pages;
+  }
+
+  List<NavigationDestination> _buildDestinations(
+    bool isFamilyMember,
+    dynamic strings,
+  ) {
+    return [
+      NavigationDestination(
+        icon: const Icon(Icons.home_outlined),
+        selectedIcon: const Icon(Icons.home_rounded),
+        label: strings.t('home'),
+      ),
+      if (!isFamilyMember)
+        NavigationDestination(
+          icon: const Icon(Icons.family_restroom_outlined),
+          selectedIcon: const Icon(Icons.family_restroom),
+          label: strings.t('family'),
+        ),
+      NavigationDestination(
+        icon: const Icon(Icons.badge_outlined),
+        selectedIcon: const Icon(Icons.badge),
+        label: strings.t('card'),
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.receipt_long_outlined),
+        selectedIcon: const Icon(Icons.receipt_long),
+        label: strings.t('claims'),
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.person_outline),
+        selectedIcon: const Icon(Icons.person),
+        label: strings.t('profile'),
+      ),
     ];
+  }
 
-    return MultiBlocListener(
-      listeners: [
-        BlocListener<ConnectivityCubit, ConnectivityState>(
-          listenWhen: (prev, curr) => !prev.isOnline && curr.isOnline,
-          listener: (context, _) => context.read<AppCubit>().sync(),
-        ),
-      ],
-      child: Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.health_and_safety,
-                color: AppTheme.primary,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(strings.t('appTitle')),
-          ],
-        ),
+  Future<void> _handlePop(BuildContext context) async {
+    if (_index != 0) {
+      setState(() => _index = 0);
+      return;
+    }
+    // On home tab — show exit confirmation
+    final strings = CbhiLocalizations.of(context);
+    await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(strings.t('exitAppTitle')),
+        content: Text(strings.t('exitAppMessage')),
         actions: [
-          BlocBuilder<AppCubit, AppState>(
-            builder: (context, state) {
-              final snapshot = state.snapshot;
-              final isPendingSync = snapshot?.isPendingSync ?? false;
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(strings.t('cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(strings.t('yes')),
+          ),
+        ],
+      ),
+    );
+    // We don't programmatically exit — the system handles it if the user
+    // confirms. The dialog result is intentionally unused here because
+    // dart:io SystemNavigator.pop() is not web-safe.
+  }
 
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isPendingSync)
-                    Semantics(
-                      label: 'Offline — changes pending sync',
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 4),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppTheme.warning.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                              color: AppTheme.warning.withValues(alpha: 0.3)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.cloud_off_outlined,
-                                color: AppTheme.warning, size: 14),
-                            const SizedBox(width: 4),
-                            Text(
-                              strings.t('offlineBadge'),
-                              style: const TextStyle(
-                                color: AppTheme.warning,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  // Notification bell with unread badge
-                  _NotificationBell(snapshot: snapshot),
-                  Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primary.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: IconButton(
-                      tooltip: strings.t('syncNow'),
-                      onPressed: state.isSyncing
-                          ? null
-                          : () async {
-                              final appCubit = context.read<AppCubit>();
-                              final authCubit = context.read<AuthCubit>();
-                              final familyCubit =
-                                  context.read<MyFamilyCubit>();
-                              await appCubit.sync();
-                              await authCubit.refreshSession();
-                              await familyCubit.load();
-                            },
-                      icon: state.isSyncing
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.sync),
-                    ),
+  @override
+  Widget build(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
+    final authState = context.watch<AuthCubit>().state;
+    final isFamilyMember = authState.isFamilyMember;
+    final appCubit = context.read<AppCubit>();
+
+    final pages = _buildPages(isFamilyMember, appCubit);
+    final destinations = _buildDestinations(isFamilyMember, strings);
+
+    // Guard: clamp index to valid range when role changes
+    final safeIndex = _index.clamp(0, pages.length - 1);
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _handlePop(context);
+      },
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<ConnectivityCubit, ConnectivityState>(
+            listenWhen: (prev, curr) => !prev.isOnline && curr.isOnline,
+            listener: (context, _) => context.read<AppCubit>().sync(),
+          ),
+        ],
+        child: Scaffold(
+          appBar: AppBar(
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.health_and_safety,
+                    color: AppTheme.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(strings.t('appTitle')),
+                if (isFamilyMember) ...[
+                  const SizedBox(width: 8),
+                  StatusBadge(
+                    label: strings.t('familyMemberSession'),
+                    color: AppTheme.accent,
                   ),
                 ],
-              );
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          const ConnectivityBanner(),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 350),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              transitionBuilder: (child, animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0.03, 0),
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: child,
-                  ),
-                );
-              },
-              child: KeyedSubtree(
-                key: ValueKey(_index),
-                child: pages[_index],
+              ],
+            ),
+            actions: [
+              BlocBuilder<AppCubit, AppState>(
+                builder: (context, state) {
+                  final snapshot = state.snapshot;
+                  final isPendingSync = snapshot?.isPendingSync ?? false;
+
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isPendingSync)
+                        Semantics(
+                          label: 'Offline — changes pending sync',
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppTheme.warning.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                  color:
+                                      AppTheme.warning.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.cloud_off_outlined,
+                                    color: AppTheme.warning, size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  strings.t('offlineBadge'),
+                                  style: const TextStyle(
+                                    color: AppTheme.warning,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      // Notification bell with unread badge
+                      _NotificationBell(snapshot: snapshot),
+                      Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          tooltip: strings.t('syncNow'),
+                          onPressed: state.isSyncing
+                              ? null
+                              : () async {
+                                  final authCubit =
+                                      context.read<AuthCubit>();
+                                  final familyCubit =
+                                      context.read<MyFamilyCubit>();
+                                  await appCubit.sync();
+                                  await authCubit.refreshSession();
+                                  await familyCubit.load();
+                                },
+                          icon: state.isSyncing
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2),
+                                )
+                              : const Icon(Icons.sync),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
+            ],
+          ),
+          body: Column(
+            children: [
+              const ConnectivityBanner(),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 350),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0.03, 0),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: KeyedSubtree(
+                    key: ValueKey(safeIndex),
+                    child: pages[safeIndex],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          bottomNavigationBar: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 16,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            child: NavigationBar(
+              selectedIndex: safeIndex,
+              onDestinationSelected: (value) =>
+                  setState(() => _index = value),
+              destinations: destinations,
             ),
           ),
-        ],
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
         ),
-        child: NavigationBar(
-          selectedIndex: _index,
-          onDestinationSelected: (value) => setState(() => _index = value),
-          destinations: [
-            NavigationDestination(
-              icon: const Icon(Icons.home_outlined),
-              selectedIcon: const Icon(Icons.home_rounded),
-              label: strings.t('home'),
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.family_restroom_outlined),
-              selectedIcon: const Icon(Icons.family_restroom),
-              label: strings.t('family'),
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.badge_outlined),
-              selectedIcon: const Icon(Icons.badge),
-              label: strings.t('card'),
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.receipt_long_outlined),
-              selectedIcon: const Icon(Icons.receipt_long),
-              label: strings.t('claims'),
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.person_outline),
-              selectedIcon: const Icon(Icons.person),
-              label: strings.t('profile'),
-            ),
-          ],
-        ),
-      ),
       ),
     );
   }
@@ -538,3 +606,5 @@ class _NotificationBell extends StatelessWidget {
     );
   }
 }
+
+

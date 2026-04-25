@@ -680,6 +680,18 @@ const _en = <String, String>{
   'payingPayNowOrLater': 'Would you like to pay your premium now, or continue to the dashboard and pay later?',
   'payNow': 'Pay Now',
   'payLater': 'Pay Later',
+  'passkeysSection': 'Passkeys',
+  'passkeysSubtitle': 'Manage your registered passkeys for web sign-in',
+  'addPasskey': 'Add passkey',
+  'deletePasskey': 'Delete',
+  'noPasskeysRegistered': 'No passkeys registered',
+  'noPasskeysSubtitle': 'Add a passkey to sign in faster on the web',
+  'passkeyAdded': 'Passkey added successfully',
+  'passkeyDeleted': 'Passkey removed',
+  'passkeyDeleteConfirmTitle': 'Remove Passkey?',
+  'passkeyDeleteConfirmMessage': 'This passkey will be removed from your account.',
+  'passkeyDevice': 'Device passkey',
+  'passkeyAddFailed': 'Failed to add passkey. Please try again.',
 };
 
 const _am = <String, String>{
@@ -1296,6 +1308,18 @@ const _am = <String, String>{
   'payingPayNowOrLater': 'ፕሪሚየምዎን አሁን መክፈል ይፈልጋሉ ወይስ ወደ ዳሽቦርድ ሄደው ኋላ ይክፈሉ?',
   'payNow': 'አሁን ክፈል',
   'payLater': 'ኋላ ክፈል',
+  'passkeysSection': 'ፓስኪዎች',
+  'passkeysSubtitle': 'ለድር ግቤት የተመዘገቡ ፓስኪዎችዎን ያስተዳድሩ',
+  'addPasskey': 'ፓስኪ ጨምር',
+  'deletePasskey': 'ሰርዝ',
+  'noPasskeysRegistered': 'ምንም ፓስኪ አልተመዘገበም',
+  'noPasskeysSubtitle': 'በድሩ ላይ ፈጠን ብለው ለመግባት ፓስኪ ይጨምሩ',
+  'passkeyAdded': 'ፓስኪ በተሳካ ሁኔታ ተጨምሯል',
+  'passkeyDeleted': 'ፓስኪ ተሰርዟል',
+  'passkeyDeleteConfirmTitle': 'ፓስኪ ይሰርዙ?',
+  'passkeyDeleteConfirmMessage': 'ይህ ፓስኪ ከመለያዎ ይወገዳል።',
+  'passkeyDevice': 'የመሣሪያ ፓስኪ',
+  'passkeyAddFailed': 'ፓስኪ ማከል አልተሳካም። እንደገና ይሞክሩ።',
 };
 
 const _om = <String, String>{
@@ -1912,6 +1936,18 @@ const _om = <String, String>{
   'payingPayNowOrLater': 'Kaffalti kee amma kaffaluu barbaaddaa moo daashboorditti deemtee booda kaffaluu barbaaddaa?',
   'payNow': 'Amma Kaffali',
   'payLater': 'Booda Kaffali',
+  'passkeysSection': 'Paaskiiwwan',
+  'passkeysSubtitle': 'Paaskiiwwan galmaa\'an kan seensa weebii bulchi',
+  'addPasskey': 'Paaskii dabaluu',
+  'deletePasskey': 'Haqi',
+  'noPasskeysRegistered': 'Paaskiin hin galmoofne',
+  'noPasskeysSubtitle': 'Weebii irratti dafii seenuuf paaskii dabaluu',
+  'passkeyAdded': 'Paaskiin milkaa\'inaan dabalameera',
+  'passkeyDeleted': 'Paaskiin haqqameera',
+  'passkeyDeleteConfirmTitle': 'Paaskii Haqi?',
+  'passkeyDeleteConfirmMessage': 'Paaskiin kun herrega kee irraa ni haqqama.',
+  'passkeyDevice': 'Paaskii meeshaa',
+  'passkeyAddFailed': 'Paaskii dabaluun hin milkoofne. Irra deebi\'i yaali.',
 };
 
 final _strings = <String, Map<String, String>>{

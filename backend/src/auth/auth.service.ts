@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  HttpException,
+  HttpStatus,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -30,6 +32,7 @@ type AuthTokenPayload = {
   role: string;
   phoneNumber?: string | null;
   email?: string | null;
+  tokenVersion?: number;
 };
 
 // Refresh token TTL: 30 days
@@ -94,11 +97,47 @@ export class AuthService {
       );
     }
 
+    // Task 17.1: OTP rate limiting — load select:false rate-limit fields
+    const userWithRateLimit = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect([
+        'user.otpRateLimitWindowStart',
+        'user.otpRateLimitCount',
+      ])
+      .where('user.id = :id', { id: user.id })
+      .getOne();
+
+    if (userWithRateLimit) {
+      const windowStart = userWithRateLimit.otpRateLimitWindowStart;
+      const OTP_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+      const OTP_MAX_PER_WINDOW = 3;
+
+      if (windowStart && Date.now() - windowStart.getTime() < OTP_WINDOW_MS) {
+        // Within the current window
+        if ((userWithRateLimit.otpRateLimitCount ?? 0) >= OTP_MAX_PER_WINDOW) {
+          throw new HttpException(
+            'Too many OTP requests. Try again later.',
+            HttpStatus.TOO_MANY_REQUESTS,
+          );
+        }
+        // Increment counter
+        userWithRateLimit.otpRateLimitCount =
+          (userWithRateLimit.otpRateLimitCount ?? 0) + 1;
+        await this.userRepository.save(userWithRateLimit);
+      } else {
+        // Outside window or no window set — reset
+        userWithRateLimit.otpRateLimitWindowStart = new Date();
+        userWithRateLimit.otpRateLimitCount = 1;
+        await this.userRepository.save(userWithRateLimit);
+      }
+    }
+
     const code = this.generateOtp();
     user.oneTimeCodeHash = this.hashValue(`${purpose}:${code}`);
     user.oneTimeCodePurpose = purpose;
     user.oneTimeCodeTarget = target;
-    user.oneTimeCodeExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    // Task 17.5: Extend OTP expiry to 10 minutes
+    user.oneTimeCodeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
     await this.userRepository.save(user);
 
     // Send OTP via SMS (non-email targets) or log in dev
@@ -111,7 +150,7 @@ export class AuthService {
     return {
       channel: isEmail ? 'email' : 'sms',
       target: this.maskTarget(target),
-      expiresInSeconds: 300,
+      expiresInSeconds: 600,
       // Only expose debugCode in non-production environments
       ...(this.isProduction ? {} : { debugCode: code }),
     };
@@ -124,10 +163,48 @@ export class AuthService {
       throw new NotFoundException('Account not found.');
     }
 
-    this.assertOtp(user, dto.code, 'login', target);
-    this.clearOtp(user);
-    user.lastLoginAt = new Date();
-    await this.userRepository.save(user);
+    // Task 17.3: Load otpFailCount (select:false field)
+    const userWithFailCount = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect(['user.otpFailCount'])
+      .where('user.id = :id', { id: user.id })
+      .getOne();
+
+    const currentFailCount = userWithFailCount?.otpFailCount ?? 0;
+
+    // Validate OTP — catch failures to track fail count
+    try {
+      this.assertOtp(user, dto.code, 'login', target);
+    } catch (err) {
+      // Increment fail counter
+      if (userWithFailCount) {
+        const newFailCount = currentFailCount + 1;
+        if (newFailCount >= 5) {
+          // Invalidate OTP and reset counter
+          this.clearOtp(userWithFailCount);
+          userWithFailCount.otpFailCount = 0;
+          await this.userRepository.save(userWithFailCount);
+          throw new UnauthorizedException(
+            'Too many failed attempts. Request a new OTP.',
+          );
+        }
+        userWithFailCount.otpFailCount = newFailCount;
+        await this.userRepository.save(userWithFailCount);
+      }
+      throw err;
+    }
+
+    // Success — reset fail counter
+    if (userWithFailCount) {
+      userWithFailCount.otpFailCount = 0;
+      this.clearOtp(userWithFailCount);
+      userWithFailCount.lastLoginAt = new Date();
+      await this.userRepository.save(userWithFailCount);
+    } else {
+      this.clearOtp(user);
+      user.lastLoginAt = new Date();
+      await this.userRepository.save(user);
+    }
 
     return this.issueSession(user);
   }
@@ -213,6 +290,8 @@ export class AuthService {
     this.assertOtp(user, dto.code, 'password_reset', identifier);
     user.passwordHash = this.hashPassword(dto.newPassword);
     this.clearOtp(user);
+    // Task 17.7: Increment tokenVersion to invalidate all prior sessions
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
     await this.userRepository.save(user);
 
     return {
@@ -235,10 +314,20 @@ export class AuthService {
       throw new UnauthorizedException('Missing bearer token.');
     }
 
-    // FIX QW-6: Use @nestjs/jwt JwtService.verify() instead of hand-rolled HMAC verify
+    // Use RS256 public key in production, HS256 secret in development/test
+    const isProduction = process.env.NODE_ENV === 'production';
+    const publicKey = process.env.AUTH_JWT_PUBLIC_KEY;
+
     let payload: AuthTokenPayload;
     try {
-      payload = this.jwtService.verify<AuthTokenPayload>(token);
+      if (isProduction && publicKey) {
+        payload = this.jwtService.verify<AuthTokenPayload>(token, {
+          algorithms: ['RS256'],
+          publicKey: publicKey.replace(/\\n/g, '\n'),
+        });
+      } else {
+        payload = this.jwtService.verify<AuthTokenPayload>(token);
+      }
     } catch {
       throw new UnauthorizedException('Invalid or expired access token.');
     }
@@ -254,6 +343,15 @@ export class AuthService {
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Your session is no longer active.');
+    }
+
+    // Task 17.7: Validate tokenVersion — reject JWTs issued before a password change
+    const payloadVersion = payload.tokenVersion ?? 0;
+    const userVersion = user.tokenVersion ?? 0;
+    if (payloadVersion !== userVersion) {
+      throw new UnauthorizedException(
+        'Session invalidated. Please sign in again.',
+      );
     }
 
     return user;
@@ -275,6 +373,8 @@ export class AuthService {
       role: user.role,
       phoneNumber: user.phoneNumber,
       email: user.email,
+      // Task 17.7: Include tokenVersion in JWT payload
+      tokenVersion: user.tokenVersion ?? 0,
     };
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: `${this.accessTokenTtlSeconds}s`,
@@ -353,6 +453,8 @@ export class AuthService {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found.');
     user.passwordHash = this.hashPassword(password);
+    // Task 17.7: Increment tokenVersion to invalidate all prior sessions
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
     await this.userRepository.save(user);
     return { message: 'Password set successfully.' };
   }
@@ -466,7 +568,7 @@ export class AuthService {
     }
 
     if (user.oneTimeCodeExpiresAt.getTime() < Date.now()) {
-      throw new UnauthorizedException('The verification code has expired.');
+      throw new BadRequestException('The verification code has expired.');
     }
 
     const expected = this.hashValue(`${purpose}:${code}`);

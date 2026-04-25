@@ -1752,4 +1752,43 @@ class CbhiRepository {
     if (path.startsWith('/')) return '$apiBaseUrl$path';
     return path;
   }
+
+  // ── Passkey (WebAuthn) endpoints ─────────────────────────────────────────
+
+  /// Returns WebAuthn PublicKeyCredentialRequestOptions for authentication.
+  Future<Map<String, dynamic>> getPasskeyAuthenticateOptions(String identifier) async {
+    return _postJson(
+      '/auth/passkey/authenticate-options',
+      {'identifier': identifier},
+    );
+  }
+
+  /// Verifies a WebAuthn assertion and returns a JWT session.
+  Future<AuthSession> authenticateWithPasskey(Map<String, dynamic> dto) async {
+    final json = await _postJson('/auth/passkey/authenticate', dto);
+    final session = AuthSession.fromJson(json);
+    await _persistSession(session);
+    return session;
+  }
+
+  /// Returns WebAuthn PublicKeyCredentialCreationOptions for registration.
+  Future<Map<String, dynamic>> getPasskeyRegisterOptions() async {
+    return _postJson('/auth/passkey/register-options', {}, authorized: true);
+  }
+
+  /// Verifies a WebAuthn attestation and stores the passkey credential.
+  Future<void> registerPasskey(Map<String, dynamic> dto) async {
+    await _postJson('/auth/passkey/register', dto, authorized: true);
+  }
+
+  /// Removes a registered passkey credential.
+  Future<void> removePasskey(String credentialId) async {
+    await _deleteJson('/auth/passkey/$credentialId', authorized: true);
+  }
+
+  /// Lists registered passkey credentials for the current user.
+  Future<List<Map<String, dynamic>>> getPasskeyCredentials() async {
+    final result = await _getJson('/auth/passkey/credentials', authorized: true);
+    return (result as List).cast<Map<String, dynamic>>();
+  }
 }

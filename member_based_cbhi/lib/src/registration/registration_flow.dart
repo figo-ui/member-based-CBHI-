@@ -8,6 +8,7 @@ import '../auth/auth_state.dart';
 import '../cbhi_localizations.dart';
 import '../theme/app_theme.dart';
 import 'registration_cubit.dart';
+import 'registration_step_indicator.dart';
 import 'personal_info/personal_info_form.dart';
 import 'confirmation/personal_info_confirmation.dart';
 import 'identity/identity_verification_screen.dart';
@@ -53,18 +54,33 @@ class _RegistrationFlowState extends State<RegistrationFlow> {
 
           switch (state.currentStep) {
             case RegistrationStep.personalInfo:
-              return PersonalInfoForm(
-                repository: repo,
-                onNext: regCubit.submitPersonalInfo,
+              return _StepWrapper(
+                step: RegistrationStep.personalInfo,
+                child: PersonalInfoForm(
+                  repository: repo,
+                  onNext: regCubit.submitPersonalInfo,
+                ),
               );
             case RegistrationStep.confirmation:
-              return const PersonalInfoConfirmation();
+              return _StepWrapper(
+                step: RegistrationStep.confirmation,
+                child: const PersonalInfoConfirmation(),
+              );
             case RegistrationStep.identity:
-              return const IdentityVerificationScreen();
+              return _StepWrapper(
+                step: RegistrationStep.identity,
+                child: const IdentityVerificationScreen(),
+              );
             case RegistrationStep.membership:
-              return const MembershipSelectionScreen();
+              return _StepWrapper(
+                step: RegistrationStep.membership,
+                child: const MembershipSelectionScreen(),
+              );
             case RegistrationStep.indigentProof:
-              return const IndigentProofScreen();
+              return _StepWrapper(
+                step: RegistrationStep.indigentProof,
+                child: const IndigentProofScreen(),
+              );
             case RegistrationStep.payment:
               final snapshot = state.registrationSnapshot;
               if (snapshot == null) {
@@ -72,10 +88,13 @@ class _RegistrationFlowState extends State<RegistrationFlow> {
                   body: Center(child: CircularProgressIndicator()),
                 );
               }
-              return PaymentScreen(
-                repository: repo,
-                snapshot: snapshot,
-                onPaymentComplete: regCubit.submitPaymentSuccess,
+              return _StepWrapper(
+                step: RegistrationStep.payment,
+                child: PaymentScreen(
+                  repository: repo,
+                  snapshot: snapshot,
+                  onPaymentComplete: regCubit.submitPaymentSuccess,
+                ),
               );
 
             case RegistrationStep.setupAccount:
@@ -89,10 +108,13 @@ class _RegistrationFlowState extends State<RegistrationFlow> {
                   body: Center(child: CircularProgressIndicator()),
                 );
               }
-              return AccountSetupScreen(
-                authCubit: authCubit,
-                repository: repo,
-                phoneNumber: phone,
+              return _StepWrapper(
+                step: RegistrationStep.setupAccount,
+                child: AccountSetupScreen(
+                  authCubit: authCubit,
+                  repository: repo,
+                  phoneNumber: phone,
+                ),
               );
 
             case RegistrationStep.completed:
@@ -108,6 +130,27 @@ class _RegistrationFlowState extends State<RegistrationFlow> {
           }
         },
       ),
+    );
+  }
+}
+
+// ── Step Wrapper — adds progress indicator above each step screen ─────────────
+
+/// Overlays a [RegistrationStepIndicator] at the very top of the step screen
+/// without modifying the individual step widgets.
+class _StepWrapper extends StatelessWidget {
+  const _StepWrapper({required this.step, required this.child});
+
+  final RegistrationStep step;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        RegistrationStepIndicator(step: step),
+        Expanded(child: child),
+      ],
     );
   }
 }

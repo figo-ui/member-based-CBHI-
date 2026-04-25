@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,6 +14,7 @@ import '../indigent/indigent_application_screen.dart';
 import '../shared/animated_widgets.dart';
 import '../shared/biometric_service.dart';
 import '../shared/help_screen.dart';
+import '../shared/passkey_service.dart';
 import '../theme/app_theme.dart';
 
 /// Profile screen — settings, language, dark mode, biometric, account actions.
@@ -331,6 +333,15 @@ class ProfileScreen extends StatelessWidget {
 
         const SizedBox(height: 16),
 
+        // Passkeys section (web only)
+        if (kIsWeb) ...[
+          _PasskeysSection(repository: context.read<AppCubit>().repository)
+              .animate()
+              .fadeIn(duration: 400.ms, delay: 335.ms)
+              .slideY(begin: 0.06, end: 0, duration: 400.ms, delay: 335.ms),
+          const SizedBox(height: 16),
+        ],
+
         // App info card
         GlassCard(
           child: Column(
@@ -609,7 +620,12 @@ class _BiometricToggleState extends State<_BiometricToggle> {
     if (value) {
       final session = ctx.read<AuthCubit>().state.session;
       if (session == null) return;
-      final ok = await BiometricService.enableBiometric(session.accessToken);
+      // Parse token expiry from session so BiometricService can validate it
+      final tokenExpiry = DateTime.tryParse(session.expiresAt);
+      final ok = await BiometricService.enableBiometric(
+        session.accessToken,
+        tokenExpiry: tokenExpiry,
+      );
       if (mounted) setState(() => _enabled = ok);
     } else {
       await BiometricService.disableBiometric();
@@ -649,6 +665,345 @@ class _BiometricToggleState extends State<_BiometricToggle> {
             value: _enabled,
             onChanged: (v) => _toggle(v, context),
             activeThumbColor: AppTheme.accent,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Passkeys section (web only) ───────────────────────────────────────────────
+
+class _PasskeysSection extends StatefulWidget {
+  const _PasskeysSection({required this.repository});
+
+  final CbhiRepository repository;
+
+  @override
+  State<_PasskeysSection> createState() => _PasskeysSectionState();
+}
+
+class _PasskeysSectionState extends State<_PasskeysSection> {
+  List<Map<String, dynamic>> _credentials = [];
+  bool _loading = true;
+  bool _adding = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCredentials();
+  }
+
+  Future<void> _loadCredentials() async {
+    if (!mounted) return;
+    setState(() { _loading = true; _error = null; });
+    try {
+      final creds = await widget.repository.getPasskeyCredentials();
+      if (mounted) setState(() { _credentials = creds; _loading = false; });
+    } catch (e) {
+      if (mounted) setState(() { _loading = false; _error = e.toString().replaceFirst('Exception: ', ''); });
+    }
+  }
+
+  Future<void> _addPasskey(BuildContext ctx) async {
+    final strings = CbhiLocalizations.of(ctx);
+    final session = ctx.read<AuthCubit>().state.session;
+    if (session == null) return;
+
+    setState(() { _adding = true; _error = null; });
+    try {
+      // 1. Get registration options from backend
+      final options = await widget.repository.getPasskeyRegisterOptions();
+
+      final challenge = options['challenge']?.toString() ?? '';
+      final rpId = options['rp']?['id']?.toString() ??
+          options['rpId']?.toString() ?? '';
+      final userId = session.user.id;
+      final userName = session.user.displayName;
+
+      // 2. Call PasskeyService.register() to invoke navigator.credentials.create()
+      final attestation = await PasskeyService.register(
+        userId: userId,
+        userName: userName,
+        challenge: challenge,
+        rpId: rpId,
+      );
+
+      if (attestation == null) {
+        // User cancelled or passkey not supported
+        if (mounted) {
+          setState(() { _adding = false; });
+          ScaffoldMessenger.maybeOf(ctx)?.showSnackBar(
+            SnackBar(content: Text(strings.t('passkeyNotSupported'))),
+          );
+        }
+        return;
+      }
+
+      // 3. Send attestation to backend
+      await widget.repository.registerPasskey({
+        'credentialId': attestation.credentialId,
+        'clientDataJSON': attestation.clientDataJSON,
+        'attestationObject': attestation.attestationObject,
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(ctx)?.showSnackBar(
+          SnackBar(
+            content: Text(strings.t('passkeyRegistered')),
+            backgroundColor: AppTheme.success,
+          ),
+        );
+        await _loadCredentials();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _adding = false;
+          _error = e.toString().replaceFirst('Exception: ', '');
+        });
+        ScaffoldMessenger.maybeOf(ctx)?.showSnackBar(
+          SnackBar(
+            content: Text(strings.t('passkeyAddFailed')),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _adding = false);
+    }
+  }
+
+  Future<void> _deletePasskey(BuildContext ctx, String credentialId) async {
+    final strings = CbhiLocalizations.of(ctx);
+
+    final confirmed = await showDialog<bool>(
+      context: ctx,
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(strings.t('passkeyDeleteConfirmTitle')),
+        content: Text(strings.t('passkeyDeleteConfirmMessage')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: Text(strings.t('cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.error),
+            child: Text(strings.t('deletePasskey')),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await widget.repository.removePasskey(credentialId);
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(ctx)?.showSnackBar(
+          SnackBar(content: Text(strings.t('passkeyDeleted'))),
+        );
+        await _loadCredentials();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(ctx)?.showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
+
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.key_outlined, color: AppTheme.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      strings.t('passkeysSection'),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    Text(
+                      strings.t('passkeysSubtitle'),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Error message
+          if (_error != null) ...[
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.error.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(AppTheme.radiusS),
+              ),
+              child: Text(
+                _error!,
+                style: const TextStyle(color: AppTheme.error, fontSize: 13),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Credentials list
+          if (_loading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppTheme.primary,
+                ),
+              ),
+            )
+          else if (_credentials.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, size: 16, color: AppTheme.textSecondary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      strings.t('noPasskeysRegistered'),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ...(_credentials.map((cred) {
+              final credentialId = cred['credentialId']?.toString() ?? '';
+              final deviceName = cred['deviceName']?.toString();
+              final lastUsedAt = cred['lastUsedAt']?.toString();
+              final displayName = (deviceName != null && deviceName.isNotEmpty)
+                  ? deviceName
+                  : strings.t('passkeyDevice');
+              final lastUsed = lastUsedAt != null && lastUsedAt.isNotEmpty
+                  ? _formatDateLabel(lastUsedAt)
+                  : null;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceLight,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusS),
+                    border: Border.all(
+                      color: AppTheme.primary.withValues(alpha: 0.15),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.security_outlined,
+                        size: 18,
+                        color: AppTheme.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              displayName,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                            if (lastUsed != null)
+                              Text(
+                                lastUsed,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppTheme.textSecondary,
+                                    ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: AppTheme.error,
+                          size: 20,
+                        ),
+                        tooltip: strings.t('deletePasskey'),
+                        onPressed: credentialId.isEmpty
+                            ? null
+                            : () => _deletePasskey(context, credentialId),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            })),
+
+          const SizedBox(height: 8),
+
+          // Add passkey button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _adding ? null : () => _addPasskey(context),
+              icon: _adding
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.primary,
+                      ),
+                    )
+                  : const Icon(Icons.add, size: 18),
+              label: Text(strings.t('addPasskey')),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.primary,
+                side: const BorderSide(color: AppTheme.primary),
+                minimumSize: const Size(double.infinity, 44),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                ),
+              ),
+            ),
           ),
         ],
       ),
