@@ -46,11 +46,41 @@ class _RegistrationFlowState extends State<RegistrationFlow> {
           },
         ),
       ],
-      child: BlocBuilder<RegistrationCubit, RegistrationState>(
-        builder: (context, state) {
-          final regCubit = context.read<RegistrationCubit>();
-          final authCubit = context.read<AuthCubit>();
-          final repo = authCubit.repository;
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          final strings = CbhiLocalizations.of(context);
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text(strings.t('abandonRegistrationTitle')),
+              content: Text(strings.t('abandonRegistrationMessage')),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(strings.t('cancel')),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppTheme.error,
+                  ),
+                  child: Text(strings.t('yes')),
+                ),
+              ],
+            ),
+          );
+          if (confirmed == true && context.mounted) {
+            context.read<RegistrationCubit>().reset();
+            context.read<AuthCubit>().leaveGuest();
+          }
+        },
+        child: BlocBuilder<RegistrationCubit, RegistrationState>(
+          builder: (context, state) {
+            final regCubit = context.read<RegistrationCubit>();
+            final authCubit = context.read<AuthCubit>();
+            final repo = authCubit.repository;
 
           switch (state.currentStep) {
             case RegistrationStep.personalInfo:
@@ -130,6 +160,7 @@ class _RegistrationFlowState extends State<RegistrationFlow> {
           }
         },
       ),
+    ),
     );
   }
 }

@@ -234,23 +234,23 @@ All Flutter code must compile cleanly for both Android and Flutter Web (dart2js 
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 20. Update `_HomeShell` first-login experience and back-navigation semantics
-  - [ ] 20.1 Replace `_showOnboarding()` `AlertDialog` with a `SnackBar`: navigate to Dashboard tab (index 0) on first login; show `SnackBar` with `strings.t('goToFamily')` action button that sets `_index = 1`
+  - [x] 20.1 Replace `_showOnboarding()` `AlertDialog` with a `SnackBar`: navigate to Dashboard tab (index 0) on first login; show `SnackBar` with `strings.t('goToFamily')` action button that sets `_index = 1`
     - _Requirements: 4.1, 4.2_
-  - [ ] 20.2 Add `StatusBadge` to `_HomeShell` `AppBar` when the authenticated user has role `BENEFICIARY`: display `strings.t('familyMemberSession')` text
+  - [x] 20.2 Add `StatusBadge` to `_HomeShell` `AppBar` when the authenticated user has role `BENEFICIARY`: display `strings.t('familyMemberSession')` text
     - _Requirements: 4.4_
-  - [ ] 20.3 Wrap `_HomeShell` in `PopScope(canPop: false, onPopInvokedWithResult: ...)`: if `_index != 0`, switch to index 0; if `_index == 0`, show exit confirmation dialog using `strings.t('exitAppTitle')` / `strings.t('exitAppMessage')`
+  - [x] 20.3 Wrap `_HomeShell` in `PopScope(canPop: false, onPopInvokedWithResult: ...)`: if `_index != 0`, switch to index 0; if `_index == 0`, show exit confirmation dialog using `strings.t('exitAppTitle')` / `strings.t('exitAppMessage')`
     - _Requirements: 5.4, 5.5_
-  - [ ] 20.4 Wrap `RegistrationFlow` in `PopScope(canPop: false, onPopInvokedWithResult: ...)`: show confirmation dialog using `strings.t('abandonRegistrationTitle')` / `strings.t('abandonRegistrationMessage')`; on confirm call `RegistrationCubit.reset()` and `AuthCubit.leaveGuest()`
+  - [x] 20.4 Wrap `RegistrationFlow` in `PopScope(canPop: false, onPopInvokedWithResult: ...)`: show confirmation dialog using `strings.t('abandonRegistrationTitle')` / `strings.t('abandonRegistrationMessage')`; on confirm call `RegistrationCubit.reset()` and `AuthCubit.leaveGuest()`
     - _Requirements: 5.1, 5.2_
 
-- [ ] 21. Final integration wiring and cleanup
-  - [ ] 21.1 Remove `LoginScreen` and `FamilyMemberLoginScreen` files (or mark as deprecated); update all navigation references to use `UnifiedLoginScreen`
+- [x] 21. Final integration wiring and cleanup
+  - [x] 21.1 Remove `LoginScreen` and `FamilyMemberLoginScreen` files (or mark as deprecated); update all navigation references to use `UnifiedLoginScreen`
     - _Requirements: 11.1_
-  - [ ] 21.2 Verify `WelcomeScreen` back navigation from `UnifiedLoginScreen` clears all `TextEditingController`s (handled by `PopScope` in `UnifiedLoginScreen`)
+  - [x] 21.2 Verify `WelcomeScreen` back navigation from `UnifiedLoginScreen` clears all `TextEditingController`s (handled by `PopScope` in `UnifiedLoginScreen`)
     - _Requirements: 3.8_
-  - [ ] 21.3 Verify `ConnectivityBanner` renders and animates identically on web (Vercel) and mobile; run `flutter build web --release` to confirm no dart2js compilation errors
+  - [x] 21.3 Verify `ConnectivityBanner` renders and animates identically on web (Vercel) and mobile; run `flutter build web --release` to confirm no dart2js compilation errors
     - _Requirements: 9.3, 9.5_
-  - [ ] 21.4 Run localization smoke test: assert all 25 new ARB keys exist in `app_en.arb`, `app_am.arb`, and `app_om.arb` with non-empty values in `am` and `om`
+  - [x] 21.4 Run localization smoke test: assert all 25 new ARB keys exist in `app_en.arb`, `app_am.arb`, and `app_om.arb` with non-empty values in `am` and `om`
     - _Requirements: 10.1, 10.2_
 
 - [ ] 22. Final checkpoint — Ensure all tests pass

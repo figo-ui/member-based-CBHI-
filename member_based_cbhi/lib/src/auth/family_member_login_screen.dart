@@ -1,3 +1,7 @@
+// DEPRECATED: This screen has been replaced by UnifiedLoginScreen.
+// It is kept for reference only and is no longer used in the app.
+// See: lib/src/auth/unified_login_screen.dart
+// ignore_for_file: unused_element
 import 'package:flutter/material.dart';
 
 import '../cbhi_localizations.dart';
