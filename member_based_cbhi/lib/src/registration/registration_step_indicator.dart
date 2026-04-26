@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../cbhi_localizations.dart';
 import '../theme/app_theme.dart';
+import '../shared/premium_widgets.dart';
 import 'registration_cubit.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────

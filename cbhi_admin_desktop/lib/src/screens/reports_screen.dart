@@ -1256,7 +1256,7 @@ class _FacilityTab extends StatelessWidget {
                   ),
                 )),
                 DataCell(Text(
-                  '${(f['avgClaimAmount'] as num? ?? 0).toStringAsFixed(0)}',
+                  (f['avgClaimAmount'] as num? ?? 0).toStringAsFixed(0),
                 )),
               ]);
             }).toList(),

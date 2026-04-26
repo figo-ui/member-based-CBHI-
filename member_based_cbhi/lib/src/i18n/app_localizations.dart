@@ -602,8 +602,6 @@ const _en = <String, String>{
   'autoCheckingPayment': 'Checking automatically every 5 seconds',
   'noInternetConnection': 'No internet connection. Check your network and try again.',
   'retryConnection': 'Retry',
-  'completeSyncForQr': 'Sync your account to generate your QR card. Tap the sync button at the top.',
-  'showAtFacility': 'Show at Facility',
   'showAtFacilityHint': 'Show this QR code to facility staff to verify your coverage.',
   'signInWithBiometrics': 'Sign in with biometrics',
   'signOut': 'Sign Out',

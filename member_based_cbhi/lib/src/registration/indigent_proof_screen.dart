@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
@@ -11,6 +12,7 @@ import '../cbhi_localizations.dart';
 import '../theme/app_theme.dart';
 import '../shared/language_selector.dart';
 import '../shared/local_attachment_store.dart';
+import '../shared/premium_widgets.dart';
 import 'registration_cubit.dart';
 
 /// Indigent pathway: same personal + identity data as paying members; only
@@ -107,7 +109,7 @@ class _IndigentProofScreenState extends State<IndigentProofScreen> {
     final strings = CbhiLocalizations.of(context);
     final regCubit = context.watch<RegistrationCubit>();
     final state = regCubit.state;
-    final textTheme = Theme.of(context).textTheme;
+
 
     return Scaffold(
       appBar: AppBar(
@@ -123,10 +125,12 @@ class _IndigentProofScreenState extends State<IndigentProofScreen> {
           ),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: SingleChildScrollView(
+      body: Stack(
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,7 +169,7 @@ class _IndigentProofScreenState extends State<IndigentProofScreen> {
                             ),
                           ),
                         ),
-                      ).animate(onPlay: (c) => c.repeat(reverse: true)).move(begin: const Offset(-10, -10), end: const Offset(10, 10), duration: 5.s),
+                      ).animate(onPlay: (c) => c.repeat(reverse: true)).move(begin: const Offset(-10, -10), end: const Offset(10, 10), duration: 5.seconds),
 
                       Padding(
                         padding: const EdgeInsets.all(AppTheme.spacingL),
@@ -218,7 +222,7 @@ class _IndigentProofScreenState extends State<IndigentProofScreen> {
                           const Spacer(),
                           StatusPill(
                             label: '${_paths.length} / 3',
-                            color: _paths.length > 0 ? AppTheme.primary : AppTheme.textSecondary,
+                            color: _paths.isNotEmpty ? AppTheme.primary : AppTheme.textSecondary,
                             compact: true,
                           ),
                         ],
@@ -348,6 +352,8 @@ class _IndigentProofScreenState extends State<IndigentProofScreen> {
               ],
             ),
           ),
+          ),
+          ),
           
           // Scanning Overlay (Google Vision API visualization)
           if (state.isLoading)
@@ -384,7 +390,7 @@ class _IndigentProofScreenState extends State<IndigentProofScreen> {
                                     ),
                                   ],
                                 ),
-                              ).animate(onPlay: (c) => c.repeat()).moveY(begin: 0, end: 158, duration: 2.s, curve: Curves.easeInOut),
+                              ).animate(onPlay: (c) => c.repeat()).moveY(begin: 0, end: 158, duration: 2.seconds, curve: Curves.easeInOut),
                             ),
                             // Face/Document icon hint
                             Center(

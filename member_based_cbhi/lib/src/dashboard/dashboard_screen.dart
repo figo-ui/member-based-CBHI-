@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/auth_cubit.dart';
 import '../benefits/benefit_utilization_widget.dart';
 import '../cbhi_data.dart';
+
 import '../cbhi_localizations.dart';
 import '../cbhi_state.dart';
 import '../coverage/renewal_reminder_widget.dart';
 import '../family/my_family_cubit.dart';
-import '../indigent/indigent_application_screen.dart';
+
 import '../payment/payment_screen.dart';
 import '../shared/animated_widgets.dart';
 import '../shared/premium_widgets.dart';
@@ -26,6 +28,7 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthCubit>().state;
+    final strings = CbhiLocalizations.of(context);
     return BlocBuilder<AppCubit, AppState>(
       builder: (context, state) {
         if (state.isLoading) return const DashboardSkeleton();
@@ -172,7 +175,7 @@ class _CoverageHeroCard extends StatelessWidget {
     final endDateStr = snapshot.coverage?['endDate']?.toString();
     final endDate = endDateStr != null ? DateTime.tryParse(endDateStr) : null;
     final expiryLabel = endDate != null
-        ? '${_formatDateLabel(endDate.toIso8601String())}'
+        ? _formatDateLabel(endDate.toIso8601String())
         : '';
 
     // Subtitle line
@@ -180,7 +183,12 @@ class _CoverageHeroCard extends StatelessWidget {
     if (snapshot.householdCode.isEmpty) {
       subtitle = strings.t('noHouseholdSynced');
     } else if (isFamilyMember) {
-      subtitle = snapshot.    return Container(
+      subtitle = '${strings.t('beneficiaryProfile')} \u2022 ${snapshot.householdCode}';
+    } else {
+      subtitle = '${strings.t('householdCode')}: ${snapshot.householdCode}';
+    }
+
+    return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppTheme.primary,
@@ -212,7 +220,7 @@ class _CoverageHeroCard extends StatelessWidget {
                 ),
               ),
             ),
-          ).animate(onPlay: (c) => c.repeat(reverse: true)).move(begin: const Offset(-20, -20), end: const Offset(20, 20), duration: 8.s, curve: Curves.easeInOut),
+          ).animate(onPlay: (c) => c.repeat(reverse: true)).move(begin: const Offset(-20, -20), end: const Offset(20, 20), duration: 8.seconds, curve: Curves.easeInOut),
           
           Positioned(
             bottom: -50,
@@ -230,7 +238,7 @@ class _CoverageHeroCard extends StatelessWidget {
                 ),
               ),
             ),
-          ).animate(onPlay: (c) => c.repeat(reverse: true)).move(begin: const Offset(10, 10), end: const Offset(-10, -10), duration: 6.s, curve: Curves.easeInOut),
+          ).animate(onPlay: (c) => c.repeat(reverse: true)).move(begin: const Offset(10, 10), end: const Offset(-10, -10), duration: 6.seconds, curve: Curves.easeInOut),
 
           Padding(
             padding: const EdgeInsets.all(AppTheme.spacingL),
@@ -287,7 +295,7 @@ class _CoverageHeroCard extends StatelessWidget {
                               shape: BoxShape.circle,
                               color: status.toUpperCase() == 'ACTIVE' ? Colors.white : AppTheme.gold,
                             ),
-                          ).animate(onPlay: (c) => c.repeat()).scale(begin: const Offset(1, 1), end: const Offset(1.5, 1.5), duration: 1.s, curve: Curves.easeInOut),
+                          ).animate(onPlay: (c) => c.repeat()).scale(begin: const Offset(1, 1), end: const Offset(1.5, 1.5), duration: 1.seconds, curve: Curves.easeInOut),
                           const SizedBox(width: 6),
                           Text(
                             status,
@@ -362,14 +370,7 @@ class _CoverageHeroCard extends StatelessWidget {
         ],
       ),
     );
-              ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
+
   }
 }
 
@@ -469,18 +470,7 @@ class _RenewalSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-                        strings.t('eligible'),
-                        style: const TextStyle(
-                          color: AppTheme.success,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
+
           const SizedBox(height: 14),
           // Renewal reminder widget handles expiry messaging
           RenewalReminderWidget(snapshot: snapshot, onRenew: onRenew),
@@ -535,170 +525,7 @@ String _calcDisplayPremium(CbhiSnapshot snapshot) {
   return '$calculated ETB';
 }
 
-// ─── _IndigentStatusSection ──────────────────────────────────────────────────
-class _IndigentStatusSection extends StatelessWidget {
-  const _IndigentStatusSection({required this.snapshot});
 
-  final CbhiSnapshot snapshot;
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = CbhiLocalizations.of(context);
-
-    final rawStatus =
-        snapshot.household['indigentStatus']?.toString() ??
-            snapshot.household['indigentApplicationStatus']?.toString() ??
-            'PENDING';
-    final upperStatus = rawStatus.toUpperCase();
-
-    final isApproved = upperStatus == 'APPROVED';
-    final isRejected = upperStatus == 'REJECTED' || upperStatus == 'DENIED';
-
-    final Color statusColor = isApproved
-        ? AppTheme.success
-        : (isRejected ? AppTheme.error : AppTheme.warning);
-    final IconData statusIcon = isApproved
-        ? Icons.verified_outlined
-        : (isRejected ? Icons.cancel_outlined : Icons.hourglass_top_outlined);
-
-    String statusTitle;
-    String statusBody;
-    if (isApproved) {
-      statusTitle = strings.t('indigentMembership');
-      final endDateStr = snapshot.coverage?['endDate']?.toString();
-      final endDate =
-          endDateStr != null ? DateTime.tryParse(endDateStr) : null;
-      statusBody = endDate != null
-          ? '${strings.t('coverage')}: ${_formatDateLabel(endDate.toIso8601String())}'
-          : strings.t('coverageEligibilityDetails');
-    } else if (isRejected) {
-      statusTitle = strings.t('indigentApplicationTitle');
-      statusBody = strings.t('indigentApplicationSubtitle');
-    } else {
-      statusTitle = strings.t('indigentApplicationTitle');
-      statusBody = strings.t('indigentApplicationSubtitle');
-    }
-
-    return GlassCard(
-      padding: const EdgeInsets.all(AppTheme.spacingM),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(statusIcon, color: statusColor, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  statusTitle,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: statusColor.withValues(alpha: 0.25)),
-                ),
-                child: Text(
-                  upperStatus,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            statusBody,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          if (isApproved) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppTheme.success.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(AppTheme.radiusS),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.volunteer_activism_outlined,
-                      color: AppTheme.success, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      strings.t('freeRenewalMessage'),
-                      style: const TextStyle(
-                          color: AppTheme.success, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ] else ...[
-            // Pending or Rejected — show upload proof button
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () => _navigateToIndigentApplication(context, snapshot),
-                icon: const Icon(Icons.upload_file_outlined, size: 18),
-                label: Text(strings.t('uploadProofDocuments')),
-                style: FilledButton.styleFrom(
-                  backgroundColor: statusColor,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-void _navigateToIndigentApplication(
-    BuildContext context, CbhiSnapshot snapshot) {
-  final appCubit = context.read<AppCubit>();
-  final authCubit = context.read<AuthCubit>();
-  final session = authCubit.state.session;
-  if (session == null) return;
-  final memberCount = snapshot.familyMembers.isNotEmpty
-      ? snapshot.familyMembers.length
-      : ((snapshot.household['memberCount'] as num?)?.toInt() ?? 1);
-  final employment =
-      snapshot.household['headEmploymentStatus']?.toString() ??
-          snapshot.household['employmentStatus']?.toString() ??
-          'unemployed';
-  Navigator.of(context).push<void>(
-    MaterialPageRoute<void>(
-      builder: (_) => IndigentApplicationScreen(
-        repository: appCubit.repository,
-        userId: session.user.id,
-        familySize: memberCount,
-        employmentStatus: employment,
-        onSubmitted: (_) {
-          Navigator.of(context).pop();
-          appCubit.sync();
-        },
-      ),
-    ),
-  );
-}
 
 // ─── _SyncStatusCard ─────────────────────────────────────────────────────────
 // Shows sync status only — renewal button removed (lives in _RenewalSection).
@@ -1664,9 +1491,10 @@ class _ReferralCard extends StatelessWidget {
     final expiresAt =
         expiresAtStr != null ? DateTime.tryParse(expiresAtStr) : null;
 
-    return GlassCard(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GlassCard(
+        padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           Container(
@@ -1711,6 +1539,7 @@ class _ReferralCard extends StatelessWidget {
           ),
           const Icon(Icons.qr_code, color: AppTheme.primary, size: 32),
         ],
+        ),
       ),
     );
   }

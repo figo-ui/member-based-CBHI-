@@ -133,10 +133,10 @@ class AdminRepository {
   }) async {
     return _post('/admin/facilities', {
       'name': name,
-      if (facilityCode != null) 'facilityCode': facilityCode,
-      if (serviceLevel != null) 'serviceLevel': serviceLevel,
-      if (phoneNumber != null) 'phoneNumber': phoneNumber,
-      if (addressLine != null) 'addressLine': addressLine,
+      'facilityCode': ?facilityCode,
+      'serviceLevel': ?serviceLevel,
+      'phoneNumber': ?phoneNumber,
+      'addressLine': ?addressLine,
     });
   }
 
@@ -148,8 +148,8 @@ class AdminRepository {
   }) async {
     await _post('/admin/facilities/$facilityId/staff', {
       'identifier': identifier,
-      if (firstName != null) 'firstName': firstName,
-      if (lastName != null) 'lastName': lastName,
+      'firstName': ?firstName,
+      'lastName': ?lastName,
     });
   }
 
@@ -158,8 +158,8 @@ class AdminRepository {
     String? entityId,
   }) async {
     final query = <String, String>{
-      if (entityType != null) 'entityType': entityType,
-      if (entityId != null) 'entityId': entityId,
+      'entityType': ?entityType,
+      'entityId': ?entityId,
     };
     final qs = query.isEmpty ? '' : '?${Uri(queryParameters: query).query}';
     final response = await _get('/admin/audit-logs$qs');

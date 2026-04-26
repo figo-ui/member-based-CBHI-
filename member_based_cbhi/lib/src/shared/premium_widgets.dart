@@ -15,7 +15,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../theme/app_theme.dart';
-import 'animated_widgets.dart';
 
 // ─── SpringTap ─────────────────────────────────────────────────────────────
 // High-quality visual feedback wrapper. Scales content down on press.

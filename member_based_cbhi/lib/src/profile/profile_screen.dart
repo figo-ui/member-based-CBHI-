@@ -796,7 +796,7 @@ class _PasskeysSectionState extends State<_PasskeysSection> {
 
       if (attestation == null) {
         // User cancelled or passkey not supported
-        if (mounted) {
+        if (mounted && ctx.mounted) {
           setState(() { _adding = false; });
           ScaffoldMessenger.maybeOf(ctx)?.showSnackBar(
             SnackBar(content: Text(strings.t('passkeyNotSupported'))),
@@ -812,7 +812,7 @@ class _PasskeysSectionState extends State<_PasskeysSection> {
         'attestationObject': attestation.attestationObject,
       });
 
-      if (mounted) {
+      if (mounted && ctx.mounted) {
         ScaffoldMessenger.maybeOf(ctx)?.showSnackBar(
           SnackBar(
             content: Text(strings.t('passkeyRegistered')),
@@ -822,7 +822,7 @@ class _PasskeysSectionState extends State<_PasskeysSection> {
         await _loadCredentials();
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && ctx.mounted) {
         setState(() {
           _adding = false;
           _error = e.toString().replaceFirst('Exception: ', '');
@@ -865,14 +865,14 @@ class _PasskeysSectionState extends State<_PasskeysSection> {
 
     try {
       await widget.repository.removePasskey(credentialId);
-      if (mounted) {
+      if (mounted && ctx.mounted) {
         ScaffoldMessenger.maybeOf(ctx)?.showSnackBar(
           SnackBar(content: Text(strings.t('passkeyDeleted'))),
         );
         await _loadCredentials();
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && ctx.mounted) {
         ScaffoldMessenger.maybeOf(ctx)?.showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceFirst('Exception: ', '')),

@@ -70,10 +70,6 @@ class AppCubit extends Cubit<AppState> {
 
   final CbhiRepository repository;
 
-  @override
-  Future<void> close() {
-    return super.close();
-  }
 
   Future<void> load() async {
     emit(state.copyWith(isLoading: true, error: null));

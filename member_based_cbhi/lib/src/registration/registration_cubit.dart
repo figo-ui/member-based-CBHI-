@@ -308,6 +308,7 @@ class RegistrationCubit extends Cubit<RegistrationState> {
         }
       ],
       digitalCards: const [],
+      referrals: const [],
       familyMembers: const [],
       syncedAt: '',
     );

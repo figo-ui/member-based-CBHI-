@@ -1322,33 +1322,6 @@ class CbhiRepository {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getMyAppeals() async {
-    final session = await _getStoredSession();
-    if (session == null) return const [];
-
-    try {
-      final response = await _getJson('/cbhi/claims/appeals');
-      if (response is List) {
-        return response.cast<Map<String, dynamic>>();
-      }
-      return const [];
-    } catch (_) {
-      return const [];
-    }
-  }
-
-  Future<void> submitClaimAppeal({
-    required String claimId,
-    required String reason,
-  }) async {
-    final session = await _getStoredSession();
-    if (session == null) throw const _ApiException('Not authenticated');
-
-    await _postJson('/cbhi/claims/appeals', {
-      'claimId': claimId,
-      'reason': reason,
-    });
-  }
 
   Future<void> _storeAuthIfPresent(Map<String, dynamic> json) async {
     final auth = json['auth'];
@@ -1682,6 +1655,7 @@ class CbhiRepository {
         ),
       ],
       syncedAt: now,
+      referrals: const [],
     );
   }
 

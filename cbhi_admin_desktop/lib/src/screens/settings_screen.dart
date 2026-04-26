@@ -204,7 +204,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _SettingsRow(
                       label: strings.t('language'),
                       child: DropdownButtonFormField<String>(
-                        value: _language,
+                        initialValue: _language,
                         decoration: const InputDecoration(isDense: true),
                         items: const [
                           DropdownMenuItem(value: 'en', child: Text('English')),
@@ -226,7 +226,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Switch(
                             value: _darkMode,
                             onChanged: (v) => setState(() => _darkMode = v),
-                            activeColor: AdminTheme.primary,
+                            activeTrackColor: AdminTheme.primary,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -285,7 +285,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             value: _smsEnabled,
                             onChanged: (v) =>
                                 setState(() => _smsEnabled = v),
-                            activeColor: AdminTheme.primary,
+                            activeTrackColor: AdminTheme.primary,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -309,7 +309,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             value: _pushEnabled,
                             onChanged: (v) =>
                                 setState(() => _pushEnabled = v),
-                            activeColor: AdminTheme.primary,
+                            activeTrackColor: AdminTheme.primary,
                           ),
                           const SizedBox(width: 8),
                           Text(

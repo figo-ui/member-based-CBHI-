@@ -9,8 +9,8 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../cbhi_data.dart';
 import '../cbhi_localizations.dart';
 import '../cbhi_state.dart';
-import '../shared/animated_widgets.dart';
 import '../theme/app_theme.dart';
+import '../shared/premium_widgets.dart';
 
 /// Digital CBHI card screen — shows QR-coded membership cards for all
 /// household members (or just the current beneficiary for family logins).
@@ -233,7 +233,7 @@ class _CardFront extends StatelessWidget {
                   stops: const [0.0, 0.5, 1.0],
                 ),
               ),
-            ).animate(onPlay: (c) => c.repeat()).move(begin: const Offset(-300, -300), end: const Offset(300, 300), duration: 3.s),
+            ).animate(onPlay: (c) => c.repeat()).move(begin: const Offset(-300, -300), end: const Offset(300, 300), duration: 3.seconds),
           ),
 
           Padding(
@@ -350,7 +350,9 @@ class _CardFront extends StatelessWidget {
                 ),
               ],
             ),
-          ),
+          ],
+        ),
+      ),
         ],
       ),
     );
@@ -407,7 +409,7 @@ class _CardBack extends StatelessWidget {
                   stops: const [0.0, 0.5, 1.0],
                 ),
               ),
-            ).animate(onPlay: (c) => c.repeat()).move(begin: const Offset(300, -300), end: const Offset(-300, 300), duration: 4.s),
+            ).animate(onPlay: (c) => c.repeat()).move(begin: const Offset(300, -300), end: const Offset(-300, 300), duration: 4.seconds),
           ),
 
           Padding(

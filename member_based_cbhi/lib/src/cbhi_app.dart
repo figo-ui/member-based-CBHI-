@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -333,7 +334,13 @@ class _HomeShellState extends State<_HomeShell> {
   }
 
   Future<void> _handlePop(BuildContext context) async {
-    if (  @override
+    if (_index != 0) {
+      setState(() => _index = 0);
+    } else {
+      SystemNavigator.pop();
+    }
+  }
+      @override
   Widget build(BuildContext context) {
     final strings = CbhiLocalizations.of(context);
     final authState = context.watch<AuthCubit>().state;
@@ -564,6 +571,7 @@ class _HomeShellState extends State<_HomeShell> {
     ),
     );
   }
+    }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Notification Bell — AppBar action with unread badge
