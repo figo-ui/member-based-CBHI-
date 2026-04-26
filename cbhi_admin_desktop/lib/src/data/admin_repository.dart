@@ -354,32 +354,53 @@ class AdminRepository {
   };
 
   Future<Map<String, dynamic>> _get(String path) async {
-    final response = await _client
-        .get(Uri.parse('$kAdminApiBase$path'), headers: _headers)
-        .timeout(const Duration(seconds: 15));
-    return _parse(response);
+    try {
+      final response = await _client
+          .get(Uri.parse('$kAdminApiBase$path'), headers: _headers)
+          .timeout(const Duration(seconds: 15));
+      return _parse(response);
+    } catch (e) {
+      if (e is Exception && !e.toString().contains('HTTP')) {
+        throw Exception('Network error: Unable to reach the admin server. Please check your connection.');
+      }
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body) async {
-    final response = await _client
-        .post(
-          Uri.parse('$kAdminApiBase$path'),
-          headers: _headers,
-          body: jsonEncode(body),
-        )
-        .timeout(const Duration(seconds: 30));
-    return _parse(response);
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('$kAdminApiBase$path'),
+            headers: _headers,
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 30));
+      return _parse(response);
+    } catch (e) {
+      if (e is Exception && !e.toString().contains('HTTP')) {
+        throw Exception('Network error: Request failed. Please check your internet connection.');
+      }
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> _patch(String path, Map<String, dynamic> body) async {
-    final response = await _client
-        .patch(
-          Uri.parse('$kAdminApiBase$path'),
-          headers: _headers,
-          body: jsonEncode(body),
-        )
-        .timeout(const Duration(seconds: 15));
-    return _parse(response);
+    try {
+      final response = await _client
+          .patch(
+            Uri.parse('$kAdminApiBase$path'),
+            headers: _headers,
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 15));
+      return _parse(response);
+    } catch (e) {
+      if (e is Exception && !e.toString().contains('HTTP')) {
+        throw Exception('Network error: Update failed. Please check your internet connection.');
+      }
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> _put(String path, Map<String, dynamic> body) async {
@@ -409,10 +430,11 @@ class AdminRepository {
 
     if (response.statusCode >= 400) {
       final msg = body['message'];
+      final retryable = body['retryable'] == true;
+      final errorPrefix = retryable ? '[Retryable] ' : '';
+      
       throw Exception(
-        msg is List
-            ? msg.join(', ')
-            : msg?.toString() ?? 'Request failed (${response.statusCode})',
+        '$errorPrefix${msg is List ? msg.join(', ') : (msg?.toString() ?? 'Request failed (${response.statusCode})')}',
       );
     }
     return body;

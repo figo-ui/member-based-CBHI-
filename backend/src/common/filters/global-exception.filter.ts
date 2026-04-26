@@ -29,6 +29,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'An unexpected error occurred.';
     let error = 'Internal Server Error';
+    let retryable = false;
 
     if (exception instanceof HttpException) {
       statusCode = exception.getStatus();
@@ -41,32 +42,43 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message = (resp['message'] as string | string[]) ?? exception.message;
         error = (resp['error'] as string) ?? exception.name;
       }
+      // 429 Too Many Requests and 5xx errors are typically retryable
+      retryable = statusCode === 429 || statusCode >= 500;
     } else if (exception instanceof Error) {
+      const errorName = exception.constructor.name;
+      
+      // Handle common Database errors
+      if (errorName.includes('QueryFailedError') || errorName.includes('Connection')) {
+        statusCode = HttpStatus.SERVICE_UNAVAILABLE;
+        message = 'The database is currently busy or unavailable. Please try again in a few seconds.';
+        error = 'Database Error';
+        retryable = true;
+      } else {
+        message = this.isProduction 
+          ? 'A system error occurred. Our team has been notified.' 
+          : exception.message;
+      }
+
       this.logger.error(
-        `Unhandled exception: ${exception.message}`,
+        `Unhandled exception [${errorName}]: ${exception.message}`,
         this.isProduction ? undefined : exception.stack,
       );
-      // FIX MJ-8: Report unhandled errors to Sentry
       this.reportToSentry(exception, request);
     }
 
-    const body: ErrorResponse = {
+    const body = {
       statusCode,
       message,
       error,
+      retryable,
       timestamp: new Date().toISOString(),
       path: request.url,
+      // Provide developer-specific info in non-prod
+      ...(this.isProduction ? {} : { stack: exception instanceof Error ? exception.stack : String(exception) }),
     };
 
     if (statusCode >= 500) {
-      this.logger.error(
-        `[${request.method}] ${request.url} → ${statusCode}`,
-        this.isProduction
-          ? undefined
-          : exception instanceof Error
-          ? exception.stack
-          : String(exception),
-      );
+      this.logger.error(`[${request.method}] ${request.url} → ${statusCode}`);
     }
 
     response.status(statusCode).json(body);

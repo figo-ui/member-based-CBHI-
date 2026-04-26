@@ -130,27 +130,61 @@ class FacilityRepository {
   };
 
   Future<Map<String, dynamic>> _get(String path) async {
-    final response = await _client
-        .get(Uri.parse('$kFacilityApiBase$path'), headers: _headers)
-        .timeout(const Duration(seconds: 15));
-    return _parse(response);
+    try {
+      final response = await _client
+          .get(Uri.parse('$kFacilityApiBase$path'), headers: _headers)
+          .timeout(const Duration(seconds: 15));
+      return _parse(response);
+    } catch (e) {
+      if (e is Exception && !e.toString().contains('HTTP')) {
+        throw Exception('Network error: Unable to reach the facility server. Please check your connection.');
+      }
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body) async {
-    final response = await _client
-        .post(
-          Uri.parse('$kFacilityApiBase$path'),
-          headers: _headers,
-          body: jsonEncode(body),
-        )
-        .timeout(const Duration(seconds: 30));
-    return _parse(response);
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('$kFacilityApiBase$path'),
+            headers: _headers,
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 30));
+      return _parse(response);
+    } catch (e) {
+      if (e is Exception && !e.toString().contains('HTTP')) {
+        throw Exception('Network error: Request failed. Please check your internet connection.');
+      }
+      rethrow;
+    }
   }
 
   Map<String, dynamic> _parse(http.Response response) {
-    final body = jsonDecode(response.body);
-    if (response.statusCode >= 400) throw Exception((body as Map)['message']?.toString() ?? 'Request failed');
-    return (body as Map).cast<String, dynamic>();
+    final rawBody = response.body.trim();
+    if (rawBody.isEmpty) {
+      if (response.statusCode >= 400) throw Exception('Request failed with status: ${response.statusCode}');
+      return {};
+    }
+
+    Map<String, dynamic> body;
+    try {
+      body = (jsonDecode(rawBody) as Map).cast<String, dynamic>();
+    } catch (_) {
+      throw Exception('Server returned invalid data (HTTP ${response.statusCode}).');
+    }
+
+    if (response.statusCode >= 400) {
+      final msg = body['message'];
+      final retryable = body['retryable'] == true;
+      final errorPrefix = retryable ? '[Retryable] ' : '';
+
+      throw Exception(
+        '$errorPrefix${msg is List ? msg.join(', ') : (msg?.toString() ?? 'Request failed (${response.statusCode})')}',
+      );
+    }
+    return body;
   }
 
   List<Map<String, dynamic>> _asList(dynamic value) =>

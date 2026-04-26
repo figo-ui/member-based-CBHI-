@@ -1467,7 +1467,10 @@ class CbhiRepository {
       if (error is _ApiException) {
         rethrow;
       }
-      throw const _ApiException('Network unavailable.', retryable: true);
+      throw const _ApiException(
+        'Connection to server failed. Please check your internet or the server status.',
+        retryable: true,
+      );
     }
   }
 
@@ -1487,7 +1490,10 @@ class CbhiRepository {
       if (error is _ApiException) {
         rethrow;
       }
-      throw const _ApiException('Network unavailable.', retryable: true);
+      throw const _ApiException(
+        'Connection to server failed. Please check your internet or the server status.',
+        retryable: true,
+      );
     }
   }
 
@@ -1505,7 +1511,10 @@ class CbhiRepository {
       if (error is _ApiException) {
         rethrow;
       }
-      throw const _ApiException('Network unavailable.', retryable: true);
+      throw const _ApiException(
+        'Connection to server failed. Please check your internet or the server status.',
+        retryable: true,
+      );
     }
   }
 
@@ -1537,11 +1546,13 @@ class CbhiRepository {
     }
 
     final message = decoded['message'];
+    final serverRetryable = decoded['retryable'];
+    
     throw _ApiException(
       message is List
           ? message.join(', ')
-          : 'Request failed for $path: ${body.isEmpty ? response.statusCode : body}',
-      retryable: response.statusCode >= 500,
+          : (message?.toString() ?? 'Request failed: ${response.statusCode}'),
+      retryable: serverRetryable is bool ? serverRetryable : response.statusCode >= 500,
       statusCode: response.statusCode,
     );
   }
