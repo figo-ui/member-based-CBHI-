@@ -642,6 +642,8 @@
   "filterByCategory": "Filter by Category",
   "allCategories": "All",
   "noServicesInCategory": "No services in this category",
+  "noServicesConfigured": "No services configured yet",
+  "noServicesConfiguredSubtitle": "The benefit package has no service items yet. Contact your CBHI office.",
   "tryDifferentCategory": "Try selecting a different category",
   "perMemberPerYear": "per member / year",
   "maxClaim": "Max",

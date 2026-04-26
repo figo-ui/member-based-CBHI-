@@ -101,118 +101,72 @@ class _MainShellState extends State<MainShell> {
       body: Row(
         children: [
           // ── Sidebar ──────────────────────────────────────────────────────
+          // ── Navigation Rail ────────────────────────────────────────────────
           Container(
-            width: 220,
             color: kSidebarBg,
             child: Column(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Image.asset(
-                          'assets/images/logo.png',
-                          width: 24,
-                          height: 24,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              strings.t('facilityBrand'),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                              ),
-                            ),
-                            Text(
-                              strings.t('staffPortal'),
-                              style: const TextStyle(
-                                color: Color(0xFF8AADA4),
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(color: Color(0xFF1E3530), height: 1),
-                const SizedBox(height: 8),
                 Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    itemCount: items.length,
-                    itemBuilder: (context, i) {
-                      final item = items[i];
-                      final selected = _index == i;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(10),
-                            onTap: () => setState(() => _index = i),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: selected
-                                    ? kAccent.withValues(alpha: 0.15)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(10),
-                                border: selected
-                                    ? Border.all(
-                                        color: kAccent.withValues(alpha: 0.3),
-                                      )
-                                    : null,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    selected ? item.selected : item.icon,
-                                    color: selected
-                                        ? kAccent
-                                        : const Color(0xFF8AADA4),
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    item.label,
-                                    style: TextStyle(
-                                      color: selected
-                                          ? kAccent
-                                          : const Color(0xFF8AADA4),
-                                      fontWeight: selected
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                  child: NavigationRail(
+                    extended: true,
+                    minExtendedWidth: 220,
+                    backgroundColor: kSidebarBg,
+                    indicatorColor: kAccent.withValues(alpha: 0.2),
+                    unselectedIconTheme: const IconThemeData(color: Color(0xFF8AADA4)),
+                    selectedIconTheme: const IconThemeData(color: kAccent),
+                    unselectedLabelTextStyle: const TextStyle(color: Color(0xFF8AADA4)),
+                    selectedLabelTextStyle: const TextStyle(color: kAccent, fontWeight: FontWeight.bold),
+                    leading: Container(
+                      padding: const EdgeInsets.only(top: 10, bottom: 20),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.contain,
                             ),
                           ),
-                        ),
-                      );
+                          const SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                strings.t('facilityBrand'),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                strings.t('staffPortal'),
+                                style: const TextStyle(
+                                  color: Color(0xFF8AADA4),
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    destinations: items.map((item) => NavigationRailDestination(
+                      icon: Icon(item.icon),
+                      selectedIcon: Icon(item.selected),
+                      label: Text(item.label),
+                    )).toList(),
+                    selectedIndex: _index,
+                    onDestinationSelected: (index) {
+                      setState(() => _index = index);
                     },
                   ),
                 ),
@@ -234,6 +188,7 @@ class _MainShellState extends State<MainShell> {
                           vertical: 12,
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(
                               Icons.logout,

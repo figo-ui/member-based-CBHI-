@@ -156,10 +156,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.admin_panel_settings,
-                      color: Colors.white,
-                      size: 56,
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     Text(

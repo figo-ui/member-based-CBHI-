@@ -39,7 +39,10 @@ class NotificationInboxScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (notifications.isEmpty) {
-            return _EmptyInbox(strings: strings);
+            return _EmptyInbox(
+              strings: strings,
+              onRefresh: () => context.read<AppCubit>().sync(),
+            );
           }
           return RefreshIndicator(
             color: AppTheme.primary,
@@ -205,8 +208,9 @@ class _NotificationTile extends StatelessWidget {
 }
 
 class _EmptyInbox extends StatelessWidget {
-  const _EmptyInbox({required this.strings});
+  const _EmptyInbox({required this.strings, this.onRefresh});
   final dynamic strings;
+  final VoidCallback? onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -239,6 +243,14 @@ class _EmptyInbox extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
+          if (onRefresh != null) ...[
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: onRefresh,
+              icon: const Icon(Icons.sync, size: 18),
+              label: Text(strings.t('syncNow')),
+            ),
+          ],
         ],
       ),
     ).animate().fadeIn(duration: 400.ms);

@@ -49,13 +49,26 @@ class ConnectivityCubit extends Cubit<ConnectivityState> {
 
   /// Call once after the cubit is created (e.g. in _BootstrapScreenState.initState).
   Future<void> initialize() async {
-    // 1. Determine initial state synchronously before any stream events.
-    final initial = await Connectivity().checkConnectivity();
-    _emitFromResults(initial);
+    try {
+      // 1. Determine initial state synchronously before any stream events.
+      final initial = await Connectivity().checkConnectivity();
+      _emitFromResults(initial);
+    } catch (_) {
+      // If connectivity check fails (e.g. on some web environments),
+      // assume online so the app doesn't block the user.
+      emit(const ConnectivityState(
+        isOnline: true,
+        status: ConnectivityStatus.online,
+      ));
+    }
 
     // 2. Subscribe to future changes.
-    _subscription =
-        Connectivity().onConnectivityChanged.listen(_emitFromResults);
+    _subscription = Connectivity().onConnectivityChanged.listen(
+      _emitFromResults,
+      onError: (_) {
+        // Stream error — keep last known state, don't crash.
+      },
+    );
   }
 
   void _emitFromResults(List<ConnectivityResult> results) {

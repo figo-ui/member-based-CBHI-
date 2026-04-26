@@ -441,6 +441,8 @@
   "noPackageConfigured": "Paakeejiin hin qindaa'amne. Waajjira CBHI kee quunnamii.",
   "noPaymentsRecorded": "Kaffaltin galmaayee hin jiru",
   "noServicesInCategory": "Gosuma kana keessatti tajaajila hin jiru",
+  "noServicesConfigured": "Ammaaf tajaajilli hin qindaa'amne",
+  "noServicesConfiguredSubtitle": "Paakeejiin faayidaa ammaaf waan tajaajilaa hin qabu. Waajjira CBHI kee quunnamii.",
   "none": "Kan hin jirre",
   "notAvailable": "Hin jiru",
   "notCovered": "Hin haguugamne",

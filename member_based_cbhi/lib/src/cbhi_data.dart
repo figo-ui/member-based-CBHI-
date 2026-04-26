@@ -1432,21 +1432,31 @@ class CbhiRepository {
     }
   }
 
+  // Timeouts: GET = 20s (reads), POST/PATCH = 30s (writes), DELETE = 20s
+  static const _kGetTimeout = Duration(seconds: 20);
+  static const _kWriteTimeout = Duration(seconds: 30);
+
   Future<Map<String, dynamic>> _getJson(
     String path, {
     bool authorized = false,
     Map<String, String>? headers,
   }) async {
     try {
-      final response = await _client.get(
-        Uri.parse('$apiBaseUrl$path'),
-        headers: headers ?? await _headers(authorized: authorized),
-      );
+      final response = await _client
+          .get(
+            Uri.parse('$apiBaseUrl$path'),
+            headers: headers ?? await _headers(authorized: authorized),
+          )
+          .timeout(
+            _kGetTimeout,
+            onTimeout: () => throw const _ApiException(
+              'Request timed out. Please check your connection.',
+              retryable: true,
+            ),
+          );
       return _decodeResponse(path, response);
     } catch (error) {
-      if (error is _ApiException) {
-        rethrow;
-      }
+      if (error is _ApiException) rethrow;
       throw const _ApiException('Network unavailable.', retryable: true);
     }
   }
@@ -1457,16 +1467,22 @@ class CbhiRepository {
     bool authorized = false,
   }) async {
     try {
-      final response = await _client.post(
-        Uri.parse('$apiBaseUrl$path'),
-        headers: await _headers(authorized: authorized),
-        body: jsonEncode(payload),
-      );
+      final response = await _client
+          .post(
+            Uri.parse('$apiBaseUrl$path'),
+            headers: await _headers(authorized: authorized),
+            body: jsonEncode(payload),
+          )
+          .timeout(
+            _kWriteTimeout,
+            onTimeout: () => throw const _ApiException(
+              'Request timed out. Please check your connection.',
+              retryable: true,
+            ),
+          );
       return _decodeResponse(path, response);
     } catch (error) {
-      if (error is _ApiException) {
-        rethrow;
-      }
+      if (error is _ApiException) rethrow;
       throw const _ApiException(
         'Connection to server failed. Please check your internet or the server status.',
         retryable: true,
@@ -1480,16 +1496,22 @@ class CbhiRepository {
     bool authorized = false,
   }) async {
     try {
-      final response = await _client.patch(
-        Uri.parse('$apiBaseUrl$path'),
-        headers: await _headers(authorized: authorized),
-        body: jsonEncode(payload),
-      );
+      final response = await _client
+          .patch(
+            Uri.parse('$apiBaseUrl$path'),
+            headers: await _headers(authorized: authorized),
+            body: jsonEncode(payload),
+          )
+          .timeout(
+            _kWriteTimeout,
+            onTimeout: () => throw const _ApiException(
+              'Request timed out. Please check your connection.',
+              retryable: true,
+            ),
+          );
       return _decodeResponse(path, response);
     } catch (error) {
-      if (error is _ApiException) {
-        rethrow;
-      }
+      if (error is _ApiException) rethrow;
       throw const _ApiException(
         'Connection to server failed. Please check your internet or the server status.',
         retryable: true,
@@ -1502,15 +1524,21 @@ class CbhiRepository {
     bool authorized = false,
   }) async {
     try {
-      final response = await _client.delete(
-        Uri.parse('$apiBaseUrl$path'),
-        headers: await _headers(authorized: authorized),
-      );
+      final response = await _client
+          .delete(
+            Uri.parse('$apiBaseUrl$path'),
+            headers: await _headers(authorized: authorized),
+          )
+          .timeout(
+            _kGetTimeout,
+            onTimeout: () => throw const _ApiException(
+              'Request timed out. Please check your connection.',
+              retryable: true,
+            ),
+          );
       return _decodeResponse(path, response);
     } catch (error) {
-      if (error is _ApiException) {
-        rethrow;
-      }
+      if (error is _ApiException) rethrow;
       throw const _ApiException(
         'Connection to server failed. Please check your internet or the server status.',
         retryable: true,
@@ -1573,6 +1601,7 @@ class CbhiRepository {
       'notifications': json['notifications'] ?? const <Map<String, dynamic>>[],
       'digitalCards': json['digitalCards'] ?? const <Map<String, dynamic>>[],
       'familyMembers': json['familyMembers'] ?? const <Map<String, dynamic>>[],
+      'referrals': json['referrals'] ?? const <Map<String, dynamic>>[],
       'syncedAt':
           json['syncedAt']?.toString() ?? DateTime.now().toIso8601String(),
     });
@@ -1718,6 +1747,16 @@ class CbhiRepository {
   }
 
   // ── Benefit Package ───────────────────────────────────────────────────────
+
+  /// Ping the backend health endpoint. Returns true if reachable.
+  Future<bool> ping() async {
+    try {
+      await _getJson('/health');
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 
   Future<Map<String, dynamic>> getActiveBenefitPackage() async {
     try {

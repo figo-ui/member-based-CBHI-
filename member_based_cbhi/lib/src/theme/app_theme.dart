@@ -69,14 +69,11 @@ class AppTheme {
   static const Duration durationSlow = Duration(milliseconds: 500);
 
   // ───── Elevation & Shadows ─────
+  // Modern Material 3 relies on tonal elevation and surface colors,
+  // but if explicit shadows are needed, keep them extremely subtle.
   static List<BoxShadow> get cardShadow => [
     BoxShadow(
-      color: const Color(0xFF0D7A5F).withValues(alpha: 0.08),
-      blurRadius: 24,
-      offset: const Offset(0, 8),
-    ),
-    BoxShadow(
-      color: Colors.black.withValues(alpha: 0.04),
+      color: Colors.black.withValues(alpha: 0.03),
       blurRadius: 8,
       offset: const Offset(0, 2),
     ),
@@ -84,9 +81,9 @@ class AppTheme {
 
   static List<BoxShadow> get subtleShadow => [
     BoxShadow(
-      color: Colors.black.withValues(alpha: 0.06),
-      blurRadius: 12,
-      offset: const Offset(0, 4),
+      color: Colors.black.withValues(alpha: 0.02),
+      blurRadius: 4,
+      offset: const Offset(0, 2),
     ),
   ];
 

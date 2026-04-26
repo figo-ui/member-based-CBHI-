@@ -81,7 +81,7 @@ function buildTypeOrmConfig(): TypeOrmModuleOptions {
       database: conn.database,
       ssl: conn.ssl ? { rejectUnauthorized: false } : false,
       extra: {
-        max: Number(process.env.DB_POOL_MAX ?? conn.isPooler ? 10 : 20),
+        max: Number(process.env.DB_POOL_MAX ?? (conn.isPooler ? 10 : 20)),
         min: Number(process.env.DB_POOL_MIN ?? 2),
         idleTimeoutMillis: 30_000,
         connectionTimeoutMillis: 10_000,

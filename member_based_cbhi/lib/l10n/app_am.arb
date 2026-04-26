@@ -429,6 +429,8 @@
   "noPackageConfigured": "ምንም ፓኬጅ አልተዋቀረም። ሲቢኤችአይ ጽ/ቤትዎን ያነጋግሩ።",
   "noPaymentsRecorded": "ምንም ክፍያ አልተመዘገበም",
   "noServicesInCategory": "በዚህ ምድብ አገልግሎት የለም",
+  "noServicesConfigured": "እስካሁን ምንም አገልግሎት አልተዋቀረም",
+  "noServicesConfiguredSubtitle": "የጥቅም ፓኬጁ እስካሁን ምንም አገልግሎት የለውም። ሲቢኤችአይ ጽ/ቤትዎን ያነጋግሩ።",
   "none": "ምንም",
   "notAvailable": "አይገኝም",
   "notCovered": "አልተሸፈነም",

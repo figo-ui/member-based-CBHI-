@@ -186,10 +186,11 @@ class _BootstrapScreenState extends State<_BootstrapScreen> {
                         color: AppTheme.primary.withValues(alpha: 0.10),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.health_and_safety,
-                        size: 48,
-                        color: AppTheme.primary,
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.contain,
                       ),
                     )
                         .animate(onPlay: (c) => c.repeat())
@@ -397,10 +398,11 @@ class _HomeShellState extends State<_HomeShell> {
                     color: AppTheme.primary.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
-                    Icons.health_and_safety,
-                    color: AppTheme.primary,
-                    size: 20,
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 20,
+                    height: 20,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const SizedBox(width: 10),

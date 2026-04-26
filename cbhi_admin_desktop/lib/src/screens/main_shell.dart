@@ -100,48 +100,38 @@ class _MainShellState extends State<MainShell> {
     return Scaffold(
       body: Row(
         children: [
-          // ── Collapsible Sidebar ───────────────────────────────────────────
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            width: _sidebarExpanded
-                ? _kSidebarExpandedWidth
-                : _kSidebarCollapsedWidth,
+          // ── Navigation Rail ────────────────────────────────────────────────
+          Container(
             color: AdminTheme.sidebarBg,
             child: Column(
               children: [
-                // Toggle button row at top of sidebar
-                _SidebarHeader(
-                  expanded: _sidebarExpanded,
-                  onToggle: _toggleSidebar,
-                  strings: strings,
-                ),
-
-                const Divider(color: Color(0xFF1E3530), height: 1),
-                const SizedBox(height: 8),
-
-                // Nav items
                 Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                  child: NavigationRail(
+                    extended: _sidebarExpanded,
+                    minExtendedWidth: _kSidebarExpandedWidth,
+                    minWidth: _kSidebarCollapsedWidth,
+                    backgroundColor: AdminTheme.sidebarBg,
+                    indicatorColor: AdminTheme.primary.withValues(alpha: 0.5),
+                    unselectedIconTheme: const IconThemeData(color: AdminTheme.sidebarText),
+                    selectedIconTheme: const IconThemeData(color: Colors.white),
+                    unselectedLabelTextStyle: const TextStyle(color: AdminTheme.sidebarText),
+                    selectedLabelTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    leading: _SidebarHeader(
+                      expanded: _sidebarExpanded,
+                      onToggle: _toggleSidebar,
+                      strings: strings,
                     ),
-                    itemCount: navItems.length,
-                    itemBuilder: (context, index) {
-                      final item = navItems[index];
-                      final isSelected = _selectedIndex == index;
-                      return _SidebarNavItem(
-                        item: item,
-                        isSelected: isSelected,
-                        expanded: _sidebarExpanded,
-                        onTap: () => setState(() => _selectedIndex = index),
-                      );
+                    destinations: navItems.map((item) => NavigationRailDestination(
+                      icon: Icon(item.icon),
+                      selectedIcon: Icon(item.selectedIcon),
+                      label: Text(item.label),
+                    )).toList(),
+                    selectedIndex: _selectedIndex,
+                    onDestinationSelected: (index) {
+                      setState(() => _selectedIndex = index);
                     },
                   ),
                 ),
-
-                // Bottom — user info + logout
                 const Divider(color: Color(0xFF1E3530), height: 1),
                 _SidebarFooter(
                   expanded: _sidebarExpanded,

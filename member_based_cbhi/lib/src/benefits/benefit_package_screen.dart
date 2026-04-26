@@ -174,7 +174,13 @@ class _BenefitPackageBody extends StatelessWidget {
         const SizedBox(height: 16),
 
         // Service items
-        if (filtered.isEmpty)
+        if (items.isEmpty)
+          EmptyState(
+            icon: Icons.medical_services_outlined,
+            title: strings.t('noServicesConfigured'),
+            subtitle: strings.t('noServicesConfiguredSubtitle'),
+          )
+        else if (filtered.isEmpty)
           EmptyState(
             icon: Icons.medical_services_outlined,
             title: strings.t('noServicesInCategory'),

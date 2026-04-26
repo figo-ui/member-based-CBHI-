@@ -69,9 +69,7 @@ class _ConnectivityBannerState extends State<ConnectivityBanner> {
         final previous = context.read<ConnectivityCubit>().state;
         _onStateChange(previous, current);
       },
-      buildWhen: (prev, curr) =>
-          prev.isOnline != curr.isOnline ||
-          _showBackOnline != (_showBackOnline),
+      buildWhen: (prev, curr) => prev.isOnline != curr.isOnline,
       builder: (context, state) {
         final strings = CbhiLocalizations.of(context);
 

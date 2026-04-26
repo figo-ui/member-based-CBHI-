@@ -54,129 +54,133 @@ class DashboardScreen extends StatelessWidget {
             await authCubit.refreshSession();
             await familyCubit.load();
           },
-          child: ListView(
-            padding: const EdgeInsets.all(AppTheme.spacingM),
-            children: [
-              _SetupBanner(),
-              // Bento Top Section
-              _CoverageHeroCard(
-                snapshot: snapshot,
-                isFamilyMember: isFamilyMember,
-                isIndigent: isIndigent,
-              )
-                  .animate()
-                  .fadeIn(duration: 600.ms)
-                  .scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1), curve: Curves.easeOutBack),
-              
-              const SizedBox(height: AppTheme.spacingM),
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.all(AppTheme.spacingM),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _SetupBanner(),
+                    // Bento Top Section
+                    _CoverageHeroCard(
+                      snapshot: snapshot,
+                      isFamilyMember: isFamilyMember,
+                      isIndigent: isIndigent,
+                    ),
+                    
+                    const SizedBox(height: AppTheme.spacingM),
 
-              BentoGrid(
-                crossAxisCount: 2,
-                children: [
-                  // Grid items
-                  _QuickStatTile(
-                    label: strings.t('coverage'),
-                    value: snapshot.coverageStatus,
-                    icon: Icons.verified_outlined,
-                    color: _coverageColor(snapshot.coverageStatus),
-                  ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
-                  
-                  if (isFamilyMember)
-                    _QuickStatTile(
-                      label: strings.t('eligibility'),
-                      value: snapshot.eligibility?['approved'] == true ? strings.t('eligible') : strings.t('pending'),
-                      icon: Icons.verified_user_outlined,
-                      color: snapshot.eligibility?['approved'] == true ? AppTheme.success : AppTheme.warning,
-                    ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0)
-                  else if (membershipType.toLowerCase() == 'paying')
-                    _QuickStatTile(
-                      label: strings.t('members'),
-                      value: snapshot.familyMembers.length.toString(),
-                      icon: Icons.family_restroom_outlined,
-                      color: AppTheme.primary,
-                    ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0)
-                  else if (isIndigent)
-                    _QuickStatTile(
-                      label: strings.t('indigentApplication'),
-                      value: snapshot.household['indigentStatus']?.toString() ?? strings.t('pending'),
-                      icon: Icons.volunteer_activism_outlined,
-                      color: AppTheme.accent,
-                    ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0)
-                  else
-                    _QuickStatTile(
-                      label: strings.t('members'),
-                      value: snapshot.familyMembers.length.toString(),
-                      icon: Icons.family_restroom_outlined,
-                      color: AppTheme.primary,
-                    ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
-                ],
-              ),
-              
-              if (isIndigent && snapshot.household['indigentStatus'] == 'PENDING_PROOF')
-                Padding(
-                  padding: const EdgeInsets.only(top: AppTheme.spacingL),
-                  child: _IndigentProofBanner(
-                    snapshot: snapshot,
-                    onFinalize: () => _navigateToIndigentApplication(context, snapshot),
-                  ).animate().fadeIn().shake(delay: 600.ms),
-                ),
-
-              if (!isIndigent && (snapshot.coverageStatus == 'PENDING_PAYMENT' || snapshot.coverageStatus == 'UNPAID'))
-                Padding(
-                  padding: const EdgeInsets.only(top: AppTheme.spacingL),
-                  child: _PaymentPendingBanner(
-                    snapshot: snapshot,
-                    onPay: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => PaymentScreen(
-                          repository: context.read<AppCubit>().repository,
+                    BentoGrid(
+                      crossAxisCount: 2,
+                      children: [
+                        // Grid items
+                        _QuickStatTile(
+                          label: strings.t('coverage'),
+                          value: snapshot.coverageStatus,
+                          icon: Icons.verified_outlined,
+                          color: _coverageColor(snapshot.coverageStatus),
+                        ),
+                        
+                        if (isFamilyMember)
+                          _QuickStatTile(
+                            label: strings.t('eligibility'),
+                            value: snapshot.eligibility?['approved'] == true ? strings.t('eligible') : strings.t('pending'),
+                            icon: Icons.verified_user_outlined,
+                            color: snapshot.eligibility?['approved'] == true ? AppTheme.success : AppTheme.warning,
+                          )
+                        else if (membershipType.toLowerCase() == 'paying')
+                          _QuickStatTile(
+                            label: strings.t('members'),
+                            value: snapshot.familyMembers.length.toString(),
+                            icon: Icons.family_restroom_outlined,
+                            color: AppTheme.primary,
+                          )
+                        else if (isIndigent)
+                          _QuickStatTile(
+                            label: strings.t('indigentApplication'),
+                            value: snapshot.household['indigentStatus']?.toString() ?? strings.t('pending'),
+                            icon: Icons.volunteer_activism_outlined,
+                            color: AppTheme.accent,
+                          )
+                        else
+                          _QuickStatTile(
+                            label: strings.t('members'),
+                            value: snapshot.familyMembers.length.toString(),
+                            icon: Icons.family_restroom_outlined,
+                            color: AppTheme.primary,
+                          ),
+                      ],
+                    ),
+                    
+                    if (isIndigent && snapshot.household['indigentStatus'] == 'PENDING_PROOF')
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppTheme.spacingL),
+                        child: _IndigentProofBanner(
                           snapshot: snapshot,
-                          onPaymentComplete: () => context.read<AppCubit>().sync(),
+                          onFinalize: () => _navigateToIndigentApplication(context, snapshot),
                         ),
                       ),
+
+                    if (!isIndigent && (snapshot.coverageStatus == 'PENDING_PAYMENT' || snapshot.coverageStatus == 'UNPAID'))
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppTheme.spacingL),
+                        child: _PaymentPendingBanner(
+                          snapshot: snapshot,
+                          onPay: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => PaymentScreen(
+                                repository: context.read<AppCubit>().repository,
+                                snapshot: snapshot,
+                                onPaymentComplete: () => context.read<AppCubit>().sync(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    
+                    const SizedBox(height: AppTheme.spacingL),
+                    
+                    if (canRenew && !isIndigent) ...[
+                      _RenewalSection(
+                        snapshot: snapshot,
+                        isSyncing: state.isSyncing,
+                        onRenew: () => _showRenewCoverageSheet(
+                          context, snapshot, context.read<AppCubit>().repository),
+                      ),
+                      const SizedBox(height: AppTheme.spacingM),
+                    ],
+                    
+                    _SyncStatusCard(
+                      snapshot: snapshot,
+                      isFamilyMember: isFamilyMember,
+                      canRenew: canRenew && !isIndigent,
+                      isSyncing: state.isSyncing,
+                      onRenew: () => _showRenewCoverageSheet(
+                        context, snapshot, context.read<AppCubit>().repository),
                     ),
-                  ).animate().fadeIn().shake(delay: 600.ms),
+                    
+                    const SizedBox(height: AppTheme.spacingL),
+                    
+                    if (!isIndigent) ...[
+                      _PaymentHistorySection(snapshot: snapshot),
+                      const SizedBox(height: AppTheme.spacingL),
+                    ],
+                    
+                    _BenefitUtilizationSection(snapshot: snapshot),
+                    
+                    const SizedBox(height: AppTheme.spacingL),
+                    
+                    if (snapshot.referrals.isNotEmpty) ...[
+                      _ReferralsSection(snapshot: snapshot),
+                      const SizedBox(height: AppTheme.spacingL),
+                    ],
+                    
+                    _RecentNotificationsSection(snapshot: snapshot),
+                    const SizedBox(height: AppTheme.spacingL),
+                  ]),
                 ),
-              
-              const SizedBox(height: AppTheme.spacingL),
-              
-              if (canRenew && !isIndigent) ...[
-                _RenewalSection(
-                  snapshot: snapshot,
-                  isSyncing: state.isSyncing,
-                  onRenew: () => _showRenewCoverageSheet(
-                    context, snapshot, context.read<AppCubit>().repository),
-                ).animate().fadeIn(delay: 400.ms),
-                const SizedBox(height: AppTheme.spacingM),
-              ],
-              
-              _SyncStatusCard(
-                snapshot: snapshot,
-                isFamilyMember: isFamilyMember,
-                canRenew: canRenew && !isIndigent,
-                isSyncing: state.isSyncing,
-                onRenew: () => _showRenewCoverageSheet(
-                  context, snapshot, context.read<AppCubit>().repository),
-              ).animate().fadeIn(delay: 450.ms),
-              
-              const SizedBox(height: AppTheme.spacingL),
-              
-              if (!isIndigent) ...[
-                _PaymentHistorySection(snapshot: snapshot).animate().fadeIn(delay: 500.ms),
-                const SizedBox(height: AppTheme.spacingL),
-              ],
-              
-              _BenefitUtilizationSection(snapshot: snapshot).animate().fadeIn(delay: 550.ms),
-              
-              const SizedBox(height: AppTheme.spacingL),
-              
-              if (snapshot.referrals.isNotEmpty) ...[
-                _ReferralsSection(snapshot: snapshot).animate().fadeIn(delay: 600.ms),
-                const SizedBox(height: AppTheme.spacingL),
-              ],
-              
-              _RecentNotificationsSection(snapshot: snapshot).animate().fadeIn(delay: 650.ms),
-              const SizedBox(height: AppTheme.spacingL),
+              ),
             ],
           ),
         );
@@ -235,43 +239,6 @@ class _CoverageHeroCard extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Aurora Mesh Effect (Layered gradients)
-          Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppTheme.accent.withValues(alpha: 0.4),
-                    AppTheme.accent.withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
-          ).animate(onPlay: (c) => c.repeat(reverse: true)).move(begin: const Offset(-20, -20), end: const Offset(20, 20), duration: 8.seconds, curve: Curves.easeInOut),
-          
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: 0.15),
-                    Colors.white.withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
-          ).animate(onPlay: (c) => c.repeat(reverse: true)).move(begin: const Offset(10, 10), end: const Offset(-10, -10), duration: 6.seconds, curve: Curves.easeInOut),
-
           Padding(
             padding: const EdgeInsets.all(AppTheme.spacingL),
             child: Column(
@@ -327,7 +294,7 @@ class _CoverageHeroCard extends StatelessWidget {
                               shape: BoxShape.circle,
                               color: status.toUpperCase() == 'ACTIVE' ? Colors.white : AppTheme.gold,
                             ),
-                          ).animate(onPlay: (c) => c.repeat()).scale(begin: const Offset(1, 1), end: const Offset(1.5, 1.5), duration: 1.seconds, curve: Curves.easeInOut),
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             status,
@@ -729,15 +696,7 @@ class _PaymentHistorySection extends StatelessWidget {
                         label: payment['status']?.toString() ?? 'UNKNOWN'),
                   ],
                 ),
-              )
-                  .animate()
-                  .fadeIn(duration: 350.ms, delay: (50 * entry.key).ms)
-                  .slideX(
-                      begin: 0.05,
-                      end: 0,
-                      duration: 350.ms,
-                      delay: (50 * entry.key).ms),
-            );
+              );
           }),
       ],
     );
