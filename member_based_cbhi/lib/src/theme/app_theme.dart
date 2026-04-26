@@ -325,10 +325,10 @@ class AppTheme {
 
   // ───── Dark Theme ─────
   static ThemeData get darkTheme {
-    const darkSurface = Color(0xFF0F1A17);
-    const darkCard = Color(0xFF1A2E28);
+    const darkSurface = Color(0xFF0F1715); // Slightly darker
+    const darkCard = Color(0xFF1E2D28);    // Slightly more contrast
     const darkText = Color(0xFFE8F5F0);
-    const darkTextSecondary = Color(0xFF8AADA4);
+    const darkTextSecondary = Color(0xFFA0BDB5);
 
     final textTheme = Typography.material2021().white.apply(
       fontFamily: 'Outfit',
@@ -341,6 +341,7 @@ class AppTheme {
       secondary: primary,
       tertiary: gold,
       surface: darkSurface,
+      surfaceContainer: darkCard,
       error: error,
       onPrimary: Colors.white,
       onSecondary: Colors.white,
@@ -352,25 +353,18 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: darkSurface,
       textTheme: textTheme.copyWith(
-        headlineSmall: textTheme.headlineSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: darkText,
-        ),
-        titleLarge: textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: darkText,
-        ),
-        titleMedium: textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w500,
-          color: darkText,
-        ),
+        displayLarge: textTheme.displayLarge?.copyWith(fontWeight: FontWeight.w700, color: darkText),
+        displayMedium: textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w700, color: darkText),
+        displaySmall: textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w700, color: darkText),
+        headlineLarge: textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w600, color: darkText),
+        headlineMedium: textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w600, color: darkText),
+        headlineSmall: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600, color: darkText),
+        titleLarge: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: darkText),
+        titleMedium: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500, color: darkText),
         bodyLarge: textTheme.bodyLarge?.copyWith(color: darkText),
         bodyMedium: textTheme.bodyMedium?.copyWith(color: darkTextSecondary),
         bodySmall: textTheme.bodySmall?.copyWith(color: darkTextSecondary),
-        labelLarge: textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: darkText,
-        ),
+        labelLarge: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600, color: darkText),
       ),
       appBarTheme: AppBarTheme(
         elevation: 0,
@@ -392,29 +386,10 @@ class AppTheme {
         ),
         margin: EdgeInsets.zero,
       ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          minimumSize: const Size(double.infinity, 52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radiusM),
-          ),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size(double.infinity, 52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radiusM),
-          ),
-        ),
-      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: darkCard,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 16,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusM),
           borderSide: const BorderSide(color: Color(0xFF2A4A40)),
@@ -428,19 +403,15 @@ class AppTheme {
           borderSide: const BorderSide(color: accent, width: 2),
         ),
         labelStyle: textTheme.bodyMedium?.copyWith(color: darkTextSecondary),
+        hintStyle: textTheme.bodyMedium?.copyWith(color: darkTextSecondary.withValues(alpha: 0.5)),
       ),
       navigationBarTheme: NavigationBarThemeData(
         height: 72,
-        elevation: 0,
         backgroundColor: darkCard,
-        surfaceTintColor: Colors.transparent,
         indicatorColor: accent.withValues(alpha: 0.15),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return textTheme.labelSmall?.copyWith(
-              color: accent,
-              fontWeight: FontWeight.w700,
-            );
+            return textTheme.labelSmall?.copyWith(color: accent, fontWeight: FontWeight.w700);
           }
           return textTheme.labelSmall?.copyWith(color: darkTextSecondary);
         }),
@@ -456,7 +427,6 @@ class AppTheme {
           borderRadius: BorderRadius.vertical(top: Radius.circular(radiusL)),
         ),
         backgroundColor: darkCard,
-        surfaceTintColor: Colors.transparent,
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: darkCard,

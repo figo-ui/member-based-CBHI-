@@ -76,7 +76,7 @@ class CbhiApp extends StatelessWidget {
             localizationsDelegates: CbhiLocalizations.delegatesFor(appLocale),
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
-            themeMode: state.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            themeMode: state.themeMode,
             home: const _BootstrapScreen(),
           );
         },
@@ -504,6 +504,7 @@ class _HomeShellState extends State<_HomeShell> {
                 ),
               Expanded(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const ConnectivityBanner(),
                     Expanded(

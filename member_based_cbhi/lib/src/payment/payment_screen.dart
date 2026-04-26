@@ -399,10 +399,131 @@ class _PaymentScreenState extends State<PaymentScreen> {
               const SizedBox(height: 16),
               _VerifyResultCard(result: _verifyResult!, strings: strings),
             ],
+
+            const SizedBox(height: 32),
+            const Divider(),
+            const SizedBox(height: 16),
+            
+            // Manual proof section
+            Text(
+              strings.t('offlinePaymentTitle'),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              strings.t('offlinePaymentSubtitle'),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            
+            OutlinedButton.icon(
+              onPressed: () => _showManualProofDialog(context),
+              icon: const Icon(Icons.upload_file_outlined),
+              label: Text(strings.t('submitBankReceipt')),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+              ),
+            ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
+  }
+
+  void _showManualProofDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => _ManualProofDialog(
+        repository: widget.repository,
+        onDone: widget.onPaymentComplete,
+      ),
+    );
+  }
+}
+
+class _ManualProofDialog extends StatefulWidget {
+  const _ManualProofDialog({required this.repository, required this.onDone});
+  final CbhiRepository repository;
+  final VoidCallback onDone;
+
+  @override
+  State<_ManualProofDialog> createState() => _ManualProofDialogState();
+}
+
+class _ManualProofDialogState extends State<_ManualProofDialog> {
+  final _receiptController = TextEditingController();
+  final _bankController = TextEditingController();
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _receiptController.dispose();
+    _bankController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
+    return AlertDialog(
+      title: Text(strings.t('submitBankReceipt')),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _bankController,
+            decoration: InputDecoration(
+              labelText: strings.t('bankName'),
+              hintText: 'e.g. CBE, Dashen, Awash',
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _receiptController,
+            decoration: InputDecoration(
+              labelText: strings.t('receiptNumber'),
+              hintText: strings.t('receiptNumberHint'),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(strings.t('cancel')),
+        ),
+        FilledButton(
+          onPressed: _submitting ? null : _submit,
+          child: _submitting
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : Text(strings.t('submit')),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (_receiptController.text.isEmpty) return;
+    setState(() => _submitting = true);
+    try {
+      await widget.repository.renewCoverage(
+        paymentMethod: 'bank_transfer',
+        providerName: _bankController.text,
+        receiptNumber: _receiptController.text,
+      );
+      if (mounted) {
+        Navigator.pop(context);
+        widget.onDone();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+        setState(() => _submitting = false);
+      }
+    }
   }
 }
 

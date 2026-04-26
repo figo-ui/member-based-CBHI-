@@ -1035,8 +1035,13 @@ class CbhiRepository {
   /// Set the initial password for first-time setup WITHOUT invalidating the
   /// current session. Use this when the user is setting a password for the
   /// first time after registration — the session must stay active.
-  Future<void> setInitialPasswordDirect({required String password}) async {
-    await _postJson('/auth/set-initial-password', {'password': password}, authorized: true);
+  /// Set the initial password for first-time setup. If [setupCode] is provided,
+  /// it uses that as an implicit credential (allowing setup without a session).
+  Future<void> setInitialPasswordDirect({required String password, String? setupCode}) async {
+    await _postJson('/auth/set-initial-password', {
+      'password': password,
+      if (setupCode != null) 'setupCode': setupCode,
+    }, authorized: setupCode == null);
   }
 
   /// GDPR: anonymise and deactivate the account.
@@ -1113,7 +1118,7 @@ class CbhiRepository {
     required List<String> documents,
     List<Map<String, dynamic>>? documentMeta,
   }) async {
-    return _postJson('/indigent/apply', {
+    final payload = {
       'userId': userId,
       'income': income,
       'employmentStatus': employmentStatus,
@@ -1122,7 +1127,18 @@ class CbhiRepository {
       'disabilityStatus': disabilityStatus,
       'documents': documents,
       'documentMeta': documentMeta,
-    });
+    };
+
+    try {
+      return await _postJson('/indigent/apply', payload, authorized: true);
+    } on _ApiException catch (e) {
+      if (!e.retryable) rethrow;
+      await localDb.queueAction('submit_indigent_application', payload);
+      return {
+        'status': 'queued',
+        'message': 'Application queued for sync due to network connectivity.'
+      };
+    }
   }
 
   /// Get document requirements for indigent applications
@@ -1252,6 +1268,8 @@ class CbhiRepository {
           final snapshot = _snapshotFromRegistration(response);
           await _storeAuthIfPresent(response);
           await localDb.writeSnapshot(snapshot);
+        } else if (type == 'submit_indigent_application') {
+          await _postJson('/indigent/apply', payload, authorized: true);
         }
         await localDb.removeAction(id);
       } catch (error) {

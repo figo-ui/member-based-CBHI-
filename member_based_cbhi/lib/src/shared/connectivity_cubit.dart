@@ -60,7 +60,9 @@ class ConnectivityCubit extends Cubit<ConnectivityState> {
 
   void _emitFromResults(List<ConnectivityResult> results) {
     final wasOnline = state.isOnline;
-    final isOnline = results.any((r) => r != ConnectivityResult.none);
+    // Check for any connection type that isn't 'none'.
+    // Including 'other' which often represents VPNs or certain desktop environments.
+    final isOnline = results.isNotEmpty && results.any((r) => r != ConnectivityResult.none);
     final status =
         isOnline ? ConnectivityStatus.online : ConnectivityStatus.offline;
 

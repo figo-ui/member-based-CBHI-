@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBHI Identity Verification</title>
+    <style>
+        :root {
+            --primary-bg: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-blue: #38bdf8;
+            --accent-purple: #818cf8;
+            --accent-pink: #f472b6;
+            --success: #4ade80;
+            --error: #fb7185;
+            --text: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at top left, #1e293b, #0f172a);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .background-blobs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            filter: blur(80px);
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.4;
+        }
+
+        .blob-1 { width: 300px; height: 300px; background: var(--accent-blue); top: 10%; left: 10%; animation: move 20s infinite; }
+        .blob-2 { width: 400px; height: 400px; background: var(--accent-purple); bottom: 10%; right: 10%; animation: move 25s infinite reverse; }
+        .blob-3 { width: 250px; height: 250px; background: var(--accent-pink); top: 50%; left: 50%; animation: move 15s infinite; }
+
+        @keyframes move {
+            0% { transform: translate(0, 0); }
+            50% { transform: translate(100px, 50px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        .container {
+            width: 90%;
+            max-width: 450px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 1;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        h1 { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+        p.subtitle { color: #94a3b8; text-align: center; font-size: 14px; }
+
+        .id-options {
+            display: grid;
+            gap: 16px;
+        }
+
+        .id-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .id-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .id-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(56, 189, 248, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-blue);
+        }
+
+        .id-info h3 { font-size: 16px; margin-bottom: 4px; }
+        .id-info p { font-size: 12px; color: #64748b; }
+
+        /* Camera Screen */
+        .camera-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 3/2;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid var(--glass-border);
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            margin: 20px;
+            width: calc(100% - 40px);
+            height: calc(100% - 40px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .camera-overlay::before {
+            content: 'Align ID card here';
+            color: #fff;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: rgba(0,0,0,0.5);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .capture-btn {
+            width: 64px;
+            height: 64px;
+            background: #fff;
+            border-radius: 50%;
+            border: 6px solid rgba(255,255,255,0.2);
+            margin: 0 auto;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .capture-btn:active { transform: scale(0.9); }
+
+        /* Results Screen */
+        .matrix-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .matrix-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .matrix-label { font-size: 14px; color: #94a3b8; }
+        .matrix-value { font-weight: 600; font-size: 14px; }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-blue);
+            width: 0;
+            transition: width 1s ease-out;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-valid { background: rgba(74, 222, 128, 0.1); color: var(--success); }
+        .status-invalid { background: rgba(251, 113, 133, 0.1); color: var(--error); }
+
+        .action-btn {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: #fff;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .action-btn:hover { opacity: 0.9; }
+
+        /* Mock IDs display */
+        #mock-id-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .scanning-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--accent-blue);
+            box-shadow: 0 0 15px var(--accent-blue);
+            animation: scan 2s linear infinite;
+            display: none;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="container">
+        <!-- Step 1: ID Selection -->
+        <div id="screen-select" class="screen active">
+            <div>
+                <h1>Verify Identity</h1>
+                <p class="subtitle">Select your identity document type to proceed</p>
+            </div>
+            <div class="id-options">
+                <div class="id-card" onclick="selectId('local')">
+                    <div class="id-icon">🪪</div>
+                    <div class="id-info">
+                        <h3>Local Kebele ID</h3>
+                        <p>Standard community identification</p>
+                    </div>
+                </div>
+                <div class="id-card" onclick="selectId('fayda')">
+                    <div class="id-icon">✨</div>
+                    <div class="id-info">
+                        <h3>Fayda (National ID)</h3>
+                        <p>Digital national identification system</p>
+                    </div>
+                </div>
+                <div class="id-card" onclick="selectId('passport')">
+                    <div class="id-icon">✈️</div>
+                    <div class="id-info">
+                        <h3>Passport</h3>
+                        <p>International travel document</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Camera Capture -->
+        <div id="screen-capture" class="screen">
+            <div>
+                <h1>Capture Photo</h1>
+                <p class="subtitle">Position your <span id="selected-id-name">ID</span> within the frame</p>
+            </div>
+            <div class="camera-container">
+                <div class="camera-overlay"></div>
+                <div id="scan-line" class="scanning-line"></div>
+                <img id="mock-id-preview" src="" alt="Captured ID">
+                <div id="camera-feed" style="width: 100%; height: 100%; background: #111; display: flex; align-items: center; justify-content: center; color: #333;">
+                    <span>[ Camera Feed Active ]</span>
+                </div>
+            </div>
+            <div class="capture-btn" id="capture-btn" onclick="takePhoto()"></div>
+            <p class="subtitle">Ensure all text is clearly visible</p>
+        </div>
+
+        <!-- Step 3: Verification Results -->
+        <div id="screen-results" class="screen">
+            <div>
+                <h1>Verification Results</h1>
+                <p class="subtitle">Match Matrix Analysis</p>
+            </div>
+            
+            <div class="matrix-card">
+                <div class="matrix-item-group">
+                    <div class="matrix-item">
+                        <span class="matrix-label">Name Match</span>
+                        <span class="matrix-value" id="name-match-val">0%</span>
+                    </div>
+                    <div class="progress-bar"><div id="name-match-fill" class="progress-fill"></div></div>
+                </div>
+
+                <div class="matrix-item-group">
+                    <div class="matrix-item">
+                        <span class="matrix-label">ID Authenticity</span>
+                        <span class="matrix-value" id="auth-val">0%</span>
+                    </div>
+                    <div class="progress-bar"><div id="auth-fill" class="progress-fill" style="background: var(--accent-purple)"></div></div>
+                </div>
+
+                <div class="matrix-item">
+                    <span class="matrix-label">Expiration Status</span>
+                    <span id="expiry-status" class="status-badge">Checking...</span>
+                </div>
+
+                <div class="matrix-item">
+                    <span class="matrix-label">Document Type</span>
+                    <span class="matrix-value" id="res-doc-type">-</span>
+                </div>
+            </div>
+
+            <div id="overall-validity" style="text-align: center; padding: 16px; border-radius: 12px; font-weight: 700; font-size: 18px;">
+                VERIFYING...
+            </div>
+
+            <button class="action-btn" onclick="resetFlow()">Finish & Continue</button>
+        </div>
+    </div>
+
+    <script>
+        let currentIdType = '';
+        // Mock data for simulation: Local (Valid), Fayda (Expired), Passport (Valid)
+        const testData = {
+            'local': { name: 'Abebe Bikila', expiry: '2027-12-31', match: 98, auth: 95 },
+            'fayda': { name: 'Mulugeta Tesfaye', expiry: '2023-01-15', match: 99, auth: 99 },
+            'passport': { name: 'Sara Lemma', expiry: '2029-05-20', match: 100, auth: 98 }
+        };
+
+        function selectId(type) {
+            currentIdType = type;
+            document.getElementById('selected-id-name').innerText = type.charAt(0).toUpperCase() + type.slice(1) + ' ID';
+            showScreen('capture');
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-' + id).classList.add('active');
+        }
+
+        function takePhoto() {
+            const btn = document.getElementById('capture-btn');
+            const scanLine = document.getElementById('scan-line');
+            const preview = document.getElementById('mock-id-preview');
+            const feed = document.getElementById('camera-feed');
+
+            btn.style.pointerEvents = 'none';
+            btn.style.opacity = '0.5';
+            scanLine.style.display = 'block';
+
+            // Simulate scanning delay (2 seconds)
+            setTimeout(() => {
+                scanLine.style.display = 'none';
+                feed.style.display = 'none';
+                preview.style.display = 'block';
+                preview.src = generateMockIdSvg(currentIdType);
+                
+                setTimeout(() => {
+                    runVerification();
+                }, 1500);
+            }, 2000);
+        }
+
+        function runVerification() {
+            showScreen('results');
+            const data = testData[currentIdType];
+            
+            // Animate result bars and values
+            setTimeout(() => {
+                document.getElementById('name-match-fill').style.width = data.match + '%';
+                document.getElementById('name-match-val').innerText = data.match + '%';
+                
+                document.getElementById('auth-fill').style.width = data.auth + '%';
+                document.getElementById('auth-val').innerText = data.auth + '%';
+                
+                document.getElementById('res-doc-type').innerText = currentIdType.toUpperCase();
+                
+                const expiryDate = new Date(data.expiry);
+                const today = new Date();
+                const isExpired = expiryDate < today;
+                
+                const expiryBadge = document.getElementById('expiry-status');
+                expiryBadge.innerText = isExpired ? 'Expired' : 'Valid';
+                expiryBadge.className = 'status-badge ' + (isExpired ? 'status-invalid' : 'status-valid');
+                
+                const validityDiv = document.getElementById('overall-validity');
+                if (!isExpired && data.match > 90 && data.auth > 90) {
+                    validityDiv.innerText = '✅ IDENTITY VERIFIED';
+                    validityDiv.style.background = 'rgba(74, 222, 128, 0.1)';
+                    validityDiv.style.color = 'var(--success)';
+                } else {
+                    validityDiv.innerText = '❌ VERIFICATION FAILED';
+                    validityDiv.style.background = 'rgba(251, 113, 133, 0.1)';
+                    validityDiv.style.color = 'var(--error)';
+                }
+            }, 500);
+        }
+
+        function resetFlow() {
+            showScreen('select');
+            document.getElementById('mock-id-preview').style.display = 'none';
+            document.getElementById('camera-feed').style.display = 'flex';
+            document.getElementById('capture-btn').style.pointerEvents = 'auto';
+            document.getElementById('capture-btn').style.opacity = '1';
+            document.getElementById('name-match-fill').style.width = '0%';
+            document.getElementById('auth-fill').style.width = '0%';
+        }
+
+        // Dynamically generate a mock ID image based on type
+        function generateMockIdSvg(type) {
+            const data = testData[type];
+            const color = type === 'passport' ? '#4c1d95' : (type === 'fayda' ? '#0369a1' : '#1e293b');
+            const title = type.toUpperCase() + " DOCUMENT";
+            
+            const svg = `
+                <svg width="400" height="250" viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="400" height="250" rx="15" fill="${color}" />
+                    <rect x="20" y="20" width="360" height="210" rx="10" fill="rgba(255,255,255,0.05)" />
+                    <text x="40" y="60" font-family="sans-serif" font-size="20" font-weight="bold" fill="white">${title}</text>
+                    <rect x="40" y="80" width="80" height="100" rx="5" fill="rgba(255,255,255,0.2)" />
+                    <text x="140" y="100" font-family="sans-serif" font-size="14" fill="#94a3b8">Name:</text>
+                    <text x="140" y="120" font-family="sans-serif" font-size="16" font-weight="bold" fill="white">${data.name}</text>
+                    <text x="140" y="150" font-family="sans-serif" font-size="14" fill="#94a3b8">Expiry Date:</text>
+                    <text x="140" y="170" font-family="sans-serif" font-size="16" font-weight="bold" fill="white">${data.expiry}</text>
+                    <text x="40" y="210" font-family="sans-serif" font-size="10" fill="rgba(255,255,255,0.3)">ID: ${Math.random().toString(36).substr(2, 9).toUpperCase()}</text>
+                </svg>
+            `;
+            return 'data:image/svg+xml;base64,' + btoa(svg);
+        }
+    </script>
+</body>
+</html>

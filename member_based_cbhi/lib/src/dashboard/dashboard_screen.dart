@@ -15,6 +15,7 @@ import '../coverage/renewal_reminder_widget.dart';
 import '../family/my_family_cubit.dart';
 
 import '../payment/payment_screen.dart';
+import '../indigent/indigent_application_screen.dart';
 import '../shared/animated_widgets.dart';
 import '../shared/premium_widgets.dart';
 import '../shared/skeleton_widgets.dart';
@@ -58,22 +59,20 @@ class DashboardScreen extends StatelessWidget {
             children: [
               _SetupBanner(),
               // Bento Top Section
+              _CoverageHeroCard(
+                snapshot: snapshot,
+                isFamilyMember: isFamilyMember,
+                isIndigent: isIndigent,
+              )
+                  .animate()
+                  .fadeIn(duration: 600.ms)
+                  .scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1), curve: Curves.easeOutBack),
+              
+              const SizedBox(height: AppTheme.spacingM),
+
               BentoGrid(
                 crossAxisCount: 2,
                 children: [
-                  // Full width hero
-                  SizedBox(
-                    width: double.infinity,
-                    child: _CoverageHeroCard(
-                      snapshot: snapshot,
-                      isFamilyMember: isFamilyMember,
-                      isIndigent: isIndigent,
-                    ),
-                  )
-                      .animate()
-                      .fadeIn(duration: 600.ms)
-                      .scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1), curve: Curves.easeOutBack),
-                  
                   // Grid items
                   _QuickStatTile(
                     label: strings.t('coverage'),
@@ -88,6 +87,13 @@ class DashboardScreen extends StatelessWidget {
                       value: snapshot.eligibility?['approved'] == true ? strings.t('eligible') : strings.t('pending'),
                       icon: Icons.verified_user_outlined,
                       color: snapshot.eligibility?['approved'] == true ? AppTheme.success : AppTheme.warning,
+                    ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0)
+                  else if (membershipType.toLowerCase() == 'paying')
+                    _QuickStatTile(
+                      label: strings.t('members'),
+                      value: snapshot.familyMembers.length.toString(),
+                      icon: Icons.family_restroom_outlined,
+                      color: AppTheme.primary,
                     ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0)
                   else if (isIndigent)
                     _QuickStatTile(
@@ -105,6 +111,32 @@ class DashboardScreen extends StatelessWidget {
                     ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
                 ],
               ),
+              
+              if (isIndigent && snapshot.household['indigentStatus'] == 'PENDING_PROOF')
+                Padding(
+                  padding: const EdgeInsets.only(top: AppTheme.spacingL),
+                  child: _IndigentProofBanner(
+                    snapshot: snapshot,
+                    onFinalize: () => _navigateToIndigentApplication(context, snapshot),
+                  ).animate().fadeIn().shake(delay: 600.ms),
+                ),
+
+              if (!isIndigent && (snapshot.coverageStatus == 'PENDING_PAYMENT' || snapshot.coverageStatus == 'UNPAID'))
+                Padding(
+                  padding: const EdgeInsets.only(top: AppTheme.spacingL),
+                  child: _PaymentPendingBanner(
+                    snapshot: snapshot,
+                    onPay: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => PaymentScreen(
+                          repository: context.read<AppCubit>().repository,
+                          snapshot: snapshot,
+                          onPaymentComplete: () => context.read<AppCubit>().sync(),
+                        ),
+                      ),
+                    ),
+                  ).animate().fadeIn().shake(delay: 600.ms),
+                ),
               
               const SizedBox(height: AppTheme.spacingL),
               
@@ -1274,7 +1306,8 @@ class _SetupBannerState extends State<_SetupBanner> {
                             .read<AppCubit>()
                             .repository
                             .setInitialPasswordDirect(
-                                password: newCtrl.text);
+                                password: newCtrl.text,
+                                setupCode: _setupCode);
                         // Clear all setup code flags
                         final p = await SharedPreferences.getInstance();
                         await p.remove('cbhi_setup_code');
@@ -1540,6 +1573,187 @@ class _ReferralCard extends StatelessWidget {
           const Icon(Icons.qr_code, color: AppTheme.primary, size: 32),
         ],
         ),
+      ),
+    );
+  }
+}
+
+Future<void> _navigateToIndigentApplication(BuildContext context, CbhiSnapshot snapshot) async {
+  final viewer = snapshot.viewer ?? {};
+  final userId = viewer['id']?.toString() ?? snapshot.household['id']?.toString() ?? '';
+  final employmentStatus = snapshot.household['employmentStatus']?.toString() ?? 'Unemployed';
+  
+  await Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => IndigentApplicationScreen(
+        repository: context.read<AppCubit>().repository,
+        userId: userId,
+        familySize: snapshot.familyMembers.length,
+        employmentStatus: employmentStatus,
+        onSubmitted: (result) async {
+          Navigator.of(context).pop();
+          await context.read<AppCubit>().sync();
+        },
+      ),
+    ),
+  );
+}
+
+class _IndigentProofBanner extends StatelessWidget {
+  const _IndigentProofBanner({required this.snapshot, required this.onFinalize});
+  final CbhiSnapshot snapshot;
+  final VoidCallback onFinalize;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.spacingM),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppTheme.accent, AppTheme.accent.withValues(alpha: 0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.accent.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.volunteer_activism_outlined, color: Colors.white, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      strings.t('indigentProofRequired'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      strings.t('uploadProofToFinalize'),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onFinalize,
+              icon: const Icon(Icons.file_upload_outlined, size: 18),
+              label: Text(strings.t('uploadProofNow')),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppTheme.accent,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusS),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaymentPendingBanner extends StatelessWidget {
+  const _PaymentPendingBanner({required this.snapshot, required this.onPay});
+  final CbhiSnapshot snapshot;
+  final VoidCallback onPay;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = CbhiLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.spacingM),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppTheme.warning, AppTheme.warning.withValues(alpha: 0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.warning.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      strings.t('paymentRequired'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      strings.t('completePaymentToActivate'),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onPay,
+              icon: const Icon(Icons.payment, size: 18),
+              label: Text(strings.t('payNow')),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppTheme.warning,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusS),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

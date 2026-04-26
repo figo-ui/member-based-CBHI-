@@ -742,6 +742,14 @@ const _en = <String, String>{
   'passkeyDeleteConfirmMessage': 'This passkey will be removed from your account.',
   'passkeyDevice': 'Device passkey',
   'passkeyAddFailed': 'Failed to add passkey. Please try again.',
+  'indigentProofRequired': 'Indigent Proof Required',
+  'uploadProofToFinalize': 'Please upload documents to finalize your status.',
+  'uploadProofNow': 'Upload Proof Now',
+  'bankReceipt': 'Bank Receipt Number',
+  'bankName': 'Bank Name',
+  'paymentProof': 'Payment Proof',
+  'submitProof': 'Submit Proof',
+  'biometricSessionExpired': 'Biometric session expired. Please sign in with PIN.',
 };
 
 const _am = <String, String>{
@@ -1421,6 +1429,14 @@ const _am = <String, String>{
   'passkeyDeleteConfirmMessage': 'ይህ ፓስኪ ከመለያዎ ይወገዳል።',
   'passkeyDevice': 'የመሣሪያ ፓስኪ',
   'passkeyAddFailed': 'ፓስኪ ማከል አልተሳካም። እንደገና ይሞክሩ።',
+  'indigentProofRequired': 'የድጋፍ ማስረጃ ያስፈልጋል',
+  'uploadProofToFinalize': 'ሁኔታዎን ለማረጋገጥ እባክዎን ሰነዶችን ይጫኑ።',
+  'uploadProofNow': 'አሁኑኑ ይጫኑ',
+  'bankReceipt': 'የባንክ ደረሰኝ ቁጥር',
+  'bankName': 'የባንክ ስም',
+  'paymentProof': 'የክፍያ ማስረጃ',
+  'submitProof': 'ማስረጃ አቅርብ',
+  'biometricSessionExpired': 'የባዮሜትሪክ ጊዜ አልፏል። እባክዎን በPIN ይግቡ።',
 };
 
 const _om = <String, String>{
@@ -2100,6 +2116,14 @@ const _om = <String, String>{
   'passkeyDeleteConfirmMessage': 'Paaskiin kun herrega kee irraa ni haqqama.',
   'passkeyDevice': 'Paaskii meeshaa',
   'passkeyAddFailed': 'Paaskii dabaluun hin milkoofne. Irra deebi\'i yaali.',
+  'indigentProofRequired': 'Ragaa deeggarsaa barbaachisa',
+  'uploadProofToFinalize': 'Haala kee mirkaneessuuf maaloo ragaalee fe\'i.',
+  'uploadProofNow': 'Amma fe\'i',
+  'bankReceipt': 'Lakkoofsa ragaa baankii',
+  'bankName': 'Maqaa baankii',
+  'paymentProof': 'Ragaa kaffaltii',
+  'submitProof': 'Ragaa ergi',
+  'biometricSessionExpired': 'Yeroon baayomeetrikii dhumee jira. Maaloo PINn seeni.',
 };
 
 final _strings = <String, Map<String, String>>{

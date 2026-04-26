@@ -16,7 +16,7 @@ class AppState extends Equatable {
     required this.isLoading,
     required this.isSyncing,
     this.error,
-    this.isDarkMode = false,
+    this.themeMode = ThemeMode.light,
   });
 
   factory AppState.initial() {
@@ -25,7 +25,7 @@ class AppState extends Equatable {
       locale: Locale('en'),
       isLoading: true,
       isSyncing: false,
-      isDarkMode: false,
+      themeMode: ThemeMode.system,
     );
   }
 
@@ -34,7 +34,9 @@ class AppState extends Equatable {
   final bool isLoading;
   final bool isSyncing;
   final String? error;
-  final bool isDarkMode;
+  final ThemeMode themeMode;
+
+  bool get isDarkMode => themeMode == ThemeMode.dark;
 
   AppState copyWith({
     CbhiSnapshot? snapshot,
@@ -42,7 +44,7 @@ class AppState extends Equatable {
     bool? isLoading,
     bool? isSyncing,
     String? error,
-    bool? isDarkMode,
+    ThemeMode? themeMode,
   }) {
     return AppState(
       snapshot: snapshot ?? this.snapshot,
@@ -50,7 +52,7 @@ class AppState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       isSyncing: isSyncing ?? this.isSyncing,
       error: error,
-      isDarkMode: isDarkMode ?? this.isDarkMode,
+      themeMode: themeMode ?? this.themeMode,
     );
   }
 
@@ -61,7 +63,7 @@ class AppState extends Equatable {
     isLoading,
     isSyncing,
     error,
-    isDarkMode,
+    themeMode,
   ];
 }
 
@@ -77,7 +79,13 @@ class AppCubit extends Cubit<AppState> {
       // Restore persisted locale and dark mode preference
       final prefs = await SharedPreferences.getInstance();
       final savedLocale = prefs.getString(_kLocaleKey);
-      final savedDark = prefs.getBool(_kDarkModeKey) ?? false;
+      final savedTheme = prefs.getString(_kDarkModeKey) ?? 'system';
+      final ThemeMode themeMode = switch (savedTheme) {
+        'light' => ThemeMode.light,
+        'dark' => ThemeMode.dark,
+        'system' => ThemeMode.system,
+        _ => ThemeMode.system,
+      };
       final locale = savedLocale != null ? Locale(savedLocale) : const Locale('en');
 
       final snapshot = await repository.loadCachedSnapshot();
@@ -85,7 +93,7 @@ class AppCubit extends Cubit<AppState> {
         snapshot: snapshot,
         isLoading: false,
         locale: locale,
-        isDarkMode: savedDark,
+        themeMode: themeMode,
       ));
     } catch (error) {
       emit(state.copyWith(isLoading: false, error: error.toString()));
@@ -145,12 +153,16 @@ class AppCubit extends Cubit<AppState> {
     );
   }
 
-  void toggleDarkMode() {
-    final newDark = !state.isDarkMode;
-    emit(state.copyWith(isDarkMode: newDark));
+  void setThemeMode(ThemeMode mode) {
+    emit(state.copyWith(themeMode: mode));
     SharedPreferences.getInstance().then(
-      (prefs) => prefs.setBool(_kDarkModeKey, newDark),
+      (prefs) => prefs.setString(_kDarkModeKey, mode.name),
     );
+  }
+
+  void toggleDarkMode() {
+    final next = state.themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    setThemeMode(next);
   }
 
   Future<void> refreshFromCache() async {

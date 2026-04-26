@@ -288,33 +288,48 @@ class ProfileScreen extends StatelessWidget {
 
         const SizedBox(height: 16),
 
-        // Dark mode toggle
+        // Theme Mode selection
         GlassCard(
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.dark_mode_outlined, color: AppTheme.primary, size: 20),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.palette_outlined, color: AppTheme.primary, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(strings.t('appearance'), style: Theme.of(context).textTheme.titleMedium),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(strings.t('darkMode'), style: Theme.of(context).textTheme.titleMedium),
-                    Text(strings.t('easierOnEyes'),
-                        style: Theme.of(context).textTheme.bodySmall),
-                  ],
-                ),
-              ),
-              Switch(
-                value: context.watch<AppCubit>().state.isDarkMode,
-                onChanged: (_) => context.read<AppCubit>().toggleDarkMode(),
-                activeThumbColor: AppTheme.primary,
+              const SizedBox(height: 16),
+              SegmentedButton<ThemeMode>(
+                segments: [
+                  ButtonSegment(
+                    value: ThemeMode.light,
+                    icon: const Icon(Icons.light_mode_outlined),
+                    label: Text(strings.t('light')),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.dark,
+                    icon: const Icon(Icons.dark_mode_outlined),
+                    label: Text(strings.t('dark')),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.system,
+                    icon: const Icon(Icons.settings_suggest_outlined),
+                    label: Text(strings.t('system')),
+                  ),
+                ],
+                selected: {context.watch<AppCubit>().state.themeMode},
+                onSelectionChanged: (Set<ThemeMode> newSelection) {
+                  context.read<AppCubit>().setThemeMode(newSelection.first);
+                },
               ),
             ],
           ),

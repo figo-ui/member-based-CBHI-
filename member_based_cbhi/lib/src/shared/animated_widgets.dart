@@ -147,7 +147,7 @@ class MetricCard extends StatelessWidget {
     final effectiveColor = color ?? AppTheme.primary;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(AppTheme.radiusM),
         boxShadow: AppTheme.subtleShadow,
       ),
@@ -168,15 +168,12 @@ class MetricCard extends StatelessWidget {
             value,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.textSecondary,
-            ),
+            style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
       ),
@@ -299,7 +296,7 @@ class GlassCard extends StatelessWidget {
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(AppTheme.radiusM),
             boxShadow: AppTheme.subtleShadow,
           ),
@@ -329,7 +326,7 @@ class EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(AppTheme.radiusM),
         boxShadow: AppTheme.subtleShadow,
       ),

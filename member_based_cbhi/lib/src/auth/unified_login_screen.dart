@@ -43,6 +43,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
   bool _pinLocked = false;
   int _biometricAttempts = 0;
   int _pinRemainingAttempts = PinService.maxFailAttempts; // shown below PIN dots
+  final _pinController = TextEditingController();
   String _pinInput = '';
   String? _error;
   bool _showEnrollBiometricBanner = false;
@@ -62,6 +63,18 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
     final pinSet = await PinService.hasPin();
     final pinLocked = pinSet ? await PinService.isLocked() : false;
     final remaining = pinSet ? await PinService.remainingAttempts() : PinService.maxFailAttempts;
+
+    _pinController.addListener(() {
+      if (_pinController.text.length <= PinService.maxLength) {
+        setState(() {
+          _pinInput = _pinController.text;
+          _error = null;
+        });
+        if (_pinInput.length == PinService.maxLength) {
+          _submitPin();
+        }
+      }
+    });
 
     if (!mounted) return;
     setState(() {
@@ -95,6 +108,12 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
         }
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _pinController.dispose();
+    super.dispose();
   }
 
   // ── Biometric ──────────────────────────────────────────────────────────────
@@ -363,6 +382,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
           onKeyTap: _onKeyTap,
           onBackspace: _onBackspace,
           onSubmit: _submitPin,
+          controller: _pinController,
         );
     }
   }
@@ -547,6 +567,7 @@ class _PinContent extends StatelessWidget {
     required this.onKeyTap,
     required this.onBackspace,
     required this.onSubmit,
+    this.controller,
   });
 
   final String pinInput;
@@ -556,6 +577,7 @@ class _PinContent extends StatelessWidget {
   final void Function(String) onKeyTap;
   final VoidCallback onBackspace;
   final VoidCallback onSubmit;
+  final TextEditingController? controller;
 
   @override
   Widget build(BuildContext context) {
@@ -612,8 +634,30 @@ class _PinContent extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // Numeric keypad
-          if (!locked) _NumericKeypad(onKeyTap: onKeyTap, onBackspace: onBackspace),
+          // On mobile, show the premium custom numeric keypad.
+          // On web/desktop, use the native device keyboard (hidden TextField).
+          if (!locked) ...[
+            if (kIsWeb)
+              SizedBox(
+                width: 0.1,
+                height: 0.1,
+                child: Opacity(
+                  opacity: 0,
+                  child: TextField(
+                    controller: controller,
+                    autofocus: true,
+                    keyboardType: TextInputType.number,
+                    onSubmitted: (_) => onSubmit(),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      counterText: '',
+                    ),
+                  ),
+                ),
+              )
+            else
+              _NumericKeypad(onKeyTap: onKeyTap, onBackspace: onBackspace),
+          ],
 
           if (locked)
             const Icon(Icons.lock_outline, size: 48, color: AppTheme.error),
