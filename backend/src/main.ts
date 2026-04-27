@@ -1,4 +1,4 @@
-// FIX MJ-8: Sentry MUST be imported before any other module
+// Sentry MUST be imported before any other module
 import './instrument';
 import 'dotenv/config';
 import { join } from 'path';
@@ -16,17 +16,15 @@ function assertRequiredEnv(): void {
   const isProduction = process.env.NODE_ENV === 'production';
   if (!isProduction) return;
 
-  // Accept either DATABASE_URL (connection string) or individual DB_* vars
   const hasDbUrl = !!process.env.DATABASE_URL;
   const dbVars = hasDbUrl ? [] : ['DB_HOST', 'DB_USERNAME', 'DB_PASSWORD', 'DB_NAME'];
-
   const required: string[] = ['AUTH_JWT_SECRET', 'DIGITAL_CARD_SECRET', ...dbVars];
   const missing = required.filter((key) => !process.env[key]);
+
   if (missing.length > 0) {
     console.error(`[STARTUP] Missing required environment variables: ${missing.join(', ')}`);
     process.exit(1);
   }
-
   if (process.env.AUTH_JWT_SECRET === 'maya-city-cbhi-secret') {
     console.error('[STARTUP] AUTH_JWT_SECRET is using the insecure default. Set a strong secret.');
     process.exit(1);
@@ -37,42 +35,55 @@ function assertRequiredEnv(): void {
   }
 }
 
-async function bootstrap() {
-  assertRequiredEnv();
+/**
+ * Returns true if the given origin is allowed.
+ * Shared logic with api/index.ts — keep in sync.
+ */
+function isOriginAllowed(origin: string | undefined, allowedOrigins: string[]): boolean {
+  if (!origin) return true;
 
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    cors: false, // Configured explicitly below
-    logger: new CbhiLogger(),
-  });
+  // Always allow any Vercel deployment (preview + production)
+  if (/^https:\/\/[^.]+\.vercel\.app$/.test(origin)) return true;
 
-  // ── Security headers ──────────────────────────────────────────────────────
-  app.use(helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow /uploads/ images
-  }));
+  // Wildcard '*' → allow everything
+  if (allowedOrigins.includes('*')) return true;
 
-  // ── CORS ──────────────────────────────────────────────────────────────────
-  const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? 'http://localhost:3000,http://localhost:4200')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
+  // Exact match
+  if (allowedOrigins.includes(origin)) return true;
 
-  // Wildcard patterns (e.g. "*.vercel.app") extracted separately
+  // Wildcard pattern match (e.g. "*.example.com")
   const wildcardPatterns = allowedOrigins
     .filter((o) => o.startsWith('*.'))
     .map((o) => new RegExp(`^https?://${o.slice(2).replace(/\./g, '\\.')}$`));
 
-  const exactOrigins = allowedOrigins.filter((o) => !o.startsWith('*.'));
+  return wildcardPatterns.some((re) => re.test(origin));
+}
+
+async function bootstrap() {
+  assertRequiredEnv();
+
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    cors: false,
+    logger: new CbhiLogger(),
+  });
+
+  // Security headers
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow /uploads/ images
+  }));
+
+  // CORS
+  const allowedOrigins = (
+    process.env.CORS_ALLOWED_ORIGINS ??
+    'http://localhost:3000,http://localhost:4200,http://10.0.2.2:3000'
+  )
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, Postman)
-      if (!origin) return callback(null, true);
-      // Exact match or wildcard '*'
-      if (exactOrigins.includes(origin) || exactOrigins.includes('*')) {
-        return callback(null, true);
-      }
-      // Wildcard pattern match (e.g. *.vercel.app)
-      if (wildcardPatterns.some((re) => re.test(origin))) {
+      if (isOriginAllowed(origin, allowedOrigins)) {
         return callback(null, true);
       }
       return callback(new Error(`CORS: origin ${origin} not allowed`), false);
@@ -80,27 +91,22 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   app.setGlobalPrefix('api/v1');
   app.useWebSocketAdapter(new IoAdapter(app));
-  app.useStaticAssets(join(process.cwd(), 'uploads'), {
-    prefix: '/uploads/',
-  });
+  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
-  // ── Global filters & pipes ────────────────────────────────────────────────
+  // Global filters & pipes
   app.useGlobalFilters(new GlobalExceptionFilter());
-  // FIX QW-7: Global 30-second request timeout
   app.useGlobalInterceptors(new TimeoutInterceptor(30_000));
   app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidUnknownValues: false,
-    }),
+    new ValidationPipe({ whitelist: true, transform: true, forbidUnknownValues: false }),
   );
 
-  // ── Swagger (non-production only) ────────────────────────────────────────
+  // Swagger (non-production only)
   if (process.env.NODE_ENV !== 'production') {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -122,7 +128,7 @@ async function bootstrap() {
       SwaggerModule.setup('api/docs', app, document);
       console.log('[Bootstrap] Swagger docs available at /api/docs');
     } catch {
-      console.log('[Bootstrap] @nestjs/swagger not installed — skipping docs. Run: npm install @nestjs/swagger');
+      console.log('[Bootstrap] @nestjs/swagger not installed — skipping docs.');
     }
   }
 
@@ -130,4 +136,5 @@ async function bootstrap() {
   await app.listen(port, '0.0.0.0');
   console.log(`[Bootstrap] Server running on port ${port} (${process.env.NODE_ENV ?? 'development'})`);
 }
+
 void bootstrap();

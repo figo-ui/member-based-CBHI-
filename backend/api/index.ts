@@ -1,6 +1,5 @@
-  /**
+/**
  * Vercel serverless entry point for NestJS.
- * Wraps the NestJS app as an Express handler for Vercel's serverless runtime.
  *
  * Limitations on Vercel vs a persistent server:
  *   - Bull/Redis job queues are disabled (no persistent process)
@@ -25,6 +24,46 @@ import type { Request, Response } from 'express';
 
 let cachedApp: NestExpressApplication | null = null;
 
+// ── CORS helpers ──────────────────────────────────────────────────────────────
+
+/**
+ * Returns true if the given origin is allowed.
+ * Rules (in order):
+ *  1. No origin (mobile apps, curl, Postman) → always allow
+ *  2. Any *.vercel.app deployment → always allow (covers all preview + prod deployments)
+ *  3. Exact match in CORS_ALLOWED_ORIGINS env var
+ *  4. Wildcard pattern match (e.g. "*.example.com" entries in the env var)
+ */
+function isOriginAllowed(origin: string | undefined): boolean {
+  if (!origin) return true;
+
+  // Always allow any Vercel deployment (preview + production)
+  if (/^https:\/\/[^.]+\.vercel\.app$/.test(origin)) return true;
+
+  const rawOrigins = (
+    process.env.CORS_ALLOWED_ORIGINS ??
+    'https://member-based-cbhi.vercel.app,https://members-cbhi-app.vercel.app,https://cbhi-admin.vercel.app,https://cbhi-facility.vercel.app,http://localhost:3000,http://localhost:4200,http://10.0.2.2:3000'
+  )
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  // Wildcard '*' → allow everything
+  if (rawOrigins.includes('*')) return true;
+
+  // Exact match
+  if (rawOrigins.includes(origin)) return true;
+
+  // Wildcard pattern match (e.g. "*.example.com")
+  const wildcardPatterns = rawOrigins
+    .filter((o) => o.startsWith('*.'))
+    .map((o) => new RegExp(`^https?://${o.slice(2).replace(/\./g, '\\.')}$`));
+
+  return wildcardPatterns.some((re) => re.test(origin));
+}
+
+// ── App factory (cached across warm invocations) ──────────────────────────────
+
 async function createApp(): Promise<NestExpressApplication> {
   if (cachedApp) return cachedApp;
 
@@ -35,34 +74,9 @@ async function createApp(): Promise<NestExpressApplication> {
 
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
-  const allowedOrigins = (
-    process.env.CORS_ALLOWED_ORIGINS ??
-    'https://member-based-cbhi.vercel.app,https://cbhi-admin.vercel.app,https://cbhi-facility.vercel.app'
-  )
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
-
-  // Wildcard patterns (e.g. "*.vercel.app") extracted separately
-  const wildcardPatterns = allowedOrigins
-    .filter((o) => o.startsWith('*.'))
-    .map((o) => new RegExp(`^https?://${o.slice(2).replace(/\./g, '\\.')}$`));
-
-  const exactOrigins = allowedOrigins.filter((o) => !o.startsWith('*.'));
-
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      // Exact match or wildcard '*'
-      if (exactOrigins.includes(origin) || exactOrigins.includes('*')) {
-        return callback(null, true);
-      }
-      // Wildcard pattern match (e.g. *.vercel.app)
-      if (wildcardPatterns.some((re) => re.test(origin))) {
-        return callback(null, true);
-      }
-      // Always allow all *.vercel.app preview deployments
-      if (/^https:\/\/[^.]+\.vercel\.app$/.test(origin)) {
+      if (isOriginAllowed(origin)) {
         return callback(null, true);
       }
       return callback(new Error(`CORS: origin ${origin} not allowed`), false);
@@ -81,7 +95,7 @@ async function createApp(): Promise<NestExpressApplication> {
     new ValidationPipe({ whitelist: true, transform: true, forbidUnknownValues: false }),
   );
 
-  // --- Swagger Configuration ---
+  // Swagger — always enabled (useful for debugging on Vercel)
   const config = new DocumentBuilder()
     .setTitle('Maya City CBHI API')
     .setDescription('Community-Based Health Insurance Digital Platform API')
@@ -95,13 +109,11 @@ async function createApp(): Promise<NestExpressApplication> {
     .addTag('vision', 'Document text extraction & validation')
     .addTag('health', 'System health checks')
     .build();
-  
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/v1/docs', app, document, {
     customSiteTitle: 'Maya City CBHI API Docs',
-    swaggerOptions: {
-      persistAuthorization: true,
-    },
+    swaggerOptions: { persistAuthorization: true },
   });
 
   await app.init();
@@ -109,10 +121,14 @@ async function createApp(): Promise<NestExpressApplication> {
   return app;
 }
 
-// Vercel serverless handler
+// ── Vercel serverless handler ─────────────────────────────────────────────────
+
 export default async function handler(req: Request, res: Response) {
-  // Root path — return API info without going through NestJS
+  const origin = req.headers['origin'] as string | undefined;
+
+  // Root path — lightweight health/info response, no NestJS boot needed
   if (req.url === '/' || req.url === '') {
+    if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Content-Type', 'application/json');
     res.status(200).json({
       name: 'Maya City CBHI API',
@@ -123,27 +139,20 @@ export default async function handler(req: Request, res: Response) {
     return;
   }
 
-  // Handle OPTIONS preflight immediately — before NestJS boots.
-  // This prevents cold-start latency from blocking CORS preflight checks.
+  // Handle OPTIONS preflight BEFORE NestJS boots.
+  // This eliminates cold-start latency from blocking browser preflight checks.
   if (req.method === 'OPTIONS') {
-    const origin = req.headers['origin'] as string | undefined;
-    const isAllowed =
-      !origin ||
-      /^https:\/\/[^.]+\.vercel\.app$/.test(origin) ||
-      (process.env.CORS_ALLOWED_ORIGINS ?? '')
-        .split(',')
-        .map((o) => o.trim())
-        .includes(origin);
-
-    if (isAllowed || !origin) {
+    if (isOriginAllowed(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin ?? '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
       res.setHeader('Access-Control-Allow-Credentials', 'true');
-      res.setHeader('Access-Control-Max-Age', '86400'); // 24h preflight cache
+      res.setHeader('Access-Control-Max-Age', '86400'); // cache preflight for 24h
       res.status(204).end();
-      return;
+    } else {
+      res.status(403).json({ message: `CORS: origin ${origin} not allowed` });
     }
+    return;
   }
 
   const app = await createApp();
