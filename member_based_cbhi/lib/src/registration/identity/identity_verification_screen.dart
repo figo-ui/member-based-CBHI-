@@ -210,7 +210,7 @@ class _IdentityVerificationScreenState
                                         Icons.category_outlined,
                                         color: AppTheme.m3OnSurfaceVariant),
                                   ),
-                                  value: selectedIdentityType,
+                                  initialValue: selectedIdentityType,
                                   items: [
                                     DropdownMenuItem(
                                         value: 'NATIONAL_ID',
@@ -255,9 +255,12 @@ class _IdentityVerificationScreenState
                                             : null,
                                   ),
                                   validator: (v) {
-                                    if (v == null || v.isEmpty)
+                                    if (v == null || v.isEmpty) {
                                       return strings.t('required');
-                                    if (_idError != null) return _idError;
+                                    }
+                                    if (_idError != null) {
+                                      return _idError;
+                                    }
                                     return null;
                                   },
                                   onChanged: (v) {
@@ -476,7 +479,7 @@ class _IdentityVerificationScreenState
                                     Icons.work_history_outlined,
                                     color: AppTheme.m3OnSurfaceVariant),
                               ),
-                              value: selectedEmploymentStatus,
+                              initialValue: selectedEmploymentStatus,
                               items: employmentOptions
                                   .map((option) => DropdownMenuItem(
                                         value: option['value'],

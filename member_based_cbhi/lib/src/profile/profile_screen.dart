@@ -1101,13 +1101,11 @@ class _M3SettingsTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.trailing,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -1128,7 +1126,7 @@ class _M3SettingsTile extends StatelessWidget {
                 ),
               ),
             ),
-            trailing ?? const Icon(
+            const Icon(
               Icons.chevron_right,
               size: 20,
               color: AppTheme.m3OnSurfaceVariant,

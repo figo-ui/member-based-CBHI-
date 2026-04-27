@@ -421,7 +421,7 @@ class _StepCard extends StatelessWidget {
                 height: 1.5,
               ),
             ),
-            ?child,
+            if (child != null) child!,
           ],
         ),
       ),
