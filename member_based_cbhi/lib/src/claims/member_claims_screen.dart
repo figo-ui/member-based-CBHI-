@@ -3,7 +3,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../cbhi_data.dart';
 import '../cbhi_localizations.dart';
-import '../shared/animated_widgets.dart';
 import '../shared/premium_widgets.dart';
 import '../theme/app_theme.dart';
 

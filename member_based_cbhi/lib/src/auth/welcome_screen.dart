@@ -34,68 +34,81 @@ class WelcomeScreen extends StatelessWidget {
 
                 const Spacer(flex: 2),
 
-                // Logo
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    width: 40,
-                    height: 40,
-                    fit: BoxFit.contain,
-                  ),
-                )
-                    .animate()
-                    .fadeIn(duration: 600.ms)
-                    .scale(
-                      begin: const Offset(0.8, 0.8),
-                      end: const Offset(1, 1),
-                      duration: 600.ms,
-                      curve: Curves.easeOutBack,
+                const Spacer(flex: 2),
+
+                // Logo Centered
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
                     ),
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.contain,
+                    ),
+                  )
+                      .animate()
+                      .fadeIn(duration: 600.ms)
+                      .scale(
+                        begin: const Offset(0.8, 0.8),
+                        end: const Offset(1, 1),
+                        duration: 600.ms,
+                        curve: Curves.easeOutBack,
+                      ),
+                ),
 
                 const SizedBox(height: 28),
 
-                // Title
-                Text(
-                  strings.t('appTitle'),
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        height: 1.15,
-                      ),
-                )
-                    .animate()
-                    .fadeIn(duration: 600.ms, delay: 200.ms)
-                    .slideX(begin: -0.1, end: 0, duration: 600.ms, delay: 200.ms),
+                // Title Centered
+                Center(
+                  child: Text(
+                    strings.t('appTitle'),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          height: 1.15,
+                        ),
+                  )
+                      .animate()
+                      .fadeIn(duration: 600.ms, delay: 200.ms)
+                      .slideY(begin: 0.1, end: 0, duration: 600.ms, delay: 200.ms),
+                ),
 
                 const SizedBox(height: 16),
 
-                // Subtitle
-                Text(
-                  strings.t('welcomeSubtitle'),
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.88),
-                        height: 1.5,
-                      ),
-                ).animate().fadeIn(duration: 500.ms, delay: 400.ms),
+                // Subtitle Centered
+                Center(
+                  child: Text(
+                    strings.t('welcomeSubtitle'),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.88),
+                          height: 1.5,
+                        ),
+                  ).animate().fadeIn(duration: 500.ms, delay: 400.ms),
+                ),
 
                 const SizedBox(height: 12),
 
                 // Feature chips
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _FeatureChip(label: strings.t('multilingual'), icon: Icons.translate),
-                    _FeatureChip(label: strings.t('digitalCard'), icon: Icons.qr_code_2),
-                    _FeatureChip(label: strings.t('claimsTracking'), icon: Icons.receipt_long),
-                    _FeatureChip(label: strings.t('offlineReady'), icon: Icons.cloud_off_outlined),
-                  ],
-                ).animate().fadeIn(duration: 500.ms, delay: 550.ms),
+                Center(
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _FeatureChip(label: strings.t('multilingual'), icon: Icons.translate),
+                      _FeatureChip(label: strings.t('digitalCard'), icon: Icons.qr_code_2),
+                      _FeatureChip(label: strings.t('claimsTracking'), icon: Icons.receipt_long),
+                      _FeatureChip(label: strings.t('offlineReady'), icon: Icons.cloud_off_outlined),
+                    ],
+                  ).animate().fadeIn(duration: 500.ms, delay: 550.ms),
+                ),
 
                 const Spacer(flex: 3),
 

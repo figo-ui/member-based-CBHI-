@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -317,6 +316,7 @@ class ProfileScreen extends StatelessWidget {
             ],
           ),
         ),
+        ),
 
         const SizedBox(height: 16),
 
@@ -373,6 +373,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
 
         const SizedBox(height: 16),
@@ -433,6 +434,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
 
         const SizedBox(height: 24),
