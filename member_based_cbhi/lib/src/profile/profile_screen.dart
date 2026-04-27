@@ -87,16 +87,21 @@ class ProfileScreen extends StatelessWidget {
               ),
             ],
           ),
-        )
-            .animate()
-            .fadeIn(duration: 500.ms)
-            .slideY(begin: 0.08, end: 0, duration: 500.ms, curve: Curves.easeOutCubic),
+        ),
 
         const SizedBox(height: 20),
 
         // Profile details card
-        GlassCard(
-          child: Column(
+        Card(
+          elevation: 0,
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(strings.t('profileDetails'), style: Theme.of(context).textTheme.titleMedium),
@@ -148,15 +153,19 @@ class ProfileScreen extends StatelessWidget {
               ),
             ],
           ),
-        )
-            .animate()
-            .fadeIn(duration: 400.ms, delay: 150.ms)
-            .slideY(begin: 0.06, end: 0, duration: 400.ms, delay: 150.ms),
+          ),
+        ),
 
         const SizedBox(height: 20),
 
         if (!authState.isFamilyMember && session != null) ...[
-          GlassCard(
+          Card(
+            elevation: 0,
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+            ),
             child: ListTile(
               leading: Icon(Icons.volunteer_activism_outlined,
                   color: Theme.of(context).colorScheme.primary),
@@ -197,7 +206,13 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 12),
 
           // Benefit Package — what's covered
-          GlassCard(
+          Card(
+            elevation: 0,
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+            ),
             child: ListTile(
               leading: const Icon(Icons.health_and_safety_outlined, color: AppTheme.primary),
               title: Text(strings.t('benefitPackageTitle')),
@@ -211,7 +226,13 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 12),
 
           // Coverage History
-          GlassCard(
+          Card(
+            elevation: 0,
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+            ),
             child: ListTile(
               leading: const Icon(Icons.history_outlined, color: AppTheme.accent),
               title: Text(strings.t('coverageHistory')),
@@ -225,7 +246,13 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 12),
 
           // Grievances
-          GlassCard(
+          Card(
+            elevation: 0,
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+            ),
             child: ListTile(
               leading: const Icon(Icons.gavel_outlined, color: AppTheme.warning),
               title: Text(strings.t('grievancesTitle')),
@@ -240,8 +267,16 @@ class ProfileScreen extends StatelessWidget {
         ],
 
         // Language selection
-        GlassCard(
-          child: Column(
+        Card(
+          elevation: 0,
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -281,16 +316,21 @@ class ProfileScreen extends StatelessWidget {
               ),
             ],
           ),
-        )
-            .animate()
-            .fadeIn(duration: 400.ms, delay: 250.ms)
-            .slideY(begin: 0.06, end: 0, duration: 400.ms, delay: 250.ms),
+        ),
 
         const SizedBox(height: 16),
 
         // Theme Mode selection
-        GlassCard(
-          child: Column(
+        Card(
+          elevation: 0,
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -333,33 +373,32 @@ class ProfileScreen extends StatelessWidget {
               ),
             ],
           ),
-        )
-            .animate()
-            .fadeIn(duration: 400.ms, delay: 300.ms)
-            .slideY(begin: 0.06, end: 0, duration: 400.ms, delay: 300.ms),
+        ),
 
         const SizedBox(height: 16),
 
         // Biometric login toggle
-        const _BiometricToggle()
-            .animate()
-            .fadeIn(duration: 400.ms, delay: 320.ms)
-            .slideY(begin: 0.06, end: 0, duration: 400.ms, delay: 320.ms),
+        const _BiometricToggle(),
 
         const SizedBox(height: 16),
 
         // Passkeys section (web only)
         if (kIsWeb) ...[
-          _PasskeysSection(repository: context.read<AppCubit>().repository)
-              .animate()
-              .fadeIn(duration: 400.ms, delay: 335.ms)
-              .slideY(begin: 0.06, end: 0, duration: 400.ms, delay: 335.ms),
+          _PasskeysSection(repository: context.read<AppCubit>().repository),
           const SizedBox(height: 16),
         ],
 
         // App info card
-        GlassCard(
-          child: Column(
+        Card(
+          elevation: 0,
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -394,10 +433,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ],
           ),
-        )
-            .animate()
-            .fadeIn(duration: 400.ms, delay: 350.ms)
-            .slideY(begin: 0.06, end: 0, duration: 400.ms, delay: 350.ms),
+        ),
 
         const SizedBox(height: 24),
 
@@ -407,7 +443,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           icon: const Icon(Icons.help_outline),
           label: Text(strings.t('helpAndFaq')),
-        ).animate().fadeIn(duration: 400.ms, delay: 420.ms),
+        ),
 
         const SizedBox(height: 12),
 
@@ -415,7 +451,7 @@ class ProfileScreen extends StatelessWidget {
           onPressed: () => _showChangePasswordDialog(context),
           icon: const Icon(Icons.lock_reset_outlined),
           label: Text(strings.t('changePassword')),
-        ).animate().fadeIn(duration: 400.ms, delay: 430.ms),
+        ),
 
         const SizedBox(height: 12),
 
@@ -427,7 +463,7 @@ class ProfileScreen extends StatelessWidget {
             foregroundColor: AppTheme.error,
             side: BorderSide(color: AppTheme.error.withValues(alpha: 0.5)),
           ),
-        ).animate().fadeIn(duration: 400.ms, delay: 400.ms),
+        ),
 
         const SizedBox(height: 12),
 
@@ -436,7 +472,7 @@ class ProfileScreen extends StatelessWidget {
           icon: const Icon(Icons.delete_forever_outlined, color: AppTheme.error),
           label: Text(strings.t('deleteAccount'),
               style: const TextStyle(color: AppTheme.error)),
-        ).animate().fadeIn(duration: 400.ms, delay: 460.ms),
+        ),
 
         const SizedBox(height: 24),
       ],

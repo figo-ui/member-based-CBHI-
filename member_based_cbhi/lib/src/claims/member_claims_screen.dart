@@ -157,12 +157,53 @@ class _MemberClaimsScreenState extends State<MemberClaimsScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(
               AppTheme.spacingM, AppTheme.spacingM, AppTheme.spacingM, 0),
-          child: AnimatedHeroCard(
-            icon: Icons.receipt_long_outlined,
-            title: strings.t('myClaims'),
-            subtitle: strings.t('trackClaimsSubtitle'),
-            value: '${claims.length} ${strings.t('claims')}',
-          ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0),
+          child: Card(
+            elevation: 0,
+            color: Theme.of(context).colorScheme.primaryContainer,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    child: const Icon(Icons.receipt_long_outlined),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strings.t('myClaims'),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          strings.t('trackClaimsSubtitle'),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    '${claims.length} ${strings.t('claims')}',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
 
         const SizedBox(height: AppTheme.spacingM),
@@ -280,149 +321,152 @@ class _ClaimCard extends StatelessWidget {
     final decisionNote = claim['decisionNote']?.toString();
     final color = _statusColor(status);
 
-    return PremiumCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
+    return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: color.withValues(alpha: 0.2),
+                  foregroundColor: color,
+                  child: Icon(_statusIcon(status), size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Facility name is primary — more meaningful than claim number
+                      Text(
+                        facilityName,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        claimNumber,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppTheme.textSecondary,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                StatusPill(label: status, color: color),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Divider(),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _DetailItem(
+                    label: strings.t('serviceDate'),
+                    value: serviceDate?.split('T').first ?? 'N/A',
+                  ),
+                ),
+                Expanded(
+                  child: _DetailItem(
+                    label: strings.t('claimed'),
+                    value: claimedAmount != null
+                        ? '$claimedAmount ETB'
+                        : 'N/A',
+                  ),
+                ),
+                if (approvedAmount != null &&
+                    double.tryParse(approvedAmount.toString()) != null &&
+                    double.parse(approvedAmount.toString()) > 0)
+                  Expanded(
+                    child: _DetailItem(
+                      label: strings.t('approved'),
+                      value: '$approvedAmount ETB',
+                      valueColor: AppTheme.success,
+                    ),
+                  ),
+              ],
+            ),
+            if (decisionNote != null && decisionNote.isNotEmpty) ...[
+              const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(_statusIcon(status), color: color, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Facility name is primary — more meaningful than claim number
-                    Text(
-                      facilityName,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      claimNumber,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
+                    const Icon(Icons.notes_outlined,
+                        size: 14, color: AppTheme.textSecondary),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        decisionNote,
+                        style: Theme.of(context).textTheme.bodySmall,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
               ),
-              StatusPill(label: status, color: color),
             ],
-          ),
-          const SizedBox(height: 12),
-          const Divider(),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _DetailItem(
-                  label: strings.t('serviceDate'),
-                  value: serviceDate?.split('T').first ?? 'N/A',
+            // Appeal button for rejected claims
+            if (alreadyAppealed) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.warning.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.warning.withValues(alpha: 0.3)),
                 ),
-              ),
-              Expanded(
-                child: _DetailItem(
-                  label: strings.t('claimed'),
-                  value: claimedAmount != null
-                      ? '$claimedAmount ETB'
-                      : 'N/A',
-                ),
-              ),
-              if (approvedAmount != null &&
-                  double.tryParse(approvedAmount.toString()) != null &&
-                  double.parse(approvedAmount.toString()) > 0)
-                Expanded(
-                  child: _DetailItem(
-                    label: strings.t('approved'),
-                    value: '$approvedAmount ETB',
-                    valueColor: AppTheme.success,
-                  ),
-                ),
-            ],
-          ),
-          if (decisionNote != null && decisionNote.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceLight,
-                borderRadius: BorderRadius.circular(AppTheme.radiusS),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.notes_outlined,
-                      size: 14, color: AppTheme.textSecondary),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      decisionNote,
-                      style: Theme.of(context).textTheme.bodySmall,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.hourglass_empty, size: 14, color: AppTheme.warning),
+                    const SizedBox(width: 6),
+                    Text(
+                      CbhiLocalizations.of(context).t('appealPending'),
+                      style: const TextStyle(
+                          color: AppTheme.warning,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+            ] else if (canAppeal) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: onAppeal,
+                icon: const Icon(Icons.gavel_outlined, size: 16),
+                label: Text(CbhiLocalizations.of(context).t('submitAppeal')),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                  side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  minimumSize: const Size(0, 40),
+                ),
+              ),
+            ],
           ],
-          // Appeal button for rejected claims
-          if (alreadyAppealed) ...[
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppTheme.warning.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(AppTheme.radiusS),
-                border: Border.all(color: AppTheme.warning.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.hourglass_empty, size: 14, color: AppTheme.warning),
-                  const SizedBox(width: 6),
-                  Text(
-                    CbhiLocalizations.of(context).t('appealPending'),
-                    style: const TextStyle(
-                        color: AppTheme.warning,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-          ] else if (canAppeal) ...[
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: onAppeal,
-              icon: const Icon(Icons.gavel_outlined, size: 16),
-              label: Text(CbhiLocalizations.of(context).t('submitAppeal')),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.primary,
-                side: const BorderSide(color: AppTheme.primary),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                minimumSize: const Size(0, 40),
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
-    )
-        .animate()
-        .fadeIn(duration: 350.ms, delay: (index * 60).ms)
-        .slideY(begin: 0.05, end: 0, duration: 350.ms, delay: (index * 60).ms);
+    );
   }
 }
 

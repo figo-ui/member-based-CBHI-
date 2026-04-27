@@ -71,8 +71,13 @@ class DashboardScreen extends StatelessWidget {
                     
                     const SizedBox(height: AppTheme.spacingM),
 
-                    BentoGrid(
+                    GridView.count(
                       crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio: 1.5,
                       children: [
                         // Grid items
                         _QuickStatTile(
@@ -224,152 +229,113 @@ class _CoverageHeroCard extends StatelessWidget {
       subtitle = '${strings.t('householdCode')}: ${snapshot.householdCode}';
     }
 
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppTheme.primary,
-        borderRadius: BorderRadius.circular(AppTheme.radiusL),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primary.withValues(alpha: 0.25),
-            blurRadius: 32,
-            offset: const Offset(0, 16),
-          ),
-        ],
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      elevation: 0,
+      color: colorScheme.primaryContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppTheme.spacingL),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(AppTheme.radiusS),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                      ),
-                      child: Icon(
-                        isFamilyMember
-                            ? Icons.person
-                            : (isIndigent
-                                ? Icons.volunteer_activism_outlined
-                                : Icons.home_work_outlined),
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        isFamilyMember
-                            ? strings.t('beneficiaryProfile')
-                            : strings.t('household'),
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
-                            ),
-                      ),
-                    ),
-                    // Status pill (Glass style)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.20),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: status.toUpperCase() == 'ACTIVE' ? Colors.white : AppTheme.gold,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            status,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                CircleAvatar(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  child: Icon(
+                    isFamilyMember
+                        ? Icons.person
+                        : (isIndigent
+                            ? Icons.volunteer_activism_outlined
+                            : Icons.home_work_outlined),
+                  ),
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  snapshot.householdCode.isEmpty
-                      ? strings.t('guestSession')
-                      : snapshot.viewerName,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontWeight: FontWeight.w500,
-                      ),
-                ),
-                if (isFamilyMember || isIndigent || expiryLabel.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isFamilyMember 
-                            ? Icons.badge_outlined 
-                            : (isIndigent ? Icons.handshake_outlined : Icons.calendar_today_outlined),
-                          color: Colors.white.withValues(alpha: 0.9),
-                          size: 14,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    isFamilyMember
+                        ? strings.t('beneficiaryProfile')
+                        : strings.t('household'),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                          color: colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          isFamilyMember 
-                            ? strings.t('familyMemberSession')
-                            : (isIndigent ? strings.t('indigentMembership') : expiryLabel),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                  ),
+                ),
+                // Status pill
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: status.toUpperCase() == 'ACTIVE' 
+                        ? Colors.green.shade100 
+                        : Colors.orange.shade100,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    status,
+                    style: TextStyle(
+                      color: status.toUpperCase() == 'ACTIVE' 
+                          ? Colors.green.shade900 
+                          : Colors.orange.shade900,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Text(
+              snapshot.householdCode.isEmpty
+                  ? strings.t('guestSession')
+                  : snapshot.viewerName,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                  ),
+            ),
+            if (isFamilyMember || isIndigent || expiryLabel.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(
+                    isFamilyMember 
+                      ? Icons.badge_outlined 
+                      : (isIndigent ? Icons.handshake_outlined : Icons.calendar_today_outlined),
+                    color: colorScheme.onPrimaryContainer,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    isFamilyMember 
+                      ? strings.t('familyMemberSession')
+                      : (isIndigent ? strings.t('indigentMembership') : expiryLabel),
+                    style: TextStyle(
+                      color: colorScheme.onPrimaryContainer,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
-
   }
 }
 
@@ -390,11 +356,53 @@ class _QuickStatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MetricTile(
-      label: label,
-      value: value,
-      icon: icon,
-      color: color,
+    final theme = Theme.of(context);
+    final iconColor = color ?? theme.colorScheme.primary;
+
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 20, color: iconColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -435,82 +443,98 @@ class _RenewalSection extends StatelessWidget {
     // Show renew button when not active, expired, or expiring soon
     final showRenewButton = !isActive || isExpiringSoon || isExpired;
 
-    return PremiumCard(
-      padding: const EdgeInsets.all(AppTheme.spacingM),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppTheme.gold.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.payments_outlined,
-                    color: AppTheme.gold, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  strings.t('renewalStatus'),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              if (isActive && !isExpiringSoon)
-                StatusPill(
-                  label: strings.t('active'),
-                  color: AppTheme.success,
-                  compact: true,
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          const SizedBox(height: 14),
-          // Renewal reminder widget handles expiry messaging
-          RenewalReminderWidget(snapshot: snapshot, onRenew: onRenew),
-          if (showRenewButton) ...[
-            const SizedBox(height: 12),
+    return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Row(
               children: [
+                CircleAvatar(
+                  backgroundColor: Colors.orange.shade100,
+                  foregroundColor: Colors.orange.shade900,
+                  child: const Icon(Icons.payments_outlined, size: 20),
+                ),
+                const SizedBox(width: 16),
                 Expanded(
-                  child: _InfoChip(
-                    label: strings.t('premium'),
-                    value: snapshot.premiumAmount > 0
-                        ? '${snapshot.premiumAmount.toStringAsFixed(0)} ETB'
-                        : _calcDisplayPremium(snapshot),
-                    icon: Icons.payments_outlined,
-                    color: AppTheme.gold,
+                  child: Text(
+                    strings.t('renewalStatus'),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _InfoChip(
-                    label: strings.t('paid'),
-                    value:
-                        '${snapshot.paidAmount.toStringAsFixed(0)} ETB',
-                    icon: Icons.account_balance_wallet_outlined,
-                    color: AppTheme.accent,
+                if (isActive && !isExpiringSoon)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade100,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      strings.t('active'),
+                      style: TextStyle(
+                        color: Colors.green.shade900,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                ),
               ],
             ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: isSyncing ? null : onRenew,
-              icon: const Icon(Icons.autorenew, size: 18),
-              label: Text(
-                snapshot.premiumAmount > 0
-                    ? strings.t('renewCoverage')
-                    : strings.t('payPremiumNow'),
+            const SizedBox(height: 16),
+            // Renewal reminder widget handles expiry messaging
+            RenewalReminderWidget(snapshot: snapshot, onRenew: onRenew),
+            if (showRenewButton) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _InfoChip(
+                      label: strings.t('premium'),
+                      value: snapshot.premiumAmount > 0
+                          ? '${snapshot.premiumAmount.toStringAsFixed(0)} ETB'
+                          : _calcDisplayPremium(snapshot),
+                      icon: Icons.payments_outlined,
+                      color: Colors.orange.shade900,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _InfoChip(
+                      label: strings.t('paid'),
+                      value:
+                          '${snapshot.paidAmount.toStringAsFixed(0)} ETB',
+                      icon: Icons.account_balance_wallet_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: isSyncing ? null : onRenew,
+                  icon: const Icon(Icons.autorenew, size: 18),
+                  label: Text(
+                    snapshot.premiumAmount > 0
+                        ? strings.t('renewCoverage')
+                        : strings.t('payPremiumNow'),
+                  ),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -560,53 +584,58 @@ class _SyncStatusCard extends StatelessWidget {
         ? _formatDateLabel(syncedDate.toIso8601String())
         : '';
 
-    return PremiumCard(
-      padding: const EdgeInsets.all(AppTheme.spacingM),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: syncColor.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(12),
+    return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: isPending ? Colors.orange.shade100 : Colors.green.shade100,
+              foregroundColor: isPending ? Colors.orange.shade900 : Colors.green.shade900,
+              child: Icon(syncIcon, size: 20),
             ),
-            child: Icon(syncIcon, color: syncColor, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isPending
-                      ? strings.t('offlineQueueActive')
-                      : strings.t('householdSynced'),
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (syncLabel.isNotEmpty) ...[
-                  const SizedBox(height: 2),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    syncLabel,
-                    style: Theme.of(context).textTheme.bodySmall,
+                    isPending
+                        ? strings.t('offlineQueueActive')
+                        : strings.t('householdSynced'),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                    overflow: TextOverflow.ellipsis,
                   ),
+                  if (syncLabel.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      syncLabel,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                 ],
-              ],
-            ),
-          ),
-          // Sync spinner when actively syncing
-          if (isSyncing)
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: AppTheme.primary,
               ),
             ),
-        ],
+            // Sync spinner when actively syncing
+            if (isSyncing)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -657,46 +686,65 @@ class _PaymentHistorySection extends StatelessWidget {
             final method = _formatPaymentMethodLabel(payment['method']?.toString());
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: PremiumCard(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 14),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.gold.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.payments_outlined,
-                          color: AppTheme.gold, size: 20),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${payment['amount']?.toString() ?? '0'} ETB',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '$method \u2022 ${_formatDateLabel(payment['paidAt'] ?? payment['createdAt'])}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    StatusPill(
-                        label: payment['status']?.toString() ?? 'UNKNOWN'),
-                  ],
+              child: Card(
+                elevation: 0,
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
                 ),
-              );
+                margin: EdgeInsets.zero,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: Colors.orange.shade100,
+                        foregroundColor: Colors.orange.shade900,
+                        child: const Icon(Icons.payments_outlined, size: 20),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${payment['amount']?.toString() ?? '0'} ETB',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '$method \u2022 ${_formatDateLabel(payment['paidAt'] ?? payment['createdAt'])}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          payment['status']?.toString() ?? 'UNKNOWN',
+                          style: TextStyle(
+                            color: Colors.blue.shade900,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
           }),
       ],
     );
@@ -767,81 +815,79 @@ class _RecentNotificationsSection extends StatelessWidget {
             final isRead = notification['isRead'] == true;
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: PremiumCard(
-                onTap: notification['id'] == null
-                    ? null
-                    : () => context
-                        .read<AppCubit>()
-                        .markNotificationRead(
-                            notification['id'].toString()),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 14),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: (isRead
-                                ? AppTheme.textSecondary
-                                : AppTheme.accent)
-                            .withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        isRead
-                            ? Icons.mark_email_read_outlined
-                            : Icons.notifications_active_outlined,
-                        color: isRead
-                            ? AppTheme.textSecondary
-                            : AppTheme.accent,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            notification['title']?.toString() ??
-                                strings.t('notifications'),
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w600),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            notification['message']?.toString() ?? '',
-                            style:
-                                Theme.of(context).textTheme.bodySmall,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!isRead)
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: AppTheme.accent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                  ],
+              child: Card(
+                elevation: 0,
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
                 ),
-              )
-                  .animate()
-                  .fadeIn(
-                      duration: 350.ms, delay: (50 * entry.key).ms)
-                  .slideX(
-                      begin: 0.05,
-                      end: 0,
-                      duration: 350.ms,
-                      delay: (50 * entry.key).ms),
+                margin: EdgeInsets.zero,
+                child: InkWell(
+                  onTap: notification['id'] == null
+                      ? null
+                      : () => context
+                          .read<AppCubit>()
+                          .markNotificationRead(
+                              notification['id'].toString()),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: isRead
+                                  ? Theme.of(context).colorScheme.surfaceContainerHighest
+                                  : Theme.of(context).colorScheme.primaryContainer,
+                          foregroundColor: isRead
+                                  ? Theme.of(context).colorScheme.onSurfaceVariant
+                                  : Theme.of(context).colorScheme.onPrimaryContainer,
+                          child: Icon(
+                            isRead
+                                ? Icons.mark_email_read_outlined
+                                : Icons.notifications_active_outlined,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                notification['title']?.toString() ??
+                                    strings.t('notifications'),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                notification['message']?.toString() ?? '',
+                                style: Theme.of(context).textTheme.bodySmall,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (!isRead)
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             );
           }),
         ],

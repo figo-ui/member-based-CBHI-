@@ -42,6 +42,8 @@ flutter doctor -v
 export DART_VM_OPTIONS="--max-old-space-size=4096"
 export NODE_OPTIONS="--max-old-space-size=4096"
 
+# The backend is deployed at member-based-cbhi.vercel.app.
+# Override by setting CBHI_API_BASE_URL in the Vercel project environment variables.
 API_URL="${CBHI_API_BASE_URL:-https://member-based-cbhi.vercel.app/api/v1}"
 echo ">>> Building for production..."
 echo ">>> API Base URL: $API_URL"

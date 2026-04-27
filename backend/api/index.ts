@@ -43,14 +43,25 @@ async function createApp(): Promise<NestExpressApplication> {
     .map((o) => o.trim())
     .filter(Boolean);
 
+  // Wildcard patterns (e.g. "*.vercel.app") extracted separately
+  const wildcardPatterns = allowedOrigins
+    .filter((o) => o.startsWith('*.'))
+    .map((o) => new RegExp(`^https?://${o.slice(2).replace(/\./g, '\\.')}$`));
+
+  const exactOrigins = allowedOrigins.filter((o) => !o.startsWith('*.'));
+
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       // Exact match or wildcard '*'
-      if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      if (exactOrigins.includes(origin) || exactOrigins.includes('*')) {
         return callback(null, true);
       }
-      // Allow all *.vercel.app preview deployments
+      // Wildcard pattern match (e.g. *.vercel.app)
+      if (wildcardPatterns.some((re) => re.test(origin))) {
+        return callback(null, true);
+      }
+      // Always allow all *.vercel.app preview deployments
       if (/^https:\/\/[^.]+\.vercel\.app$/.test(origin)) {
         return callback(null, true);
       }
@@ -59,6 +70,8 @@ async function createApp(): Promise<NestExpressApplication> {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   app.setGlobalPrefix('api/v1');
@@ -108,6 +121,29 @@ export default async function handler(req: Request, res: Response) {
       docs: '/api/v1/docs',
     });
     return;
+  }
+
+  // Handle OPTIONS preflight immediately — before NestJS boots.
+  // This prevents cold-start latency from blocking CORS preflight checks.
+  if (req.method === 'OPTIONS') {
+    const origin = req.headers['origin'] as string | undefined;
+    const isAllowed =
+      !origin ||
+      /^https:\/\/[^.]+\.vercel\.app$/.test(origin) ||
+      (process.env.CORS_ALLOWED_ORIGINS ?? '')
+        .split(',')
+        .map((o) => o.trim())
+        .includes(origin);
+
+    if (isAllowed || !origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin ?? '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Max-Age', '86400'); // 24h preflight cache
+      res.status(204).end();
+      return;
+    }
   }
 
   const app = await createApp();

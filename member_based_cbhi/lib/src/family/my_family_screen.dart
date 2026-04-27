@@ -235,18 +235,19 @@ class _MemberCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
-      padding: EdgeInsets.zero,
+    return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      margin: const EdgeInsets.only(bottom: AppTheme.spacingM),
+      clipBehavior: Clip.antiAlias,
       child: Container(
-        margin: const EdgeInsets.only(bottom: AppTheme.spacingM),
-        // Left border colored by coverage status
         decoration: BoxDecoration(
           border: Border(
             left: BorderSide(color: statusBorderColor, width: 4),
-          ),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(AppTheme.radiusM),
-            bottomLeft: Radius.circular(AppTheme.radiusM),
           ),
         ),
         child: Padding(

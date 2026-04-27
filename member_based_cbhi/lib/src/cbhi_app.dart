@@ -307,30 +307,30 @@ class _HomeShellState extends State<_HomeShell> {
   ) {
     return [
       NavigationDestination(
-        icon: const Icon(Icons.home_outlined),
-        selectedIcon: const Icon(Icons.home_rounded),
+        icon: const Icon(Icons.home_outlined, color: Color(0xFF0D7A5F)),
+        selectedIcon: const Icon(Icons.home_rounded, color: Color(0xFF0D7A5F)),
         label: strings.t('home'),
       ),
       if (!isFamilyMember)
         NavigationDestination(
-          icon: const Icon(Icons.family_restroom_outlined),
-          selectedIcon: const Icon(Icons.family_restroom),
+          icon: const Icon(Icons.family_restroom_outlined, color: Color(0xFF00BFA5)),
+          selectedIcon: const Icon(Icons.family_restroom, color: Color(0xFF00BFA5)),
           label: strings.t('family'),
         ),
       NavigationDestination(
-        icon: const Icon(Icons.badge_outlined),
-        selectedIcon: const Icon(Icons.badge),
+        icon: const Icon(Icons.badge_outlined, color: Color(0xFF1565C0)),
+        selectedIcon: const Icon(Icons.badge, color: Color(0xFF1565C0)),
         label: strings.t('card'),
       ),
       NavigationDestination(
-        icon: const Icon(Icons.receipt_long_outlined),
-        selectedIcon: const Icon(Icons.receipt_long),
+        icon: const Icon(Icons.receipt_long_outlined, color: Color(0xFFFF8F00)),
+        selectedIcon: const Icon(Icons.receipt_long, color: Color(0xFFFF8F00)),
         label: strings.t('claims'),
       ),
       NavigationDestination(
-        icon: const Icon(Icons.person_outline),
-        selectedIcon: const Icon(Icons.person),
-        label: strings.t('profile'),
+        icon: const Icon(Icons.menu_outlined, color: Color(0xFFE53935)),
+        selectedIcon: const Icon(Icons.menu_rounded, color: Color(0xFFE53935)),
+        label: 'Menu', // Changed from Profile to Menu
       ),
     ];
   }

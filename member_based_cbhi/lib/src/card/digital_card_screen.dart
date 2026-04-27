@@ -60,10 +60,7 @@ class DigitalCardScreen extends StatelessWidget {
                     child: _FlippableCard(
                       card: card,
                       snapshot: snapshot,
-                    )
-                        .animate()
-                        .fadeIn(duration: 600.ms, delay: (entry.key * 100).ms)
-                        .slideY(begin: 0.1, end: 0, curve: Curves.easeOutBack),
+                    ),
                   );
                 },
               ),
@@ -203,38 +200,18 @@ class _CardFront extends StatelessWidget {
       }
     }
 
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppTheme.primary,
-        borderRadius: BorderRadius.circular(AppTheme.radiusL),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 32,
-            offset: const Offset(0, 16),
-          ),
-        ],
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      elevation: 1,
+      color: colorScheme.primary,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
-          // Holographic Shine Effect
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: 0.0),
-                    Colors.white.withValues(alpha: 0.12),
-                    Colors.white.withValues(alpha: 0.0),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  stops: const [0.0, 0.5, 1.0],
-                ),
-              ),
-            ).animate(onPlay: (c) => c.repeat()).move(begin: const Offset(-300, -300), end: const Offset(300, 300), duration: 3.seconds),
-          ),
 
           Padding(
             padding: const EdgeInsets.all(24),
@@ -379,38 +356,18 @@ class _CardBack extends StatelessWidget {
     final strings = CbhiLocalizations.of(context);
     final hasToken = (card['token']?.toString() ?? '').isNotEmpty;
 
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppTheme.primary,
-        borderRadius: BorderRadius.circular(AppTheme.radiusL),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 32,
-            offset: const Offset(0, 16),
-          ),
-        ],
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      elevation: 1,
+      color: colorScheme.primary,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
-          // Holographic Shine Effect
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: 0.0),
-                    Colors.white.withValues(alpha: 0.08),
-                    Colors.white.withValues(alpha: 0.0),
-                  ],
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
-                  stops: const [0.0, 0.5, 1.0],
-                ),
-              ),
-            ).animate(onPlay: (c) => c.repeat()).move(begin: const Offset(300, -300), end: const Offset(-300, 300), duration: 4.seconds),
-          ),
 
           Padding(
             padding: const EdgeInsets.all(24),
