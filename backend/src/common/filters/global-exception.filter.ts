@@ -8,13 +8,23 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
-interface ErrorResponse {
-  statusCode: number;
-  message: string | string[];
-  error: string;
-  timestamp: string;
-  path: string;
-}
+/** Maps HTTP status codes to their standard reason phrases. */
+const HTTP_STATUS_TEXTS: Record<number, string> = {
+  400: 'Bad Request',
+  401: 'Unauthorized',
+  403: 'Forbidden',
+  404: 'Not Found',
+  405: 'Method Not Allowed',
+  408: 'Request Timeout',
+  409: 'Conflict',
+  410: 'Gone',
+  422: 'Unprocessable Entity',
+  429: 'Too Many Requests',
+  500: 'Internal Server Error',
+  502: 'Bad Gateway',
+  503: 'Service Unavailable',
+  504: 'Gateway Timeout',
+};
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -27,7 +37,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message: string | string[] = 'An unexpected error occurred.';
+    let message: string = 'An unexpected error occurred.';
     let error = 'Internal Server Error';
     let retryable = false;
 
@@ -39,8 +49,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message = exceptionResponse;
       } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
         const resp = exceptionResponse as Record<string, unknown>;
-        message = (resp['message'] as string | string[]) ?? exception.message;
-        error = (resp['error'] as string) ?? exception.name;
+        const rawMessage = resp['message'];
+        // class-validator returns message as string[] — join into a single string
+        // so Flutter clients always receive a plain string in the message field
+        if (Array.isArray(rawMessage)) {
+          message = rawMessage.join(', ');
+        } else {
+          message = (rawMessage as string | undefined) ?? exception.message;
+        }
+        // Normalize error to standard HTTP reason phrase, not the exception class name
+        error = (resp['error'] as string | undefined) ??
+          HTTP_STATUS_TEXTS[statusCode] ??
+          'Error';
       }
       // 429 Too Many Requests and 5xx errors are typically retryable
       retryable = statusCode === 429 || statusCode >= 500;

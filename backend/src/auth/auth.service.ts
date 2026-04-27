@@ -8,13 +8,11 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createHash, pbkdf2Sync, randomBytes, timingSafeEqual } from 'crypto';
 import { Repository } from 'typeorm';
-import { Beneficiary } from '../beneficiaries/beneficiary.entity';
 import { PreferredLanguage } from '../common/enums/cbhi.enums';
 import { User } from '../users/user.entity';
 import {
   PasswordLoginDto,
   RefreshTokenDto,
-  SetPasswordDto,
 } from './auth.dto';
 import { TotpService } from './totp.service';
 
@@ -39,8 +37,6 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(Beneficiary)
-    private readonly beneficiaryRepository: Repository<Beneficiary>,
     private readonly jwtService: JwtService,
   ) {}
 

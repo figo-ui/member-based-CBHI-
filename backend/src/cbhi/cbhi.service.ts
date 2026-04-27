@@ -22,7 +22,6 @@ import {
   IndigentEmploymentStatus,
   MembershipType,
   NotificationType,
-  PaymentMethod,
   PaymentStatus,
   PreferredLanguage,
   RelationshipToHouseholdHead,

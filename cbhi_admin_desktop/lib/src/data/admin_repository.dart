@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const String kAdminApiBase = String.fromEnvironment(
   'CBHI_API_BASE_URL',
-  defaultValue: 'https://cbhi-backend.vercel.app/api/v1',
+  defaultValue: 'https://member-based-cbhi.vercel.app/api/v1',
 );
 
 class AdminRepository {
@@ -144,10 +144,10 @@ class AdminRepository {
   }) async {
     return _post('/admin/facilities', {
       'name': name,
-      'facilityCode': ?facilityCode,
-      'serviceLevel': ?serviceLevel,
-      'phoneNumber': ?phoneNumber,
-      'addressLine': ?addressLine,
+      if (facilityCode != null) 'facilityCode': facilityCode,
+      if (serviceLevel != null) 'serviceLevel': serviceLevel,
+      if (phoneNumber != null) 'phoneNumber': phoneNumber,
+      if (addressLine != null) 'addressLine': addressLine,
     });
   }
 
@@ -159,8 +159,8 @@ class AdminRepository {
   }) async {
     await _post('/admin/facilities/$facilityId/staff', {
       'identifier': identifier,
-      'firstName': ?firstName,
-      'lastName': ?lastName,
+      if (firstName != null) 'firstName': firstName,
+      if (lastName != null) 'lastName': lastName,
     });
   }
 
@@ -169,8 +169,8 @@ class AdminRepository {
     String? entityId,
   }) async {
     final query = <String, String>{
-      'entityType': ?entityType,
-      'entityId': ?entityId,
+      if (entityType != null) 'entityType': entityType,
+      if (entityId != null) 'entityId': entityId,
     };
     final qs = query.isEmpty ? '' : '?${Uri(queryParameters: query).query}';
     final response = await _get('/admin/audit-logs$qs');
@@ -222,7 +222,7 @@ class AdminRepository {
   }) async {
     return _post('/benefit-packages', {
       'name': name,
-      'description': ?description,
+      if (description != null) 'description': description,
       'premiumPerMember': premiumPerMember,
       'annualCeiling': annualCeiling,
     });
@@ -239,7 +239,7 @@ class AdminRepository {
   }) async {
     return _post('/benefit-packages/$packageId/items', {
       'serviceName': serviceName,
-      'serviceCode': ?serviceCode,
+      if (serviceCode != null) 'serviceCode': serviceCode,
       'category': category,
       'maxClaimAmount': maxClaimAmount,
       'coPaymentPercent': coPaymentPercent,
@@ -249,7 +249,7 @@ class AdminRepository {
 
   Future<Map<String, dynamic>> updateBenefitItem(String itemId, {bool? isCovered}) async {
     return _patch('/benefit-packages/items/$itemId', {
-      'isCovered': ?isCovered,
+      if (isCovered != null) 'isCovered': isCovered,
     });
   }
 
@@ -267,8 +267,8 @@ class AdminRepository {
     String? resolution,
   }) async {
     return _patch('/grievances/$grievanceId', {
-      'status': ?status,
-      'resolution': ?resolution,
+      if (status != null) 'status': status,
+      if (resolution != null) 'resolution': resolution,
     });
   }
 
