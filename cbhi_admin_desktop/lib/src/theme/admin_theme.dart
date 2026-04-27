@@ -4,21 +4,21 @@ import 'package:google_fonts/google_fonts.dart';
 class AdminTheme {
   AdminTheme._();
 
-  static const Color primary = Color(0xFF0D7A5F);
-  static const Color accent = Color(0xFF00BFA5);
-  static const Color gold = Color(0xFFF9A825);
-  static const Color error = Color(0xFFE53935);
-  static const Color success = Color(0xFF2E7D52);
-  static const Color warning = Color(0xFFFF8F00);
-  static const Color surface = Color(0xFFF0F4F3);
-  static const Color sidebarBg = Color(0xFF0D1F1A);
-  static const Color sidebarText = Color(0xFFB8D4CC);
-  static const Color sidebarSelected = Color(0xFF00BFA5);
-  static const Color textDark = Color(0xFF1A2E35);
-  static const Color textSecondary = Color(0xFF5A7A84);
+  static const Color primary = Color(0xFF1565C0);
+  static const Color accent = Color(0xFF00B0FF);
+  static const Color gold = Color(0xFFFFA000);
+  static const Color error = Color(0xFFD32F2F);
+  static const Color success = Color(0xFF2E7D32);
+  static const Color warning = Color(0xFFF57C00);
+  static const Color surface = Color(0xFFF5F7FA);
+  static const Color sidebarBg = Color(0xFF0D1B2A);
+  static const Color sidebarText = Color(0xFFB0C4DE);
+  static const Color sidebarSelected = Color(0xFF00B0FF);
+  static const Color textDark = Color(0xFF0D1B2A);
+  static const Color textSecondary = Color(0xFF4A6572);
 
   static const LinearGradient headerGradient = LinearGradient(
-    colors: [Color(0xFF0D7A5F), Color(0xFF00BFA5)],
+    colors: [Color(0xFF1565C0), Color(0xFF00B0FF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

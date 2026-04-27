@@ -5,18 +5,18 @@ class AppTheme {
   AppTheme._();
 
   // ───── Brand Palette ─────
-  static const Color primary = Color(0xFF0D7A5F);
-  static const Color primaryDark = Color(0xFF065A45);
-  static const Color accent = Color(0xFF00BFA5);
-  static const Color gold = Color(0xFFF9A825);
-  static const Color surfaceLight = Color(0xFFF6F9F8);
+  static const Color primary = Color(0xFF1565C0);     // EHIS Primary Blue
+  static const Color primaryDark = Color(0xFF0D47A1); // EHIS Dark Blue
+  static const Color accent = Color(0xFF00B0FF);      // EHIS Accent Blue
+  static const Color gold = Color(0xFFFFA000);        // Vibrant Gold
+  static const Color surfaceLight = Color(0xFFF5F7FA); // Soft Grey
   static const Color surfaceCard = Color(0xFFFFFFFF);
-  static const Color textDark = Color(0xFF1A2E35);
-  static const Color textSecondary = Color(0xFF5A7A84);
-  static const Color error = Color(0xFFE53935);
-  static const Color success = Color(0xFF2E7D52);
-  static const Color warning = Color(0xFFFF8F00);
-  static const Color info = Color(0xFF1565C0);
+  static const Color textDark = Color(0xFF0D1B2A);    // Deep Blue-Black
+  static const Color textSecondary = Color(0xFF4A6572);
+  static const Color error = Color(0xFFD32F2F);
+  static const Color success = Color(0xFF2E7D32);
+  static const Color warning = Color(0xFFF57C00);
+  static const Color info = Color(0xFF1976D2);
 
   // Surface hierarchy (elevation system)
   static const Color surface0 = Color(0xFFF6F9F8);  // page background
@@ -31,19 +31,19 @@ class AppTheme {
 
   // Gradient presets
   static const LinearGradient heroGradient = LinearGradient(
-    colors: [Color(0xFF0D7A5F), Color(0xFF00BFA5)],
+    colors: [Color(0xFF1565C0), Color(0xFF00B0FF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient welcomeGradient = LinearGradient(
-    colors: [Color(0xFF0A5D4E), Color(0xFF0D7A5F), Color(0xFF00BFA5)],
+    colors: [Color(0xFF0D47A1), Color(0xFF1565C0), Color(0xFF00B0FF)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
 
   static const LinearGradient cardGradient = LinearGradient(
-    colors: [Color(0xFF0D7A5F), Color(0xFF148F70)],
+    colors: [Color(0xFF1565C0), Color(0xFF1976D2)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

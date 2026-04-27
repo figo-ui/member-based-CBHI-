@@ -8,7 +8,7 @@ import 'secure_storage_service.dart';
 /// The raw PIN is NEVER sent to the server.
 ///
 /// Lockout: after [maxFailAttempts] consecutive wrong PINs, PIN entry is
-/// disabled until the user completes OTP recovery.
+/// disabled until the user resets it via the profile settings.
 class PinService {
   static const _pinHashKey = 'cbhi_pin_hash';
   static const _pinFailCountKey = 'cbhi_pin_fail_count';

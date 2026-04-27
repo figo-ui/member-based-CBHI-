@@ -15,14 +15,11 @@ class AccountSetupScreen extends StatefulWidget {
     required this.authCubit,
     required this.repository,
     required this.phoneNumber,
-    // challenge kept for API compatibility but no longer used
-    this.challenge,
   });
 
   final AuthCubit authCubit;
   final CbhiRepository repository;
   final String phoneNumber;
-  final OtpChallenge? challenge;
 
   @override
   State<AccountSetupScreen> createState() => _AccountSetupScreenState();

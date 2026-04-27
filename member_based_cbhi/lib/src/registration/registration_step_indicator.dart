@@ -1,106 +1,175 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import '../cbhi_localizations.dart';
 import '../theme/app_theme.dart';
-import '../shared/premium_widgets.dart';
 import 'registration_cubit.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Step number extension on RegistrationStep
+// Step metadata
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Maps each RegistrationStep to a 1-based display index within the 5 visible
+/// user-facing steps. Returns null for non-displayable steps (start, error,
+/// completed, setupAccount).
 extension RegistrationStepX on RegistrationStep {
-  /// 1-based step number for display. Returns null for non-displayable steps.
+  /// 1-based index among the 5 visible steps. Null = not shown.
   int? get stepNumber => switch (this) {
         RegistrationStep.personalInfo => 1,
         RegistrationStep.confirmation => 2,
         RegistrationStep.identity => 3,
         RegistrationStep.membership => 4,
-        RegistrationStep.indigentProof => 5,
-        RegistrationStep.payment => 6,
-        RegistrationStep.setupAccount => 7,
+        RegistrationStep.indigentProof => 4, // sub-step of membership
+        RegistrationStep.payment => 5,
         _ => null,
       };
 
-  static const int totalSteps = 7;
+  static const int totalSteps = 5;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// RegistrationStepIndicator widget
+// RegistrationStepIndicator
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Displays a linear progress bar + "Step N of 7" label at the top of each
-/// registration step screen.
+/// A compact named-step progress bar shown above each registration screen.
 ///
-/// Usage: place at the top of the step screen's Scaffold body, before the
-/// main content.
+/// Shows 5 labelled steps. The active step is highlighted in primary colour;
+/// completed steps show a filled check circle; upcoming steps are muted.
+///
+/// Placed by [_StepWrapper] in registration_flow.dart — no AppBar involvement.
 class RegistrationStepIndicator extends StatelessWidget {
-  const RegistrationStepIndicator({
-    super.key,
-    required this.step,
-  });
+  const RegistrationStepIndicator({super.key, required this.step});
 
   final RegistrationStep step;
 
   @override
   Widget build(BuildContext context) {
-    final stepNumber = step.stepNumber;
-    if (stepNumber == null) return const SizedBox.shrink();
+    final current = step.stepNumber;
+    if (current == null) return const SizedBox.shrink();
 
-    final progress = stepNumber / RegistrationStepX.totalSteps;
     final strings = CbhiLocalizations.of(context);
 
-    // Use localized label if key exists, otherwise fall back to English
-    String stepLabel;
-    try {
-      stepLabel = strings.f('stepNofM', {
-        'n': stepNumber.toString(),
-        'm': RegistrationStepX.totalSteps.toString(),
-      });
-    } catch (_) {
-      stepLabel = 'Step $stepNumber of ${RegistrationStepX.totalSteps}';
-    }
+    // Step labels — short enough to fit on one line
+    final labels = [
+      strings.t('regStepPersonal'),
+      strings.t('regStepConfirm'),
+      strings.t('regStepIdentity'),
+      strings.t('regStepMembership'),
+      strings.t('regStepPayment'),
+    ];
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacingM,
-        vertical: AppTheme.spacingL,
-      ),
+      color: Theme.of(context).colorScheme.surface,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
+          // ── Dot + connector row ──────────────────────────────────────────
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                stepLabel,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: AppTheme.primary,
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            children: List.generate(RegistrationStepX.totalSteps * 2 - 1, (i) {
+              if (i.isOdd) {
+                // Connector line
+                final leftStep = i ~/ 2 + 1;
+                final filled = leftStep < current;
+                return Expanded(
+                  child: AnimatedContainer(
+                    duration: 300.ms,
+                    height: 2,
+                    color: filled
+                        ? AppTheme.primary
+                        : AppTheme.primary.withValues(alpha: 0.15),
+                  ),
+                );
+              }
+
+              // Step dot
+              final stepIdx = i ~/ 2 + 1;
+              final isDone = stepIdx < current;
+              final isActive = stepIdx == current;
+
+              return AnimatedContainer(
+                duration: 300.ms,
+                width: isActive ? 28 : 22,
+                height: isActive ? 28 : 22,
                 decoration: BoxDecoration(
-                  color: AppTheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  shape: BoxShape.circle,
+                  color: isDone
+                      ? AppTheme.primary
+                      : isActive
+                          ? AppTheme.primary
+                          : AppTheme.primary.withValues(alpha: 0.12),
+                  border: isActive
+                      ? Border.all(
+                          color: AppTheme.primary.withValues(alpha: 0.3),
+                          width: 3,
+                        )
+                      : null,
+                  boxShadow: isActive
+                      ? [
+                          BoxShadow(
+                            color: AppTheme.primary.withValues(alpha: 0.25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          )
+                        ]
+                      : null,
                 ),
+                child: Center(
+                  child: isDone
+                      ? const Icon(Icons.check, size: 12, color: Colors.white)
+                      : Text(
+                          '$stepIdx',
+                          style: TextStyle(
+                            fontSize: isActive ? 12 : 10,
+                            fontWeight: FontWeight.w700,
+                            color: isActive
+                                ? Colors.white
+                                : AppTheme.primary.withValues(alpha: 0.5),
+                          ),
+                        ),
+                ),
+              ).animate(key: ValueKey('dot_$stepIdx')).scale(
+                    begin: const Offset(0.85, 0.85),
+                    end: const Offset(1, 1),
+                    duration: 250.ms,
+                    curve: Curves.easeOutBack,
+                  );
+            }),
+          ),
+
+          const SizedBox(height: 6),
+
+          // ── Step labels row ──────────────────────────────────────────────
+          Row(
+            children: List.generate(RegistrationStepX.totalSteps * 2 - 1, (i) {
+              if (i.isOdd) return const Expanded(child: SizedBox.shrink());
+
+              final stepIdx = i ~/ 2 + 1;
+              final isDone = stepIdx < current;
+              final isActive = stepIdx == current;
+
+              return SizedBox(
+                width: 52,
                 child: Text(
-                  '${(progress * 100).round()}%',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppTheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  labels[stepIdx - 1],
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                    color: isDone
+                        ? AppTheme.primary
+                        : isActive
+                            ? AppTheme.primary
+                            : AppTheme.textSecondary.withValues(alpha: 0.6),
+                  ),
                 ),
-              ),
-            ],
+              );
+            }),
           ),
-          const SizedBox(height: 20),
-          TimelineStep(
-            steps: List.generate(RegistrationStepX.totalSteps, (i) => ''),
-            currentStep: stepNumber - 1,
-            compact: true,
-          ),
+
+          const SizedBox(height: 8),
         ],
       ),
     );

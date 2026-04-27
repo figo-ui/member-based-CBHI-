@@ -62,12 +62,12 @@ class AuthCubit extends Cubit<AuthState> {
 
     // No real session — build a minimal local session from registration data
     // so the dashboard opens immediately (online or offline).
-    // The real session will be established when the user signs in next time.
     if (personalInfo != null) {
       final localSession = AuthSession(
         accessToken: 'pending-sync',
         tokenType: 'Bearer',
-        expiresAt: DateTime.now().add(const Duration(hours: 24)).toIso8601String(),
+        expiresAt:
+            DateTime.now().add(const Duration(hours: 24)).toIso8601String(),
         user: AppUserProfile(
           id: 'local-${DateTime.now().millisecondsSinceEpoch}',
           displayName: '${personalInfo.firstName} ${personalInfo.lastName}',
@@ -139,7 +139,6 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> continueAsGuest() async {
-    // Persist so web refresh restores registration mode
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kWasGuestKey, true);
     emit(state.copyWith(
@@ -159,80 +158,7 @@ class AuthCubit extends Cubit<AuthState> {
     ));
   }
 
-  Future<OtpChallenge?> sendOtp({String? phoneNumber, String? email}) async {
-    emit(state.copyWith(isBusy: true, clearError: true));
-    try {
-      final challenge = await repository.sendOtp(
-        phoneNumber: phoneNumber,
-        email: email,
-      );
-      emit(state.copyWith(isBusy: false, clearError: true));
-      return challenge;
-    } catch (error) {
-      emit(state.copyWith(isBusy: false, error: error.toString()));
-      return null;
-    }
-  }
-
-  Future<OtpChallenge?> requestFamilyMemberOtp({
-    required String phoneNumber,
-    String? membershipId,
-    String? householdCode,
-    String? fullName,
-  }) async {
-    emit(state.copyWith(isBusy: true, clearError: true));
-    try {
-      final challenge = await repository.requestFamilyMemberOtp(
-        phoneNumber: phoneNumber,
-        membershipId: membershipId,
-        householdCode: householdCode,
-        fullName: fullName,
-      );
-      emit(state.copyWith(isBusy: false, clearError: true));
-      return challenge;
-    } catch (error) {
-      emit(state.copyWith(isBusy: false, error: error.toString()));
-      return null;
-    }
-  }
-
-  Future<OtpChallenge?> forgotPassword(String identifier) async {
-    emit(state.copyWith(isBusy: true, clearError: true));
-    try {
-      final challenge = await repository.forgotPassword(identifier);
-      emit(state.copyWith(isBusy: false, clearError: true));
-      return challenge;
-    } catch (error) {
-      emit(state.copyWith(isBusy: false, error: error.toString()));
-      return null;
-    }
-  }
-
-  Future<bool> verifyOtp({
-    String? phoneNumber,
-    String? email,
-    required String code,
-  }) async {
-    emit(state.copyWith(isBusy: true, clearError: true));
-    try {
-      final session = await repository.verifyOtp(
-        phoneNumber: phoneNumber,
-        email: email,
-        code: code,
-      );
-      emit(state.copyWith(
-        isBusy: false,
-        status: AuthStatus.authenticated,
-        session: session,
-        clearError: true,
-      ));
-      return true;
-    } catch (error) {
-      emit(state.copyWith(isBusy: false, error: error.toString()));
-      return false;
-    }
-  }
-
+  /// Sign in with phone/email + password.
   Future<bool> loginWithPassword({
     required String identifier,
     required String password,
@@ -249,6 +175,7 @@ class AuthCubit extends Cubit<AuthState> {
         session: session,
         clearError: true,
       ));
+      unawaited(_registerFcmToken());
       return true;
     } catch (error) {
       emit(state.copyWith(isBusy: false, error: error.toString()));
@@ -256,48 +183,25 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<bool> loginFamilyMemberWithPassword({
-    required String phoneNumber,
-    String? membershipId,
-    String? householdCode,
-    String? fullName,
-    required String password,
-  }) async {
+  /// Sign in using a stored access token (biometric flow).
+  Future<bool> loginWithStoredToken(String accessToken) async {
     emit(state.copyWith(isBusy: true, clearError: true));
     try {
-      final session = await repository.loginFamilyMemberWithPassword(
-        phoneNumber: phoneNumber,
-        membershipId: membershipId,
-        householdCode: householdCode,
-        fullName: fullName,
-        password: password,
-      );
+      final session = await repository.restoreSessionFromToken(accessToken);
+      if (session == null) {
+        emit(state.copyWith(
+          isBusy: false,
+          error: 'Session could not be restored. Please sign in again.',
+        ));
+        return false;
+      }
       emit(state.copyWith(
         isBusy: false,
         status: AuthStatus.authenticated,
         session: session,
         clearError: true,
       ));
-      return true;
-    } catch (error) {
-      emit(state.copyWith(isBusy: false, error: error.toString()));
-      return false;
-    }
-  }
-
-  Future<bool> resetPassword({
-    required String identifier,
-    required String code,
-    required String newPassword,
-  }) async {
-    emit(state.copyWith(isBusy: true, clearError: true));
-    try {
-      await repository.resetPassword(
-        identifier: identifier,
-        code: code,
-        newPassword: newPassword,
-      );
-      emit(state.copyWith(isBusy: false, clearError: true));
+      unawaited(_registerFcmToken());
       return true;
     } catch (error) {
       emit(state.copyWith(isBusy: false, error: error.toString()));
@@ -314,29 +218,5 @@ class AuthCubit extends Cubit<AuthState> {
       clearSession: true,
       clearError: true,
     ));
-  }
-
-  Future<bool> loginWithStoredToken(String accessToken) async {
-    emit(state.copyWith(isBusy: true, clearError: true));
-    try {
-      final session = await repository.restoreSessionFromToken(accessToken);
-      if (session == null) {
-        emit(state.copyWith(
-          isBusy: false,
-          error: 'Session expired. Please sign in again.',
-        ));
-        return false;
-      }
-      emit(state.copyWith(
-        isBusy: false,
-        status: AuthStatus.authenticated,
-        session: session,
-        clearError: true,
-      ));
-      return true;
-    } catch (error) {
-      emit(state.copyWith(isBusy: false, error: error.toString()));
-      return false;
-    }
   }
 }

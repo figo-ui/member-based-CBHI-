@@ -6,15 +6,15 @@ import 'i18n/app_localizations.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_shell.dart';
 
-const Color kPrimary = Color(0xFF0D7A5F);
-const Color kAccent = Color(0xFF00BFA5);
-const Color kSurface = Color(0xFFF0F4F3);
-const Color kSidebarBg = Color(0xFF0D1F1A);
-const Color kTextDark = Color(0xFF1A2E35);
-const Color kTextSecondary = Color(0xFF5A7A84);
-const Color kSuccess = Color(0xFF2E7D52);
-const Color kError = Color(0xFFE53935);
-const Color kWarning = Color(0xFFFF8F00);
+const Color kPrimary = Color(0xFF1565C0);
+const Color kAccent = Color(0xFF00B0FF);
+const Color kSurface = Color(0xFFF5F7FA);
+const Color kSidebarBg = Color(0xFF0D1B2A);
+const Color kTextDark = Color(0xFF0D1B2A);
+const Color kTextSecondary = Color(0xFF4A6572);
+const Color kSuccess = Color(0xFF2E7D32);
+const Color kError = Color(0xFFD32F2F);
+const Color kWarning = Color(0xFFF57C00);
 
 class CbhiFacilityApp extends StatefulWidget {
   const CbhiFacilityApp({super.key, required this.repository});
@@ -131,9 +131,15 @@ class _CbhiFacilityAppState extends State<CbhiFacilityApp> {
           columnSpacing: 24,
         ),
       ),
-      home: _loading
-          ? const Scaffold(
-              body: Center(child: CircularProgressIndicator(color: kPrimary)),
+          ? Scaffold(
+              body: Center(
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.contain,
+                ),
+              ),
             )
           : _authenticated
           ? MainShell(

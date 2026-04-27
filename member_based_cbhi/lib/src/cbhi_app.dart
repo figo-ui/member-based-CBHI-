@@ -192,21 +192,11 @@ class _BootstrapScreenState extends State<_BootstrapScreen> {
                         height: 48,
                         fit: BoxFit.contain,
                       ),
-                    )
-                        .animate(onPlay: (c) => c.repeat())
-                        .shimmer(
-                          duration: 1500.ms,
-                          color: AppTheme.accent.withValues(alpha: 0.3),
-                        ),
+                    ),
                     const SizedBox(height: 24),
                     Text(
                       strings.t('appTitle'),
                       style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      strings.t('loading'),
-                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
                 ),

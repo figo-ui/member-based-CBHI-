@@ -5,7 +5,7 @@ import '../cbhi_localizations.dart';
 import '../shared/language_selector.dart';
 import '../theme/app_theme.dart';
 import 'auth_cubit.dart';
-import 'unified_login_screen.dart';
+import 'login_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key, required this.authCubit});
@@ -115,7 +115,7 @@ class WelcomeScreen extends StatelessWidget {
                 // ── Sign In button ──────────────────────────────────────────
                 FilledButton(
                   onPressed: () => Navigator.of(context).push(
-                    _slideRoute(const UnifiedLoginScreen()),
+                    _slideRoute(const LoginScreen()),
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: Colors.white,

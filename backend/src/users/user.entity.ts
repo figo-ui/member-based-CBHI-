@@ -35,18 +35,6 @@ export class User extends AuditableEntity {
   @Column({ type: 'varchar', nullable: true, select: false })
   passwordHash?: string | null;
 
-  @Column({ type: 'varchar', nullable: true, select: false })
-  oneTimeCodeHash?: string | null;
-
-  @Column({ type: 'varchar', length: 32, nullable: true, select: false })
-  oneTimeCodePurpose?: string | null;
-
-  @Column({ type: 'varchar', length: 160, nullable: true, select: false })
-  oneTimeCodeTarget?: string | null;
-
-  @Column({ type: 'timestamptz', nullable: true, select: false })
-  oneTimeCodeExpiresAt?: Date | null;
-
   @Column({
     type: 'enum',
     enum: IdentityDocumentType,
@@ -101,15 +89,6 @@ export class User extends AuditableEntity {
   // ── Security hardening ────────────────────────────────────────────────────
   @Column({ type: 'int', default: 0 })
   tokenVersion!: number;
-
-  @Column({ type: 'int', default: 0, select: false })
-  otpFailCount!: number;
-
-  @Column({ type: 'int', default: 0, select: false })
-  otpRateLimitCount!: number;
-
-  @Column({ type: 'timestamptz', nullable: true, select: false })
-  otpRateLimitWindowStart?: Date | null;
 
   // ── FCM Push Notifications ─────────────────────────────────────────────────
   @Column({ type: 'varchar', length: 512, nullable: true })

@@ -23,7 +23,6 @@ class RegistrationState {
   final bool isLoading;
   final bool isOffline;
   final String? registeredPhone;
-  final OtpChallenge? setupChallenge;
   final CbhiSnapshot? registrationSnapshot;
 
   const RegistrationState({
@@ -35,7 +34,6 @@ class RegistrationState {
     this.isLoading = false,
     this.isOffline = false,
     this.registeredPhone,
-    this.setupChallenge,
     this.registrationSnapshot,
   });
 
@@ -50,7 +48,6 @@ class RegistrationState {
     bool clearError = false,
     bool clearMembership = false,
     String? registeredPhone,
-    OtpChallenge? setupChallenge,
     CbhiSnapshot? registrationSnapshot,
   }) {
     return RegistrationState(
@@ -62,7 +59,6 @@ class RegistrationState {
       isLoading: isLoading ?? this.isLoading,
       isOffline: isOffline ?? this.isOffline,
       registeredPhone: registeredPhone ?? this.registeredPhone,
-      setupChallenge: setupChallenge ?? this.setupChallenge,
       registrationSnapshot: registrationSnapshot ?? this.registrationSnapshot,
     );
   }

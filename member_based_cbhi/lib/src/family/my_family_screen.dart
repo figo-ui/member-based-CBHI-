@@ -319,7 +319,7 @@ class _MemberCard extends StatelessWidget {
                             if (member.phoneNumber != null && member.phoneNumber!.isNotEmpty)
                               _InlineBadge(label: member.phoneNumber!),
                             if (member.canLoginIndependently)
-                              _InlineBadge(label: strings.t('otpEnabled')),
+                              _InlineBadge(label: strings.t('independentAccess')),
                           ],
                         ),
                         const SizedBox(height: 10),

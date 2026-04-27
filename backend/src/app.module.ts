@@ -121,7 +121,6 @@ const redisEnabled = !!process.env.REDIS_HOST;
     // ── Rate limiting ──────────────────────────────────────────────────────
     ThrottlerModule.forRoot([
       { name: 'default', ttl: 60_000, limit: 120 },  // 120 req/min
-      { name: 'otp', ttl: 600_000, limit: 10 },       // 10 OTP/10min
     ]),
 
     // BullMQ — only register when Redis is configured (not on Vercel serverless)

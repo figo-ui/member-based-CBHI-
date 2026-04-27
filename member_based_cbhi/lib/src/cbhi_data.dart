@@ -141,30 +141,6 @@ class AuthSession {
 }
 
 @immutable
-class OtpChallenge {
-  const OtpChallenge({
-    required this.channel,
-    required this.target,
-    required this.expiresInSeconds,
-    this.debugCode,
-  });
-
-  final String channel;
-  final String target;
-  final int expiresInSeconds;
-  final String? debugCode;
-
-  factory OtpChallenge.fromJson(Map<String, dynamic> json) {
-    return OtpChallenge(
-      channel: json['channel']?.toString() ?? 'sms',
-      target: json['target']?.toString() ?? '',
-      expiresInSeconds: (json['expiresInSeconds'] as num?)?.toInt() ?? 300,
-      debugCode: json['debugCode']?.toString(),
-    );
-  }
-}
-
-@immutable
 class FamilyMember {
   const FamilyMember({
     required this.id,
@@ -849,52 +825,6 @@ class CbhiRepository {
     }
   }
 
-  Future<OtpChallenge> sendOtp({String? phoneNumber, String? email}) async {
-    final response = await _postJson('/auth/send-otp', {
-      'phoneNumber': phoneNumber,
-      'email': email,
-      'purpose': 'login',
-    });
-    return OtpChallenge.fromJson(response);
-  }
-
-  Future<OtpChallenge> requestFamilyMemberOtp({
-    required String phoneNumber,
-    String? membershipId,
-    String? householdCode,
-    String? fullName,
-  }) async {
-    final response = await _postJson('/auth/family/request-otp', {
-      'phoneNumber': phoneNumber,
-      'membershipId': membershipId,
-      'householdCode': householdCode,
-      'fullName': fullName,
-    });
-    return OtpChallenge.fromJson(response);
-  }
-
-  Future<OtpChallenge> forgotPassword(String identifier) async {
-    final response = await _postJson('/auth/forgot-password', {
-      'identifier': identifier,
-    });
-    return OtpChallenge.fromJson(response);
-  }
-
-  Future<AuthSession> verifyOtp({
-    String? phoneNumber,
-    String? email,
-    required String code,
-  }) async {
-    final response = await _postJson('/auth/verify-otp', {
-      'phoneNumber': phoneNumber,
-      'email': email,
-      'code': code,
-    });
-    final session = AuthSession.fromJson(response);
-    await _persistSession(session);
-    return session;
-  }
-
   Future<AuthSession> loginWithPassword({
     required String identifier,
     required String password,
@@ -925,18 +855,6 @@ class CbhiRepository {
     final session = AuthSession.fromJson(response);
     await _persistSession(session);
     return session;
-  }
-
-  Future<void> resetPassword({
-    required String identifier,
-    required String code,
-    required String newPassword,
-  }) async {
-    await _postJson('/auth/reset-password', {
-      'identifier': identifier,
-      'code': code,
-      'newPassword': newPassword,
-    });
   }
 
   Future<void> logout() async {
