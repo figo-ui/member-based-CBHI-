@@ -52,28 +52,10 @@ class AppTheme {
   static const Color surface2 = m3SurfaceContainer;     // subtle section bg
   static const Color surface3 = m3SurfaceContainerHigh; // pressed/hover state
 
-  // ───── Dark mode surfaces
+  // Dark mode surfaces
   static const Color darkSurface0 = Color(0xFF0F1A17);
   static const Color darkSurface1 = Color(0xFF1A2E28);
   static const Color darkSurface2 = Color(0xFF243D35);
-
-  // ───── Context-aware color helpers ─────
-  // Use these instead of hardcoded m3OnSurface/m3OnSurfaceVariant in widgets
-  // so text is visible in both light and dark mode.
-  static Color onSurface(BuildContext context) =>
-      Theme.of(context).colorScheme.onSurface;
-
-  static Color onSurfaceVariant(BuildContext context) =>
-      Theme.of(context).colorScheme.onSurfaceVariant;
-
-  static Color surfaceContainerLowAdaptive(BuildContext context) =>
-      Theme.of(context).colorScheme.surfaceContainerLow;
-
-  static Color surfaceContainerAdaptive(BuildContext context) =>
-      Theme.of(context).colorScheme.surfaceContainer;
-
-  static Color outlineVariantAdaptive(BuildContext context) =>
-      Theme.of(context).colorScheme.outlineVariant;
 
   // Gradient presets — M3 blue family
   static const LinearGradient heroGradient = LinearGradient(

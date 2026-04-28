@@ -120,7 +120,9 @@ class _MyFamilyBodyState extends State<_MyFamilyBody> {
                       isFamilyMember
                           ? strings.t('householdMembers')
                           : strings.t('familyManagement'),
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      style: const TextStyle(
+                        color: AppTheme.m3OnSurface,
+                        fontSize: 28,
                         fontWeight: FontWeight.w600,
                         height: 1.2,
                       ),
@@ -562,8 +564,8 @@ class _M3MemberCard extends StatelessWidget {
                       bottom: 0,
                       child: Container(
                         padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.star, color: Colors.amber, size: 12),

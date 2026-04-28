@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,6 +22,7 @@ import 'notifications/notification_inbox_screen.dart';
 import 'profile/profile_screen.dart';
 import 'registration/registration_cubit.dart';
 import 'registration/registration_flow.dart';
+import 'shared/animated_widgets.dart';
 import 'shared/connectivity_banner.dart';
 import 'shared/connectivity_cubit.dart';
 import 'shared/help_screen.dart';
@@ -435,10 +437,10 @@ class _HomeShellState extends State<_HomeShell> {
                     MaterialPageRoute(builder: (_) => const HelpScreen()),
                   ),
                   icon: const Icon(Icons.help_outline),
-                  label: Text(strings.t('helpAndFaq')),
-                  backgroundColor: AppTheme.m3Primary,
+                  label: const Text('Help & FAQ'),
+                  backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,
-                )
+                ).animate().scale(curve: Curves.easeOutBack, duration: 400.ms)
               : null,
           bottomNavigationBar: useSidebar
               ? null
@@ -684,9 +686,7 @@ class _NavBarItem extends StatelessWidget {
                   color: isSelected ? AppTheme.m3Primary : AppTheme.m3OnSurfaceVariant,
                   size: 24,
                 ),
-                child: isSelected
-                    ? (destination.selectedIcon ?? destination.icon)
-                    : destination.icon,
+                child: isSelected ? destination.selectedIcon : destination.icon,
               ),
               const SizedBox(height: 2),
               Text(

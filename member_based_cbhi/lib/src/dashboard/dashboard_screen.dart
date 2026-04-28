@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/auth_cubit.dart';
+import '../benefits/benefit_utilization_widget.dart';
 import '../cbhi_data.dart';
 
 import '../cbhi_localizations.dart';
@@ -73,7 +74,9 @@ class DashboardScreen extends StatelessWidget {
                               children: [
                                 Text(
                                   '${strings.t('hello')}, ${snapshot.viewerName.split(' ').first}',
-                                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                  style: const TextStyle(
+                                    color: AppTheme.m3OnSurface,
+                                    fontSize: 28,
                                     fontWeight: FontWeight.w600,
                                     height: 1.2,
                                   ),
@@ -81,7 +84,9 @@ class DashboardScreen extends StatelessWidget {
                                 const SizedBox(height: 4),
                                 Text(
                                   strings.t('coverageSummarySubtitle'),
-                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  style: const TextStyle(
+                                    color: AppTheme.m3OnSurfaceVariant,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w400,
                                   ),
                                 ),
@@ -243,6 +248,19 @@ class _CoverageHeroCard extends StatelessWidget {
     final expiryLabel = endDate != null
         ? _formatDateLabel(endDate.toIso8601String())
         : '';
+
+    // Subtitle line
+    String subtitle;
+    if (snapshot.householdCode.isEmpty) {
+      subtitle = strings.t('noHouseholdSynced');
+    } else if (isFamilyMember) {
+      subtitle = strings.t('beneficiaryProfile');
+    } else {
+      subtitle = '${strings.t('householdCode')}: ${snapshot.householdCode}';
+    }
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     // Status chip colors per M3 HealthShield spec
     Color statusBg;
@@ -1839,7 +1857,7 @@ class _SetupBannerState extends State<_SetupBanner> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerLowest,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(AppTheme.radiusS),
                   border: Border.all(
                       color: AppTheme.warning.withValues(alpha: 0.5)),
