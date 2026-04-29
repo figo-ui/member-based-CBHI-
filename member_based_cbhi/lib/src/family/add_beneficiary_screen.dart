@@ -954,12 +954,20 @@ class _OcrStatusArea extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: _buildStatusWidget(context, colorScheme),
+    );
+  }
+
+  Widget _buildStatusWidget(BuildContext context, ColorScheme colorScheme) {
     switch (scanStatus) {
       case _BeneficiaryIdScanStatus.idle:
-        return const SizedBox.shrink();
+        return const SizedBox.shrink(key: ValueKey('idle'));
 
       case _BeneficiaryIdScanStatus.scanning:
         return Container(
+          key: const ValueKey('scanning'),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerLow,
@@ -985,6 +993,7 @@ class _OcrStatusArea extends StatelessWidget {
 
       case _BeneficiaryIdScanStatus.success:
         return Container(
+          key: const ValueKey('success'),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: colorScheme.primaryContainer.withValues(alpha: 0.3),
@@ -1029,6 +1038,7 @@ class _OcrStatusArea extends StatelessWidget {
 
       case _BeneficiaryIdScanStatus.lowConfidence:
         return Container(
+          key: const ValueKey('lowConfidence'),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: colorScheme.tertiaryContainer.withValues(alpha: 0.3),
@@ -1087,6 +1097,7 @@ class _OcrStatusArea extends StatelessWidget {
 
       case _BeneficiaryIdScanStatus.failed:
         return Container(
+          key: const ValueKey('failed'),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: colorScheme.errorContainer.withValues(alpha: 0.3),

@@ -2,7 +2,7 @@
 
 ## Summary
 
-All compilation errors have been fixed in both the member app and admin app. Both apps are now ready to run.
+All compilation errors have been fixed in both the member app and admin app. Both apps are now ready to run. The backend needs to be set up locally or the Vercel deployment needs to be fixed.
 
 ---
 
@@ -20,17 +20,6 @@ All compilation errors have been fixed in both the member app and admin app. Bot
 - Integration test missing dependency (not needed for running the app)
 - Unused import warnings in test files
 - Unused parameter warning for `key` in `_PasswordStep`
-
-### How to Run Admin App
-```bash
-cd cbhi_admin_desktop
-flutter run -d windows --dart-define=CBHI_API_BASE_URL=https://member-based-cbhi.vercel.app/api/v1
-```
-
-**Login Credentials:**
-- Phone: `+251900000001`
-- Password: `Admin@1234`
-- No 2FA required (removed in previous fix)
 
 ---
 
@@ -62,7 +51,29 @@ flutter run -d windows --dart-define=CBHI_API_BASE_URL=https://member-based-cbhi
   - `my_family_screen_test.dart` - Missing/incorrect parameters
   - `personal_info_form_test.dart` - Type mismatch
 
-### How to Run Member App
+---
+
+## Backend Fixes
+
+### Issue Fixed
+- **Wrong Path in package.json** - `start:prod` script
+  - Was pointing to `dist/main` but actual file is at `dist/src/main.js`
+  - Updated script to `node dist/src/main`
+
+### Status
+⚠️ **NEEDS SETUP** - Backend requires local database or Vercel fix
+
+### Current Issues
+1. **Vercel Backend**: Showing `FUNCTION_INVOCATION_FAILED` errors
+2. **Local Backend**: Requires Docker Desktop running + local PostgreSQL database
+
+**📖 See `BACKEND_SETUP_GUIDE.md` for complete setup instructions**
+
+---
+
+## How to Run the Apps
+
+### Member App
 
 #### On Android Phone
 1. Connect your Samsung phone (SM A047F) via USB
@@ -71,20 +82,32 @@ flutter run -d windows --dart-define=CBHI_API_BASE_URL=https://member-based-cbhi
 ```bash
 cd member_based_cbhi
 flutter devices  # Verify phone is detected
-flutter run --dart-define=CBHI_API_BASE_URL=https://member-based-cbhi.vercel.app/api/v1
+flutter run --dart-define=CBHI_API_BASE_URL=http://localhost:3000/api/v1
 ```
 
 #### On Windows (for testing)
 ```bash
 cd member_based_cbhi
-flutter run -d windows --dart-define=CBHI_API_BASE_URL=https://member-based-cbhi.vercel.app/api/v1
+flutter run -d windows --dart-define=CBHI_API_BASE_URL=http://localhost:3000/api/v1
 ```
 
 #### On Web Browser
 ```bash
 cd member_based_cbhi
-flutter run -d chrome --dart-define=CBHI_API_BASE_URL=https://member-based-cbhi.vercel.app/api/v1
+flutter run -d chrome --dart-define=CBHI_API_BASE_URL=http://localhost:3000/api/v1
 ```
+
+### Admin App
+
+```bash
+cd cbhi_admin_desktop
+flutter run -d windows --dart-define=CBHI_API_BASE_URL=http://localhost:3000/api/v1
+```
+
+**Admin Login Credentials:**
+- Phone: `+251900000001`
+- Password: `Admin@1234`
+- No 2FA required (removed in previous fix)
 
 ---
 
@@ -119,36 +142,44 @@ All new UI strings are properly localized in:
 ### Member App
 - `member_based_cbhi/lib/src/family/add_beneficiary_screen.dart` - Added ID scanner widgets
 
----
-
-## Next Steps
-
-1. **Connect Phone**: Plug in your Samsung phone via USB and enable USB debugging
-2. **Run Member App**: Use the command above to install and run on your phone
-3. **Test ID Scanner**: 
-   - Add a new beneficiary
-   - Select an ID type (National ID or Local ID)
-   - Upload/scan an ID document
-   - Verify OCR extraction works
-4. **Run Admin App**: Test on Windows desktop with the provided credentials
+### Backend
+- `backend/package.json` - Fixed start:prod script path
 
 ---
 
 ## System Status
 
-✅ Backend API: Running at `https://member-based-cbhi.vercel.app/api/v1`
-✅ Database: Connected and initialized
-✅ Admin App: Compiles and ready to run on Windows
-✅ Member App: Compiles and ready to run on Android/Windows/Web
-✅ All critical compilation errors: Fixed
-⚠️ Test files: Have errors but don't affect app functionality
+⚠️ **Backend API**: Needs setup (see BACKEND_SETUP_GUIDE.md)
+  - **Vercel**: Has deployment errors (FUNCTION_INVOCATION_FAILED)
+  - **Local**: Requires Docker Desktop + local database setup
+✅ **Database**: Schema ready, needs to be initialized
+✅ **Admin App**: Compiles and ready to run on Windows
+✅ **Member App**: Compiles and ready to run on Android/Windows/Web
+✅ **All critical compilation errors**: Fixed
+⚠️ **Test files**: Have errors but don't affect app functionality
+
+---
+
+## Next Steps
+
+1. **Set up Backend** - Follow `BACKEND_SETUP_GUIDE.md` to:
+   - Option A: Start Docker Desktop and run local backend
+   - Option B: Fix Vercel deployment
+2. **Connect Phone**: Plug in your Samsung phone via USB and enable USB debugging
+3. **Run Member App**: Use the command above to install and run on your phone
+4. **Test ID Scanner**: 
+   - Add a new beneficiary
+   - Select an ID type (National ID or Local ID)
+   - Upload/scan an ID document
+   - Verify OCR extraction works
+5. **Run Admin App**: Test on Windows desktop with the provided credentials
 
 ---
 
 ## Support
 
 If you encounter any issues:
-1. Make sure your phone is connected and USB debugging is enabled
-2. Run `flutter devices` to verify device detection
-3. Check that the API URL is correct in the dart-define parameter
-4. Verify network connectivity to the backend API
+1. **Backend not starting**: See `BACKEND_SETUP_GUIDE.md`
+2. **Phone not detected**: Run `flutter devices` and enable USB debugging
+3. **API connection errors**: Verify backend is running and API URL is correct
+4. **Build errors**: Run `flutter clean` then `flutter pub get`
