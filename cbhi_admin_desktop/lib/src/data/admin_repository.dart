@@ -22,7 +22,6 @@ class AdminRepository {
 
   final http.Client _client;
   String? _token;
-  String? _pendingTotpToken;
 
   static const _tokenKey = 'cbhi_admin_token';
 
@@ -41,15 +40,6 @@ class AdminRepository {
       'identifier': identifier,
       'password': password,
     });
-
-    // If TOTP is required, store the pending token for the verify step
-    final requiresTotp = response['requiresTotpVerification'] == true ||
-        response['requiresTotp'] == true;
-    if (requiresTotp) {
-      _pendingTotpToken = response['pendingToken']?.toString();
-      // Do NOT store as the main token — it's only valid for TOTP verification
-      return response;
-    }
 
     _token = response['accessToken']?.toString();
     final prefs = await SharedPreferences.getInstance();
@@ -329,41 +319,6 @@ class AdminRepository {
     };
     final qs = query.isEmpty ? '' : '?${Uri(queryParameters: query).query}';
     return _get('/admin/reports/financial$qs');
-  }
-
-  // ── TOTP 2FA ──────────────────────────────────────────────────────────────
-
-  /// Initiates TOTP setup — returns { secret, qrUri }
-  Future<Map<String, dynamic>> setupTotp() async {
-    return _post('/auth/totp/setup', {});
-  }
-
-  /// Activates TOTP after the user verifies the first token
-  Future<void> activateTotp(String token) async {
-    await _post('/auth/totp/activate', {'token': token});
-  }
-
-  /// Verifies a TOTP code during login (second factor).
-  /// Sends the pendingToken (stored from the login response) along with the TOTP code.
-  /// Returns the full session response including [accessToken].
-  Future<Map<String, dynamic>> verifyTotp(String code) async {
-    final pendingToken = _pendingTotpToken;
-    if (pendingToken == null || pendingToken.isEmpty) {
-      throw Exception('No pending TOTP session. Please sign in again.');
-    }
-    final response = await _post('/auth/totp/verify', {
-      'token': code,
-      'pendingToken': pendingToken,
-    });
-    // Store the full access token and clear the pending token
-    final newToken = response['accessToken']?.toString();
-    if (newToken != null && newToken.isNotEmpty) {
-      _token = newToken;
-      _pendingTotpToken = null;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_tokenKey, _token ?? '');
-    }
-    return response;
   }
 
   // ── Facility Performance ──────────────────────────────────────────────────

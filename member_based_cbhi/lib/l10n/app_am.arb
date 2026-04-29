@@ -901,5 +901,31 @@
   "selectIdTypeForNumber": "ለቁጥር {number} የመታወቂያ አይነት ይምረጡ",
   "submitRegistration": "ምዝገባውን ያቅርቡ",
   "uploadLimitReached": "የመጫኛ ገደብ ተጥሷል።",
-  "useCameraOrGalleryConfirmPreview": "ፎቶ ለማንሳት ካሜራ ወይም ጋለሪ ይጠቀሙ።"
+  "useCameraOrGalleryConfirmPreview": "ፎቶ ለማንሳት ካሜራ ወይም ጋለሪ ይጠቀሙ።",
+
+  "scanOrUploadId": "ስካን ያድርጉ ወይም መታወቂያ ይጫኑ",
+  "scanOrUploadIdHint": "የብሔራዊ መታወቂያ፣ የአካባቢ መታወቂያ ወይም ፓስፖርት ፎቶ ያንሱ ወይም ምስል ይጫኑ",
+  "removeIdImage": "አስወግድ",
+  "idOcrProcessing": "ሰነዱን በAI እያነበበ ነው...",
+  "idOcrSuccess": "የመታወቂያ ቁጥር በተሳካ ሁኔታ ተወስዷል",
+  "idOcrLowConfidence": "መታወቂያ ዝቅተኛ እርግጠኝነት ተወስዷል — እባክዎ ያረጋግጡ",
+  "idOcrFailed": "የመታወቂያ ሰነዱን ማንበብ አልተቻለም። ግልጽ ፎቶ ይሞክሩ።",
+  "extractedIdNumber": "የተወሰደ የመታወቂያ ቁጥር",
+  "extractedIdNumberHint": "ራሱ ተወስዷል — ሊስተካከል አይችልም",
+  "idDocumentRequired": "እባክዎ የመታወቂያ ሰነድዎን ስካን ያድርጉ ወይም ይጫኑ",
+
+  "nameMatchTitle": "የስም ማረጋገጫ",
+  "nameMatchSuccess": "✓ ስሞች ይዛመዳሉ",
+  "nameMatchPartial": "⚠ ስሞች በከፊል ይዛመዳሉ",
+  "nameMatchMismatch": "✗ ስሞች አይዛመዱም",
+  "nameMatchSkipped": "የስም ማረጋገጫ ተዘልሏል",
+  "nameOnId": "በመታወቂያ ላይ ያለ ስም",
+  "nameYouEntered": "ያስገቡት ስም",
+  "nameMatchHint": "ከመታወቂያዎ የተወሰደው ስም ከደረጃ 1 ያስገቡት ስም ጋር ይነጻጸራል።",
+  "nameMatchMismatchWarning": "በመታወቂያዎ ላይ ያለው ስም ከያስገቡት ስም ጋር አይዛመድም። መረጃዎን ያረጋግጡ ወይም ሌላ መታወቂያ ሰነድ ይጫኑ።",
+  "idAlreadyRegistered": "ይህ የመታወቂያ ቁጥር ቀድሞውኑ በስርዓቱ ውስጥ ተመዝግቧል",
+  "idAvailabilityChecking": "የመታወቂያ ተገኝነት በማረጋገጥ ላይ...",
+  "idAvailabilityAvailable": "✓ የመታወቂያ ቁጥር ይገኛል",
+  "idAvailabilityTaken": "✗ የመታወቂያ ቁጥር ቀድሞውኑ ተመዝግቧል",
+  "duplicateIdError": "ይህ የመታወቂያ ቁጥር ቀድሞውኑ ተመዝግቧል። ይህ የእርስዎ መታወቂያ ከሆነ እባክዎ ድጋፍን ያነጋግሩ።"
 }

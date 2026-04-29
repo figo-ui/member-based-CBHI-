@@ -916,5 +916,31 @@
   "usingTempCode": "Koodii yeroo koo fayyadamaa jira",
   "currentPassword": "Jecha Darbii Ammaa",
   "tempCodePreFilled": "Koodii yeroo (duraan guutame)",
-  "continueToMembership": "Gara Miseensummaatti Itti Fufi"
+  "continueToMembership": "Gara Miseensummaatti Itti Fufi",
+
+  "scanOrUploadId": "Ragaa Eenyummaa Qori ykn Fe'i",
+  "scanOrUploadIdHint": "Suuraa ID biyyaalessaa, naannoo, ykn paaspoortii kaasi ykn suuraa fe'i",
+  "removeIdImage": "Haqi",
+  "idOcrProcessing": "Galmee AI waliin dubbisaa jira...",
+  "idOcrSuccess": "Lakkoofsi eenyummaa milkaa'inaan baafatame",
+  "idOcrLowConfidence": "Eenyummaan amantaa gadi aanaadhaan baafatame — mirkaneessaa",
+  "idOcrFailed": "Ragaa eenyummaa dubbisuu hin danda'amne. Suuraa ifaa yaali.",
+  "extractedIdNumber": "Lakkoofsa Eenyummaa Baafatame",
+  "extractedIdNumberHint": "Ofumaan baafatame — jijjiiruun hin danda'amu",
+  "idDocumentRequired": "Maaloo ragaa eenyummaa kee qori ykn fe'i",
+
+  "nameMatchTitle": "Mirkaneessa Maqaa",
+  "nameMatchSuccess": "✓ Maqaan wal simata",
+  "nameMatchPartial": "⚠ Maqaan qoodaan wal simata",
+  "nameMatchMismatch": "✗ Maqaan wal hin simatu",
+  "nameMatchSkipped": "Mirkaneessi maqaa irri darbame",
+  "nameOnId": "Maqaa ID irraa",
+  "nameYouEntered": "Maqaa galchite",
+  "nameMatchHint": "Maqaan ID kee irraa baafatame maqaa tartiiba 1 galchite waliin wal bira qabama.",
+  "nameMatchMismatchWarning": "Maqaan ID kee irraa maqaa galchite waliin wal hin simatu. Odeeffannoo kee mirkaneessi yookaan ragaa eenyummaa biraa fe'i.",
+  "idAlreadyRegistered": "Lakkoofsi eenyummaa kun duraan sirna keessatti galmaayeera",
+  "idAvailabilityChecking": "Argamuu eenyummaa mirkaneessaa jira...",
+  "idAvailabilityAvailable": "✓ Lakkoofsi eenyummaa ni argama",
+  "idAvailabilityTaken": "✗ Lakkoofsi eenyummaa duraan galmaayeera",
+  "duplicateIdError": "Lakkoofsi eenyummaa kun duraan galmaayeera. Yoo eenyummaan kee ta'e, maaloo deeggarsatti quunnamii."
 }

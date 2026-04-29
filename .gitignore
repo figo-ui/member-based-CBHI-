@@ -32,3 +32,16 @@ system.session.sql
 # OS
 .DS_Store
 Thumbs.db
+
+# Documentation (optional - keep for team reference)
+# Uncomment to exclude from git:
+# *_TEST_PLAN.md
+# *_IMPLEMENTATION.md
+# *_QUICK_START.md
+# *_FLOW_DIAGRAM.md
+# *_SUMMARY.md
+# IMPLEMENTATION_SAMPLES.md
+# TESTING_IMPLEMENTATION.md
+
+# Temporary test files
+test_write.txt

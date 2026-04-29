@@ -119,13 +119,12 @@ class _RegistrationFlowState extends State<RegistrationFlow> {
                   body: Center(child: CircularProgressIndicator()),
                 );
               }
-              return _StepWrapper(
-                step: RegistrationStep.payment,
-                child: PaymentScreen(
-                  repository: repo,
-                  snapshot: snapshot,
-                  onPaymentComplete: regCubit.submitPaymentSuccess,
-                ),
+              // PaymentScreen has its own internal _PaymentStepIndicator,
+              // so we skip _StepWrapper here to avoid a double progress bar.
+              return PaymentScreen(
+                repository: repo,
+                snapshot: snapshot,
+                onPaymentComplete: regCubit.submitPaymentSuccess,
               );
 
             case RegistrationStep.setupAccount:

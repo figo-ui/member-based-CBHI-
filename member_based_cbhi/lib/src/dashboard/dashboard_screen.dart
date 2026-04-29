@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/auth_cubit.dart';
-import '../benefits/benefit_utilization_widget.dart';
 import '../cbhi_data.dart';
 
 import '../cbhi_localizations.dart';
@@ -250,6 +249,7 @@ class _CoverageHeroCard extends StatelessWidget {
         : '';
 
     // Subtitle line
+    // ignore: unused_local_variable — kept for future use
     String subtitle;
     if (snapshot.householdCode.isEmpty) {
       subtitle = strings.t('noHouseholdSynced');
@@ -260,6 +260,7 @@ class _CoverageHeroCard extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
+    // ignore: unused_local_variable — kept for future use
     final colorScheme = theme.colorScheme;
 
     // Status chip colors per M3 HealthShield spec

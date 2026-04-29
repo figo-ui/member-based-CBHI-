@@ -905,5 +905,32 @@
 
   "usingTempCode": "I am using my temporary code",
   "currentPassword": "Current Password",
-  "tempCodePreFilled": "Temporary code (pre-filled)"
+  "tempCodePreFilled": "Temporary code (pre-filled)",
+
+  "scanOrUploadId": "Scan or Upload ID",
+  "scanOrUploadIdHint": "Take a photo or upload an image of your national ID, local ID, or passport",
+  "removeIdImage": "Remove",
+  "idOcrProcessing": "Reading document with AI...",
+  "idOcrSuccess": "ID number extracted successfully",
+  "idOcrLowConfidence": "ID extracted with low confidence — please verify",
+  "idOcrFailed": "Could not read the ID document. Please try a clearer photo.",
+  "extractedIdNumber": "Extracted ID Number",
+  "extractedIdNumberHint": "Automatically extracted — not editable",
+  "idDocumentRequired": "Please scan or upload your ID document",
+
+  "nameMatchTitle": "Name Verification",
+  "nameMatchSuccess": "✓ Names match",
+  "nameMatchPartial": "⚠ Names partially match",
+  "nameMatchMismatch": "✗ Names do not match",
+  "nameMatchSkipped": "Name verification skipped",
+  "nameOnId": "Name on ID",
+  "nameYouEntered": "Name you entered",
+  "nameMatchHint": "The name extracted from your ID is compared with the name you entered in step 1.",
+  "nameMatchMismatchWarning": "The name on your ID does not match the name you entered. Please verify your information or upload a different ID document.",
+  "idAlreadyRegistered": "This ID number is already registered in the system",
+  "idAvailabilityChecking": "Checking ID availability...",
+  "idAvailabilityAvailable": "✓ ID number is available",
+  "idAvailabilityTaken": "✗ ID number already registered",
+  "duplicateIdError": "This ID number is already registered. If this is your ID, please contact support."
 }
+

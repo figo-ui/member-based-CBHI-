@@ -1,10 +1,9 @@
+import 'dart:convert';
 import 'dart:io' if (dart.library.html) '../shared/web_stubs.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import '../shared/native_file_image_impl.dart'
-    if (dart.library.html) '../shared/native_file_image_web.dart' as impl;
-
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,9 +12,16 @@ import 'package:permission_handler/permission_handler.dart'
 
 import '../cbhi_data.dart';
 import '../cbhi_localizations.dart';
+import '../i18n/app_localizations.dart';
 import '../shared/ethiopic_date_picker.dart';
 import '../shared/local_attachment_store.dart';
+import '../shared/native_file_image_impl.dart'
+    if (dart.library.html) '../shared/native_file_image_web.dart' as impl;
+import '../theme/app_theme.dart';
 import 'add_beneficiary_cubit.dart';
+
+// ── Local enum for ID scan status ────────────────────────────────────────────
+enum _BeneficiaryIdScanStatus { idle, scanning, success, lowConfidence, failed }
 
 class AddBeneficiaryScreen extends StatefulWidget {
   const AddBeneficiaryScreen({
@@ -39,11 +45,17 @@ class _AddBeneficiaryScreenState extends State<AddBeneficiaryScreen> {
   late final TextEditingController _fullNameController;
   late final TextEditingController _dobController;
   late final TextEditingController _phoneController;
-  late final TextEditingController _idNumberController;
 
   String _gender = 'FEMALE';
   String _relationship = 'CHILD';
   String? _identityType;
+
+  // ── ID scanner local state ─────────────────────────────────────────────────
+  List<int>? _idImageBytes;
+  String? _idImageName;
+  _BeneficiaryIdScanStatus _idScanStatus = _BeneficiaryIdScanStatus.idle;
+  String _extractedIdNumber = '';
+  String? _idScanError;
 
   @override
   void initState() {
@@ -61,12 +73,14 @@ class _AddBeneficiaryScreenState extends State<AddBeneficiaryScreen> {
     _phoneController = TextEditingController(
       text: widget.member?.phoneNumber ?? '+2519',
     );
-    _idNumberController = TextEditingController(
-      text: widget.member?.identityNumber ?? '',
-    );
     _gender = widget.member?.gender ?? 'FEMALE';
     _relationship = widget.member?.relationshipToHouseholdHead ?? 'CHILD';
     _identityType = widget.member?.identityType;
+    // Pre-populate extracted ID from existing member data (edit mode)
+    _extractedIdNumber = widget.member?.identityNumber ?? '';
+    if (_extractedIdNumber.isNotEmpty) {
+      _idScanStatus = _BeneficiaryIdScanStatus.success;
+    }
   }
 
   @override
@@ -75,7 +89,6 @@ class _AddBeneficiaryScreenState extends State<AddBeneficiaryScreen> {
     _fullNameController.dispose();
     _dobController.dispose();
     _phoneController.dispose();
-    _idNumberController.dispose();
     super.dispose();
   }
 
@@ -168,12 +181,12 @@ class _AddBeneficiaryScreenState extends State<AddBeneficiaryScreen> {
       gender: _gender,
       dateOfBirth: dateOfBirth,
       relationshipToHouseholdHead: _relationship,
-      identityType: _idNumberController.text.trim().isEmpty
+      identityType: _extractedIdNumber.trim().isEmpty
           ? null
           : _identityType,
-      identityNumber: _idNumberController.text.trim().isEmpty
+      identityNumber: _extractedIdNumber.trim().isEmpty
           ? null
-          : _idNumberController.text.trim(),
+          : _extractedIdNumber.trim(),
       phoneNumber:
           (_phoneController.text.trim().isEmpty ||
               _phoneController.text.trim() == '+2519')
@@ -189,6 +202,146 @@ class _AddBeneficiaryScreenState extends State<AddBeneficiaryScreen> {
     if (success && mounted) {
       Navigator.of(context).pop(true);
     }
+  }
+
+  // ── ID image picking ───────────────────────────────────────────────────────
+
+  Future<void> _pickIdImage({bool fromCamera = false}) async {
+    try {
+      List<int>? bytes;
+      String? name;
+
+      if (kIsWeb) {
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.image,
+          allowMultiple: false,
+          withData: true,
+        );
+        if (result == null || result.files.isEmpty) return;
+        final file = result.files.first;
+        bytes = file.bytes?.toList();
+        name = file.name;
+      } else {
+        final XFile? picked = await _picker.pickImage(
+          source: fromCamera ? ImageSource.camera : ImageSource.gallery,
+          maxWidth: 1920,
+          maxHeight: 1920,
+          imageQuality: 85,
+        );
+        if (picked == null) return;
+        bytes = await picked.readAsBytes().then((b) => b.toList());
+        name = picked.name;
+      }
+
+      if (bytes == null || bytes.isEmpty) return;
+
+      setState(() {
+        _idImageBytes = bytes;
+        _idImageName = name;
+        _idScanStatus = _BeneficiaryIdScanStatus.idle;
+        _idScanError = null;
+        _extractedIdNumber = '';
+      });
+
+      await _runOcr(bytes);
+    } catch (_) {
+      // User cancelled or permission denied — silently ignore
+    }
+  }
+
+  Future<void> _runOcr(List<int> bytes) async {
+    setState(() {
+      _idScanStatus = _BeneficiaryIdScanStatus.scanning;
+      _idScanError = null;
+      _extractedIdNumber = '';
+    });
+
+    try {
+      final base64Image = base64Encode(bytes);
+      final result = await widget.repository.validateIdDocument(
+        imageBase64: base64Image,
+      );
+
+      final detectedId = result['detectedIdNumber']?.toString() ?? '';
+      final isValid = result['isValid'] == true;
+      final confidence = (result['confidence'] as num?)?.toDouble() ?? 0.0;
+      final issues = (result['issues'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const <String>[];
+
+      final isLowConfidence = !isValid && issues.isNotEmpty;
+
+      if (detectedId.isNotEmpty && (isValid || confidence >= 0.6)) {
+        setState(() {
+          _extractedIdNumber = detectedId;
+          _idScanStatus = _BeneficiaryIdScanStatus.success;
+          _idScanError = null;
+        });
+      } else if (isLowConfidence) {
+        setState(() {
+          _extractedIdNumber = detectedId;
+          _idScanStatus = _BeneficiaryIdScanStatus.lowConfidence;
+          _idScanError = issues.isNotEmpty ? issues.first : null;
+        });
+      } else {
+        setState(() {
+          _idScanStatus = _BeneficiaryIdScanStatus.failed;
+          _idScanError = issues.isNotEmpty
+              ? issues.first
+              : 'Could not extract ID number from the document.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _idScanStatus = _BeneficiaryIdScanStatus.failed;
+        _idScanError = e.toString();
+      });
+    }
+  }
+
+  void _clearIdImage() {
+    setState(() {
+      _idImageBytes = null;
+      _idImageName = null;
+      _idScanStatus = _BeneficiaryIdScanStatus.idle;
+      _idScanError = null;
+      _extractedIdNumber = '';
+    });
+  }
+
+  void _showIdPickerOptions(BuildContext context) {
+    if (kIsWeb) {
+      _pickIdImage(fromCamera: false);
+      return;
+    }
+    final strings = CbhiLocalizations.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: Text(strings.t('takePhoto')),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickIdImage(fromCamera: true);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: Text(strings.t('chooseFromGallery')),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickIdImage(fromCamera: false);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -391,23 +544,27 @@ class _AddBeneficiaryScreenState extends State<AddBeneficiaryScreen> {
                             onChanged: (value) =>
                                 setState(() => _identityType = value),
                           ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _idNumberController,
-                            decoration: InputDecoration(
-                              labelText: strings.t('idNumberOptional'),
+                          // Only show scanner when an ID type is selected
+                          if (_identityType != null) ...[
+                            const SizedBox(height: 16),
+                            _BeneficiaryIdScanner(
+                              imageBytes: _idImageBytes,
+                              imageName: _idImageName,
+                              scanStatus: _idScanStatus,
+                              extractedIdNumber: _extractedIdNumber,
+                              scanError: _idScanError,
+                              strings: strings,
+                              textTheme: Theme.of(context).textTheme,
+                              onPickImage: () =>
+                                  _showIdPickerOptions(context),
+                              onRemoveImage: _clearIdImage,
+                              onRetry: () {
+                                if (_idImageBytes != null) {
+                                  _runOcr(_idImageBytes!);
+                                }
+                              },
                             ),
-                            validator: (value) {
-                              final trimmed = value?.trim() ?? '';
-                              if (trimmed.isNotEmpty && _identityType == null) {
-                                return strings.t('selectIdTypeForNumber');
-                              }
-                              if (trimmed.isEmpty && _identityType != null) {
-                                return strings.t('enterIdNumberForType');
-                              }
-                              return null;
-                            },
-                          ),
+                          ],
                           const SizedBox(height: 28),
                           SizedBox(
                             width: double.infinity,
@@ -566,5 +723,418 @@ class _PhotoPreview extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+// ── Beneficiary ID Scanner Widget ────────────────────────────────────────────
+
+class _BeneficiaryIdScanner extends StatelessWidget {
+  const _BeneficiaryIdScanner({
+    required this.imageBytes,
+    required this.imageName,
+    required this.scanStatus,
+    required this.extractedIdNumber,
+    required this.scanError,
+    required this.strings,
+    required this.textTheme,
+    required this.onPickImage,
+    required this.onRemoveImage,
+    required this.onRetry,
+  });
+
+  final List<int>? imageBytes;
+  final String? imageName;
+  final _BeneficiaryIdScanStatus scanStatus;
+  final String extractedIdNumber;
+  final String? scanError;
+  final AppLocalizations strings;
+  final TextTheme textTheme;
+  final VoidCallback onPickImage;
+  final VoidCallback onRemoveImage;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          strings.t('identityDocument'),
+          style: textTheme.labelLarge?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Image preview or upload prompt
+        if (imageBytes != null)
+          _ImagePreview(
+            imageBytes: Uint8List.fromList(imageBytes!),
+            imageName: imageName,
+            onRemove: onRemoveImage,
+            strings: strings,
+          )
+        else
+          _UploadPrompt(
+            onPick: onPickImage,
+            strings: strings,
+          ),
+
+        const SizedBox(height: 16),
+
+        // OCR status area
+        _OcrStatusArea(
+          scanStatus: scanStatus,
+          extractedIdNumber: extractedIdNumber,
+          scanError: scanError,
+          onRetry: onRetry,
+          strings: strings,
+          textTheme: textTheme,
+        ),
+      ],
+    );
+  }
+}
+
+// ── Image Preview ─────────────────────────────────────────────────────────────
+
+class _ImagePreview extends StatelessWidget {
+  const _ImagePreview({
+    required this.imageBytes,
+    required this.imageName,
+    required this.onRemove,
+    required this.strings,
+  });
+
+  final Uint8List imageBytes;
+  final String? imageName;
+  final VoidCallback onRemove;
+  final AppLocalizations strings;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+        color: colorScheme.surfaceContainerLowest,
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppTheme.radiusS),
+            child: Image.memory(
+              imageBytes,
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  imageName ?? strings.t('idDocument'),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  strings.t('documentUploaded'),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: onRemove,
+            icon: const Icon(Icons.close),
+            tooltip: strings.t('remove'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Upload Prompt ─────────────────────────────────────────────────────────────
+
+class _UploadPrompt extends StatelessWidget {
+  const _UploadPrompt({
+    required this.onPick,
+    required this.strings,
+  });
+
+  final VoidCallback onPick;
+  final AppLocalizations strings;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return InkWell(
+      onTap: onPick,
+      borderRadius: BorderRadius.circular(AppTheme.radiusM),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: colorScheme.outline.withValues(alpha: 0.5),
+            width: 1.5,
+            strokeAlign: BorderSide.strokeAlignInside,
+          ),
+          borderRadius: BorderRadius.circular(AppTheme.radiusM),
+          color: colorScheme.surfaceContainerLowest,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.document_scanner_outlined,
+              size: 48,
+              color: AppTheme.primary,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              strings.t('scanOrUploadId'),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppTheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              strings.t('scanOrUploadIdHint'),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── OCR Status Area ───────────────────────────────────────────────────────────
+
+class _OcrStatusArea extends StatelessWidget {
+  const _OcrStatusArea({
+    required this.scanStatus,
+    required this.extractedIdNumber,
+    required this.scanError,
+    required this.onRetry,
+    required this.strings,
+    required this.textTheme,
+  });
+
+  final _BeneficiaryIdScanStatus scanStatus;
+  final String extractedIdNumber;
+  final String? scanError;
+  final VoidCallback onRetry;
+  final AppLocalizations strings;
+  final TextTheme textTheme;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    switch (scanStatus) {
+      case _BeneficiaryIdScanStatus.idle:
+        return const SizedBox.shrink();
+
+      case _BeneficiaryIdScanStatus.scanning:
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(AppTheme.radiusM),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  strings.t('scanningDocument'),
+                  style: textTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+        );
+
+      case _BeneficiaryIdScanStatus.success:
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(AppTheme.radiusM),
+            border: Border.all(
+              color: colorScheme.primary.withValues(alpha: 0.5),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.check_circle_outline,
+                color: colorScheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      strings.t('idExtracted'),
+                      style: textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      extractedIdNumber,
+                      style: textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+
+      case _BeneficiaryIdScanStatus.lowConfidence:
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.tertiaryContainer.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(AppTheme.radiusM),
+            border: Border.all(
+              color: colorScheme.tertiary.withValues(alpha: 0.5),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_outlined,
+                    color: colorScheme.tertiary,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      strings.t('lowConfidenceDetection'),
+                      style: textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (extractedIdNumber.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '${strings.t('detectedId')}: $extractedIdNumber',
+                  style: textTheme.bodyMedium,
+                ),
+              ],
+              if (scanError != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  scanError!,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              FilledButton.tonalIcon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: Text(strings.t('retry')),
+              ),
+            ],
+          ),
+        );
+
+      case _BeneficiaryIdScanStatus.failed:
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.errorContainer.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(AppTheme.radiusM),
+            border: Border.all(
+              color: colorScheme.error.withValues(alpha: 0.5),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: colorScheme.error,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      strings.t('scanFailed'),
+                      style: textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (scanError != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  scanError!,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              FilledButton.tonalIcon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: Text(strings.t('retry')),
+              ),
+            ],
+          ),
+        );
+    }
   }
 }

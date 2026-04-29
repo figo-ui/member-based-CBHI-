@@ -3,7 +3,6 @@ import '../data/admin_repository.dart';
 import '../i18n/app_localizations.dart';
 import '../theme/admin_theme.dart';
 import '../widgets/error_state_widget.dart';
-import 'totp_setup_screen.dart';
 
 /// Redesigned Settings Screen — sectioned cards for General, Notifications,
 /// Premium Configuration, Claim Rules, and Security.
@@ -654,23 +653,6 @@ class _SecurityCard extends StatelessWidget {
                   subtitle: 'Update your admin account password',
                   buttonLabel: 'Change Password',
                   onTap: () => _showChangePasswordDialog(context),
-                ),
-                const Divider(height: 24),
-                _SecurityAction(
-                  icon: Icons.verified_user_outlined,
-                  title: 'Two-Factor Authentication (TOTP)',
-                  subtitle:
-                      'Set up or reconfigure your authenticator app for 2FA',
-                  buttonLabel: 'Setup 2FA',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (_) => TotpSetupScreen(
-                        repository: repository,
-                        onComplete: () => Navigator.pop(context),
-                      ),
-                    ),
-                  ),
                 ),
               ],
             ),
